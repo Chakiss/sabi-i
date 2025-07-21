@@ -1,0 +1,36 @@
+// Firestore Security Rules for Sabai Massage Management System
+// แก้ไข Firebase Console > Firestore Database > Rules
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // อนุญาตให้อ่าน/เขียนข้อมูลทั้งหมดในโหมดพัฒนา
+    // ⚠️ สำหรับ Production ควรเพิ่ม Authentication และ Authorization
+    match /{document=**} {
+      allow read, write: if true;
+    }
+    
+    // กฎสำหรับ Production (ใช้เมื่อมี Authentication)
+    /*
+    match /services/{serviceId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    match /therapists/{therapistId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    match /bookings/{bookingId} {
+      allow read: if true;
+      allow write: if true; // อนุญาตให้ลูกค้าจองได้
+    }
+    
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    */
+  }
+}

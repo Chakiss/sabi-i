@@ -1,103 +1,454 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { getTodayBookings, getTherapists, getServices } from '@/lib/firestore';
+import { CalendarDaysIcon, UserGroupIcon, ClipboardDocumentListIcon, CurrencyDollarIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+import { toast } from 'react-hot-toast';
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+export default function HomePage() {
+  const [todayStats, setTodayStats] = useState({
+    bookings: 0,
+    activeTherapists: 0,
+    totalRevenue: 0,
+    completedSessions: 0
+  });
+  
+  const [loading, setLoading] = useState(true);
+  const [showTodayBookings, setShowTodayBookings] = useState(false);
+  const [todayBookings, setTodayBookings] = useState([]);
+  const [therapists, setTherapists] = useState([]);
+  const [services, setServices] = useState([]);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Update current time every minute
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const [bookings, therapists, services] = await Promise.all([
+          getTodayBookings(),
+          getTherapists(),
+          getServices()
+        ]);
+
+        const activeTherapists = therapists.filter(t => t.status === 'active').length;
+        const completedBookings = bookings.filter(b => b.status === 'done');
+        const totalRevenue = completedBookings.reduce((sum, booking) => {
+          const service = services.find(s => s.id === booking.serviceId);
+          return sum + (service?.priceByDuration?.[booking.duration] || 0);
+        }, 0);
+
+        setTodayStats({
+          bookings: bookings.length,
+          activeTherapists,
+          totalRevenue,
+          completedSessions: completedBookings.length
+        });
+
+        setTodayBookings(bookings);
+        setTherapists(therapists);
+        setServices(services);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+    
+    // Auto refresh every 30 seconds
+    const interval = setInterval(fetchDashboardData, 30000);
+    
+    // Refresh when window gains focus (กลับมาจากหน้าอื่น)
+    const handleFocus = () => {
+      console.log('🔄 Window focused, refreshing dashboard data...');
+      fetchDashboardData();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
+
+  const menuItems = [
+    {
+      title: 'จองคิว',
+      description: 'ลงคิวลูกค้า จัดหมอนวด',
+      icon: CalendarDaysIcon,
+      href: '/booking',
+      color: 'from-blue-400 to-blue-600',
+      bgPattern: 'bg-gradient-to-br from-blue-50 to-blue-100'
+    },
+    {
+      title: 'จัดการคิว',
+      description: 'อัพเดทสถานะ เริ่ม-จบคิว',
+      icon: ClipboardDocumentListIcon,
+      href: '/queue',
+      color: 'from-orange-400 to-orange-600',
+      bgPattern: 'bg-gradient-to-br from-orange-50 to-orange-100'
+    },
+    {
+      title: 'จัดการหมอนวด',
+      description: 'ข้อมูลพนักงาน ตารางเวร',
+      icon: UserGroupIcon,
+      href: '/therapists',
+      color: 'from-green-400 to-emerald-600',
+      bgPattern: 'bg-gradient-to-br from-green-50 to-emerald-100'
+    },
+    {
+      title: 'จัดการคอร์สนวด',
+      description: 'เพิ่ม แก้ไข ราคาคอร์ส',
+      icon: CurrencyDollarIcon,
+      href: '/services',
+      color: 'from-purple-400 to-purple-600',
+      bgPattern: 'bg-gradient-to-br from-purple-50 to-purple-100'
+    },
+    {
+      title: 'รายงานและสถิติ',
+      description: 'ดูคิวย้อนหลัง รายได้รายเดือน',
+      icon: ChartBarIcon,
+      href: '/reports',
+      color: 'from-indigo-400 to-indigo-600',
+      bgPattern: 'bg-gradient-to-br from-indigo-50 to-indigo-100'
+    },
+    {
+      title: 'Dashboard',
+      description: 'รายงานยอด สรุปรายได้',
+      icon: ClipboardDocumentListIcon,
+      href: '/dashboard',
+      color: 'from-indigo-400 to-indigo-600',
+      bgPattern: 'bg-gradient-to-br from-indigo-50 to-indigo-100'
+    }
+  ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center thai-pattern">
+        <div className="glass-card p-8 text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-transparent border-t-yellow-400 mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">🌸 กำลังโหลดข้อมูล...</p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen thai-pattern">
+      {/* Header */}
+      <div className="glass-header sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                🌸
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-yellow-600 to-yellow-500 bg-clip-text text-transparent">
+                  Saba-i Massage
+                </h1>
+                <p className="text-gray-600 mt-1">ระบบจัดการร้านนวดไทย</p>
+              </div>
+            </div>
+            
+            {/* Current Date Display */}
+            <div className="flex items-center">
+              {/* Desktop Version */}
+              <div className="hidden sm:block">
+                <div className="glass-card px-4 py-3 shadow-sm">
+                  <div className="text-right">
+                    <div className="text-xs text-gray-500 font-medium uppercase tracking-wide">วันนี้</div>
+                    <div className="text-lg font-bold bg-gradient-to-r from-yellow-600 to-yellow-500 bg-clip-text text-transparent">
+                      {currentTime.toLocaleDateString('th-TH', {
+                        weekday: 'short',
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric'
+                      })}
+                    </div>
+                    <div className="text-sm text-gray-600 font-medium">
+                      {currentTime.toLocaleTimeString('th-TH', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Mobile Version */}
+              <div className="sm:hidden">
+                <div className="glass-card px-3 py-2">
+                  <div className="text-right">
+                    <div className="text-sm font-bold bg-gradient-to-r from-yellow-600 to-yellow-500 bg-clip-text text-transparent">
+                      {currentTime.toLocaleDateString('th-TH', {
+                        day: 'numeric',
+                        month: 'short'
+                      })}
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      {currentTime.toLocaleTimeString('th-TH', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Refresh Button */}
+        <div className="flex justify-end mb-6">
+          <button
+            onClick={async () => {
+              setLoading(true);
+              try {
+                const [bookings, therapists, services] = await Promise.all([
+                  getTodayBookings(),
+                  getTherapists(),
+                  getServices()
+                ]);
+
+                const activeTherapists = therapists.filter(t => t.status === 'active').length;
+                const completedBookings = bookings.filter(b => b.status === 'done');
+                const totalRevenue = completedBookings.reduce((sum, booking) => {
+                  const service = services.find(s => s.id === booking.serviceId);
+                  return sum + (service?.priceByDuration?.[booking.duration] || 0);
+                }, 0);
+
+                setTodayStats({
+                  bookings: bookings.length,
+                  activeTherapists,
+                  totalRevenue,
+                  completedSessions: completedBookings.length
+                });
+
+                setTodayBookings(bookings);
+                setTherapists(therapists);
+                setServices(services);
+                
+                toast.success('รีเฟรชข้อมูลแล้ว');
+              } catch (error) {
+                console.error('Error refreshing data:', error);
+                toast.error('เกิดข้อผิดพลาดในการรีเฟรชข้อมูล');
+              } finally {
+                setLoading(false);
+              }
+            }}
+            className="glass-button px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+          >
+            🔄 รีเฟรช
+          </button>
+        </div>
+        
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div 
+            className="glass-stat p-6 cursor-pointer hover:scale-105 transition-all duration-200"
+            onClick={() => setShowTodayBookings(!showTodayBookings)}
+          >
+            <div className="flex items-center">
+              <div className="p-3 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 shadow-lg">
+                <CalendarDaysIcon className="h-8 w-8 text-white" />
+              </div>
+              <div className="ml-4 flex-1">
+                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wider">คิววันนี้</p>
+                <p className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
+                  {todayStats.bookings}
+                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <p className="text-xs text-blue-600 font-medium">คลิกเพื่อดูรายละเอียด</p>
+                  <Link 
+                    href="/queue" 
+                    className="text-xs text-orange-600 font-bold hover:text-orange-700 transition-colors px-2 py-1 rounded bg-orange-50 hover:bg-orange-100"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    📋 จัดการ
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="glass-stat p-6">
+            <div className="flex items-center">
+              <div className="p-3 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 shadow-lg">
+                <UserGroupIcon className="h-8 w-8 text-white" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wider">หมอนวดเข้าเวร</p>
+                <p className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent">
+                  {todayStats.activeTherapists}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="glass-stat p-6">
+            <div className="flex items-center">
+              <div className="p-3 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 shadow-lg">
+                <ClipboardDocumentListIcon className="h-8 w-8 text-white" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wider">เสร็จแล้ว</p>
+                <p className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">
+                  {todayStats.completedSessions}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="glass-stat p-6">
+            <div className="flex items-center">
+              <div className="p-3 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg">
+                <CurrencyDollarIcon className="h-8 w-8 text-white" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wider">รายได้วันนี้</p>
+                <p className="text-3xl font-bold bg-gradient-to-r from-yellow-600 to-yellow-500 bg-clip-text text-transparent">
+                  ฿{todayStats.totalRevenue.toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Today's Bookings Modal/Section */}
+        {showTodayBookings && (
+          <div className="glass-card p-8 mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold mr-3">
+                  📅
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800">คิววันนี้ ({todayBookings.length} คิว)</h2>
+              </div>
+              <button
+                onClick={() => setShowTodayBookings(false)}
+                className="p-2 rounded-lg glass-button hover:bg-white/20 transition-all duration-200"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {todayBookings.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-4xl mb-4">📅</div>
+                <p className="text-gray-500 text-lg">ยังไม่มีคิววันนี้</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {todayBookings
+                  .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
+                  .map((booking) => {
+                    const therapist = therapists.find(t => t.id === booking.therapistId);
+                    const service = services.find(s => s.id === booking.serviceId);
+                    const startTime = new Date(booking.startTime);
+                    const endTime = new Date(startTime.getTime() + booking.duration * 60000);
+                    
+                    return (
+                      <div key={booking.id} className="glass p-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h3 className="font-bold text-gray-800 text-lg">{booking.customerName}</h3>
+                              <span className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${
+                                booking.status === 'pending' ? 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-white' :
+                                booking.status === 'in_progress' ? 'bg-gradient-to-r from-blue-400 to-blue-500 text-white' :
+                                'bg-gradient-to-r from-green-400 to-green-500 text-white'
+                              }`}>
+                                {booking.status === 'pending' ? '⏳ รอคิว' :
+                                 booking.status === 'in_progress' ? '💆‍♀️ กำลังนวด' : '✅ เสร็จแล้ว'}
+                              </span>
+                            </div>
+                            {booking.customerPhone && (
+                              <p className="text-gray-500 text-sm font-medium mb-2">📞 {booking.customerPhone}</p>
+                            )}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                              <div>
+                                <span className="text-gray-600">คอร์ส:</span>
+                                <span className="ml-2 font-semibold text-gray-800">{service?.name}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-600">หมอนวด:</span>
+                                <span className="ml-2 font-semibold text-gray-800">{therapist?.name}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-600">เวลา:</span>
+                                <span className="ml-2 font-semibold text-gray-800">
+                                  {startTime.toLocaleTimeString('th-TH', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })} - {endTime.toLocaleTimeString('th-TH', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })} ({booking.duration} นาที)
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Menu Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {menuItems.map((item, index) => (
+            <Link
+              key={index}
+              href={item.href}
+              className="glass-card p-8 group relative overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              
+              <div className="relative z-10">
+                <div className="flex items-center mb-4">
+                  <div className={`p-4 rounded-xl bg-gradient-to-br ${item.color} shadow-lg group-hover:scale-110 transition-all duration-300`}>
+                    <item.icon className="h-8 w-8 text-white" />
+                  </div>
+                </div>
+                
+                <h3 className="text-2xl font-bold text-gray-800 mb-2 group-hover:text-gray-900 transition-colors">
+                  {item.title}
+                </h3>
+                <p className="text-gray-600 leading-relaxed group-hover:text-gray-700 transition-colors">
+                  {item.description}
+                </p>
+                
+                <div className="mt-6 flex items-center text-yellow-600 font-semibold">
+                  <span>เข้าใช้งาน</span>
+                  <svg className="ml-2 w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Decorative element */}
+              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-400/20 to-transparent rounded-full transform translate-x-8 -translate-y-8"></div>
+            </Link>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

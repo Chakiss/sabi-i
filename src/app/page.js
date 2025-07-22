@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getTodayBookings, getTherapists, getServices } from '@/lib/firestore';
-import { CalendarDaysIcon, UserGroupIcon, ClipboardDocumentListIcon, CurrencyDollarIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+import { CalendarDaysIcon, ClipboardDocumentListIcon, CurrencyDollarIcon, ChartBarIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 
 export default function HomePage() {
@@ -11,11 +11,16 @@ export default function HomePage() {
     bookings: 0,
     activeTherapists: 0,
     totalRevenue: 0,
-    completedSessions: 0
+    completedSessions: 0,
+    availableTherapists: [],
+    availableCount: 0,
+    busyTherapists: [],
+    busyCount: 0
   });
   
   const [loading, setLoading] = useState(true);
   const [showTodayBookings, setShowTodayBookings] = useState(false);
+  const [showAvailableTherapists, setShowAvailableTherapists] = useState(false);
   const [todayBookings, setTodayBookings] = useState([]);
   const [therapists, setTherapists] = useState([]);
   const [services, setServices] = useState([]);
@@ -39,18 +44,62 @@ export default function HomePage() {
           getServices()
         ]);
 
-        const activeTherapists = therapists.filter(t => t.status === 'active').length;
+        const activeTherapists = therapists.filter(t => t.status === 'active');
         const completedBookings = bookings.filter(b => b.status === 'done');
         const totalRevenue = completedBookings.reduce((sum, booking) => {
           const service = services.find(s => s.id === booking.serviceId);
-          return sum + (service?.priceByDuration?.[booking.duration] || 0);
+          const finalPrice = booking.finalPrice || (service?.priceByDuration?.[booking.duration] || 0);
+          return sum + finalPrice;
         }, 0);
+
+        // Calculate available therapists (not currently working)
+        const currentTime = new Date();
+        const currentTimeMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
+        
+        const therapistStatus = new Map();
+        
+        // Check for therapists who are currently in sessions
+        bookings
+          .filter(b => b.status === 'in_progress' || b.status === 'pending')
+          .forEach(booking => {
+            const startTime = new Date(booking.startTime);
+            const endTime = new Date(startTime.getTime() + booking.duration * 60000);
+            const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
+            const endMinutes = endTime.getHours() * 60 + endTime.getMinutes();
+            
+            // If current time is within the booking window
+            if (currentTimeMinutes >= startMinutes && currentTimeMinutes <= endMinutes) {
+              const service = services.find(s => s.id === booking.serviceId);
+              therapistStatus.set(booking.therapistId, {
+                status: 'busy',
+                booking: booking,
+                customer: booking.customerName,
+                service: service?.name || 'ไม่ระบุคอร์ส',
+                endTime: endTime
+              });
+            }
+          });
+        
+        const availableTherapists = activeTherapists.filter(therapist => 
+          !therapistStatus.has(therapist.id)
+        );
+
+        const busyTherapists = activeTherapists.filter(therapist => 
+          therapistStatus.has(therapist.id)
+        ).map(therapist => ({
+          ...therapist,
+          ...therapistStatus.get(therapist.id)
+        }));
 
         setTodayStats({
           bookings: bookings.length,
-          activeTherapists,
+          activeTherapists: activeTherapists.length,
           totalRevenue,
-          completedSessions: completedBookings.length
+          completedSessions: completedBookings.length,
+          availableTherapists: availableTherapists,
+          availableCount: availableTherapists.length,
+          busyTherapists: busyTherapists,
+          busyCount: busyTherapists.length
         });
 
         setTodayBookings(bookings);
@@ -102,7 +151,7 @@ export default function HomePage() {
     {
       title: 'จัดการหมอนวด',
       description: 'ข้อมูลพนักงาน ตารางเวร',
-      icon: UserGroupIcon,
+      icon: ClipboardDocumentListIcon,
       href: '/therapists',
       color: 'from-green-400 to-emerald-600',
       bgPattern: 'bg-gradient-to-br from-green-50 to-emerald-100'
@@ -284,17 +333,26 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-          
-          <div className="glass-stat p-6">
+
+          <div 
+            className="glass-stat p-6 cursor-pointer hover:scale-105 transition-all duration-200"
+            onClick={() => setShowAvailableTherapists(!showAvailableTherapists)}
+          >
             <div className="flex items-center">
               <div className="p-3 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 shadow-lg">
                 <UserGroupIcon className="h-8 w-8 text-white" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wider">หมอนวดเข้าเวร</p>
+              <div className="ml-4 flex-1">
+                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wider">หมอว่างตอนนี้</p>
                 <p className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent">
-                  {todayStats.activeTherapists}
+                  {todayStats.availableCount}
                 </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <p className="text-xs text-green-600 font-medium">คลิกเพื่อดูรายชื่อ</p>
+                  <span className="text-xs text-gray-500">
+                    /{todayStats.activeTherapists} คน
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -408,6 +466,146 @@ export default function HomePage() {
                   })}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Available Therapists Section */}
+        {showAvailableTherapists && (
+          <div className="glass-card p-8 mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-white text-sm font-bold mr-3">
+                  👥
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800">สถานะหมอนวดตอนนี้</h2>
+              </div>
+              <button
+                onClick={() => setShowAvailableTherapists(false)}
+                className="p-2 rounded-lg glass-button hover:bg-white/20 transition-all duration-200"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="glass p-4 bg-gradient-to-r from-green-50 to-emerald-50">
+                <div className="flex items-center">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-white mr-4">
+                    ✅
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">หมอที่ว่าง</p>
+                    <p className="text-2xl font-bold text-green-600">{todayStats.availableCount} คน</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="glass p-4 bg-gradient-to-r from-orange-50 to-red-50">
+                <div className="flex items-center">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center text-white mr-4">
+                    💼
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">หมอที่ไม่ว่าง</p>
+                    <p className="text-2xl font-bold text-red-500">{todayStats.busyCount} คน</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {todayStats.activeTherapists === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-4xl mb-4">�‍⚕️</div>
+                <p className="text-gray-500 text-lg">ไม่มีหมอนวดที่เข้าเวรวันนี้</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Available Therapists */}
+                {todayStats.availableCount > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                      <div className="w-4 h-4 bg-green-500 rounded-full mr-2"></div>
+                      หมอนวดที่ว่าง ({todayStats.availableCount} คน)
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {todayStats.availableTherapists.map((therapist) => (
+                        <div key={therapist.id} className="glass p-6 border-l-4 border-green-400">
+                          <div className="flex items-center mb-3">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-white text-lg font-bold mr-3">
+                              💆‍♀️
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-gray-800">{therapist.name}</h4>
+                              <p className="text-sm text-gray-600">รหัส: {therapist.id}</p>
+                            </div>
+                          </div>
+                          <div className="inline-flex items-center px-3 py-1 rounded-full bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 text-sm font-medium">
+                            <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                            พร้อมให้บริการ
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Busy Therapists */}
+                {todayStats.busyCount > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                      <div className="w-4 h-4 bg-red-500 rounded-full mr-2"></div>
+                      หมอนวดที่ไม่ว่าง ({todayStats.busyCount} คน)
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {todayStats.busyTherapists.map((therapist) => (
+                        <div key={therapist.id} className="glass p-6 border-l-4 border-red-400">
+                          <div className="flex items-center mb-3">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center text-white text-lg font-bold mr-3">
+                              💼
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-gray-800">{therapist.name}</h4>
+                              <p className="text-sm text-gray-600">รหัส: {therapist.id}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="bg-gradient-to-r from-red-50 to-orange-50 p-3 rounded-lg mb-3">
+                            <p className="text-sm text-gray-700 mb-1">
+                              <span className="font-medium">ลูกค้า:</span> {therapist.customer}
+                            </p>
+                            <p className="text-sm text-gray-700 mb-1">
+                              <span className="font-medium">คอร์ส:</span> {therapist.service}
+                            </p>
+                            <p className="text-sm text-gray-700">
+                              <span className="font-medium">เสร็จประมาณ:</span> {therapist.endTime.toLocaleTimeString('th-TH', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          </div>
+                          
+                          <div className="inline-flex items-center px-3 py-1 rounded-full bg-gradient-to-r from-red-100 to-orange-100 text-red-700 text-sm font-medium">
+                            <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
+                            กำลังให้บริการ
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+              <div className="flex items-center text-sm text-blue-700">
+                <div className="w-4 h-4 mr-2">ℹ️</div>
+                <p>
+                  <span className="font-semibold">หมายเหตุ:</span> ข้อมูลนี้คำนวณจากคิวที่กำลังดำเนินการอยู่ในปัจจุบัน 
+                  และอัพเดททุก 30 วินาทีอัตโนมัติ
+                </p>
+              </div>
+            </div>
           </div>
         )}
 

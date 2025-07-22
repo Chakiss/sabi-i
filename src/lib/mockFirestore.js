@@ -197,15 +197,25 @@ export const getTodayBookingsMock = async () => {
   return todayBookings;
 };
 
-export const updateBookingStatusMock = async (bookingId, status) => {
+export const updateBookingStatusMock = async (bookingId, status, discountData = null) => {
   await delay();
   const index = mockBookingsStorage.findIndex(b => b.id === bookingId);
   if (index !== -1) {
-    mockBookingsStorage[index] = {
+    const updateData = {
       ...mockBookingsStorage[index],
       status,
       updatedAt: new Date()
     };
+
+    // Add discount data if provided (when completing a booking)
+    if (status === 'done' && discountData) {
+      updateData.discountType = discountData.discountType;
+      updateData.discountValue = discountData.discountValue;
+      updateData.finalPrice = discountData.finalPrice;
+      updateData.completedAt = new Date();
+    }
+
+    mockBookingsStorage[index] = updateData;
   }
 };
 

@@ -6,6 +6,8 @@ import { getTodayBookings, getTherapists, getServices, updateBookingStatus } fro
 import { toast } from 'react-hot-toast';
 import { ArrowLeftIcon, ClockIcon, UserIcon, CheckCircleIcon, PlayCircleIcon, PencilIcon } from '@heroicons/react/24/outline';
 import EditBookingModal from '@/components/EditBookingModal';
+import DiscountModal from '@/components/DiscountModal';
+import BookingModal from '@/components/BookingModal';
 
 export default function QueuePage() {
   const [bookings, setBookings] = useState([]);
@@ -14,6 +16,9 @@ export default function QueuePage() {
   const [loading, setLoading] = useState(true);
   const [editingBooking, setEditingBooking] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [completingBooking, setCompletingBooking] = useState(null);
+  const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -43,16 +48,27 @@ export default function QueuePage() {
     }
   };
 
-  const handleStatusUpdate = async (bookingId, newStatus) => {
+  const handleStatusUpdate = async (bookingId, newStatus, discountData = null) => {
     try {
-      await updateBookingStatus(bookingId, newStatus);
+      await updateBookingStatus(bookingId, newStatus, discountData);
       
       // Update local state
-      setBookings(prev => prev.map(booking => 
-        booking.id === bookingId 
-          ? { ...booking, status: newStatus }
-          : booking
-      ));
+      setBookings(prev => prev.map(booking => {
+        if (booking.id === bookingId) {
+          const updatedBooking = { ...booking, status: newStatus };
+          
+          // Add discount data if completing
+          if (newStatus === 'done' && discountData) {
+            updatedBooking.discountType = discountData.discountType;
+            updatedBooking.discountValue = discountData.discountValue;
+            updatedBooking.finalPrice = discountData.finalPrice;
+            updatedBooking.completedAt = new Date();
+          }
+          
+          return updatedBooking;
+        }
+        return booking;
+      }));
       
       const statusText = {
         'pending': 'รอคิว',
@@ -117,6 +133,34 @@ export default function QueuePage() {
     fetchData(); // Refresh data after update
   };
 
+  const handleCompleteBooking = (booking) => {
+    setCompletingBooking(booking);
+    setIsDiscountModalOpen(true);
+  };
+
+  const handleDiscountModalClose = () => {
+    setIsDiscountModalOpen(false);
+    setCompletingBooking(null);
+  };
+
+  const handleCompleteWithDiscount = async (bookingId, discountData) => {
+    await handleStatusUpdate(bookingId, 'done', discountData);
+    setIsDiscountModalOpen(false);
+    setCompletingBooking(null);
+  };
+
+  const handleNewBooking = () => {
+    setIsBookingModalOpen(true);
+  };
+
+  const handleBookingModalClose = () => {
+    setIsBookingModalOpen(false);
+  };
+
+  const handleBookingAdded = () => {
+    fetchData(); // Refresh data after new booking
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center thai-pattern">
@@ -165,12 +209,12 @@ export default function QueuePage() {
               </div>
             </div>
             <div className="flex space-x-3">
-              <Link
-                href="/booking"
+              <button
+                onClick={handleNewBooking}
                 className="glass-button px-4 py-2 bg-gradient-to-r from-blue-400 to-blue-600 text-white font-medium hover:shadow-lg transition-all duration-200 flex items-center"
               >
                 📝 จองคิวใหม่
-              </Link>
+              </button>
               <button
                 onClick={fetchData}
                 className="glass-button px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
@@ -272,6 +316,7 @@ export default function QueuePage() {
                       startTime={startTime}
                       onStatusUpdate={handleStatusUpdate}
                       onEdit={handleEditBooking}
+                      onComplete={handleCompleteBooking}
                     />
                   );
                 })}
@@ -335,12 +380,29 @@ export default function QueuePage() {
         onClose={handleEditModalClose}
         onUpdate={handleBookingUpdate}
       />
+
+      {/* Discount Modal */}
+      <DiscountModal
+        booking={completingBooking}
+        isOpen={isDiscountModalOpen}
+        onClose={handleDiscountModalClose}
+        onComplete={handleCompleteWithDiscount}
+      />
+
+      {/* New Booking Modal */}
+      <BookingModal
+        isOpen={isBookingModalOpen}
+        onClose={handleBookingModalClose}
+        therapists={therapists}
+        services={services}
+        onBookingAdded={handleBookingAdded}
+      />
     </div>
   );
 }
 
 // Booking Card Component
-function BookingCard({ booking, therapist, service, startTime, onStatusUpdate, onEdit }) {
+function BookingCard({ booking, therapist, service, startTime, onStatusUpdate, onEdit, onComplete }) {
   const endTime = new Date(startTime.getTime() + booking.duration * 60000);
   
   const getNextStatus = (currentStatus) => {
@@ -363,6 +425,22 @@ function BookingCard({ booking, therapist, service, startTime, onStatusUpdate, o
   
   const nextStatus = getNextStatus(booking.status);
   const nextStatusText = getNextStatusText(booking.status);
+
+  // Handle status update - if completing, use onComplete function
+  const handleStatusClick = () => {
+    if (booking.status === 'in_progress' && nextStatus === 'done') {
+      // Create booking object with service price for discount calculation
+      const servicePrice = service?.priceByDuration?.[booking.duration] || 0;
+      const bookingWithPrice = {
+        ...booking,
+        serviceName: service?.name,
+        servicePrice: servicePrice
+      };
+      onComplete(bookingWithPrice);
+    } else if (nextStatus) {
+      onStatusUpdate(booking.id, nextStatus);
+    }
+  };
 
   return (
     <div className="glass p-4 border-l-4 border-blue-400">
@@ -387,18 +465,45 @@ function BookingCard({ booking, therapist, service, startTime, onStatusUpdate, o
         <div>
           <span className="text-gray-600">คอร์ส:</span>
           <span className="ml-2 font-semibold text-gray-800">{service?.name}</span>
+          {service?.priceByDuration?.[booking.duration] && (
+            <span className="ml-2 text-gray-500">(฿{service.priceByDuration[booking.duration].toLocaleString()})</span>
+          )}
         </div>
         <div>
           <span className="text-gray-600">หมอนวด:</span>
           <span className="ml-2 font-semibold text-gray-800">{therapist?.name}</span>
         </div>
+        
+        {/* Show discount info for completed bookings */}
+        {booking.status === 'done' && booking.discountType && (
+          <div className="mt-2 p-3 bg-green-50 rounded-lg border border-green-200">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">ราคาเดิม:</span>
+              <span>฿{(service?.priceByDuration?.[booking.duration] || 0).toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">ส่วนลด:</span>
+              <span className="text-red-600">
+                {booking.discountType === 'percentage' 
+                  ? `${booking.discountValue}%` 
+                  : `฿${booking.discountValue.toLocaleString()}`
+                }
+                {' (-฿'}{((service?.priceByDuration?.[booking.duration] || 0) - (booking.finalPrice || 0)).toLocaleString()})
+              </span>
+            </div>
+            <div className="flex justify-between text-sm font-semibold border-t border-green-300 mt-1 pt-1">
+              <span className="text-gray-800">ราคาสุทธิ:</span>
+              <span className="text-green-600">฿{(booking.finalPrice || 0).toLocaleString()}</span>
+            </div>
+          </div>
+        )}
       </div>
       
       <div className="flex space-x-2">
         {nextStatus ? (
           <>
             <button
-              onClick={() => onStatusUpdate(booking.id, nextStatus)}
+              onClick={handleStatusClick}
               className="flex-1 px-4 py-2 glass-button bg-gradient-to-r from-blue-400 to-blue-600 text-white text-sm font-semibold rounded-lg hover:shadow-md transition-all duration-200"
             >
               {nextStatusText}
@@ -416,7 +521,7 @@ function BookingCard({ booking, therapist, service, startTime, onStatusUpdate, o
           <div className="w-full text-center">
             <div className="px-4 py-3 glass bg-green-50 border border-green-200 text-green-700 text-sm font-medium rounded-lg flex items-center justify-center">
               <CheckCircleIcon className="h-4 w-4 mr-2" />
-              เสร็จสิ้นแล้ว - ไม่สามารถแก้ไขได้
+              เสร็จสิ้นแล้ว
             </div>
           </div>
         )}

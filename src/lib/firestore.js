@@ -311,21 +311,31 @@ export const getTodayBookings = async () => {
   }
 };
 
-export const updateBookingStatus = async (bookingId, status) => {
+export const updateBookingStatus = async (bookingId, status, discountData = null) => {
   if (shouldUseMock()) {
-    return updateBookingStatusMock(bookingId, status);
+    return updateBookingStatusMock(bookingId, status, discountData);
   }
   
   try {
     const docRef = doc(db, 'bookings', bookingId);
-    await updateDoc(docRef, {
+    const updateData = {
       status,
       updatedAt: Timestamp.now()
-    });
+    };
+
+    // Add discount data if provided (when completing a booking)
+    if (status === 'done' && discountData) {
+      updateData.discountType = discountData.discountType;
+      updateData.discountValue = discountData.discountValue;
+      updateData.finalPrice = discountData.finalPrice;
+      updateData.completedAt = Timestamp.now();
+    }
+
+    await updateDoc(docRef, updateData);
   } catch (error) {
     console.error('Error updating booking status:', error);
     console.warn('Falling back to mock data');
-    return updateBookingStatusMock(bookingId, status);
+    return updateBookingStatusMock(bookingId, status, discountData);
   }
 };
 

@@ -42,11 +42,11 @@ export default function ReportsPage() {
     if (selectedDate) {
       fetchDailyBookings();
     }
-  }, [selectedDate]);
+  }, [selectedDate, fetchDailyBookings]);
 
   useEffect(() => {
     fetchMonthlyData();
-  }, [selectedMonth]);
+  }, [selectedMonth, fetchMonthlyData]);
 
   const fetchTherapistsAndServices = async () => {
     try {
@@ -106,10 +106,18 @@ export default function ReportsPage() {
 
   const calculateDailyRevenue = () => {
     const completedBookings = dailyBookings.filter(b => b.status === 'done');
-    return completedBookings.reduce((sum, booking) => {
+    return completedBookings.reduce((summary, booking) => {
       const service = services.find(s => s.id === booking.serviceId);
-      return sum + (service?.priceByDuration?.[booking.duration] || 0);
-    }, 0);
+      const originalPrice = service?.priceByDuration?.[booking.duration] || 0;
+      const finalPrice = booking.finalPrice || originalPrice;
+      
+      return {
+        originalRevenue: (summary.originalRevenue || 0) + originalPrice,
+        totalDiscount: (summary.totalDiscount || 0) + (originalPrice - finalPrice),
+        finalRevenue: (summary.finalRevenue || 0) + finalPrice,
+        count: (summary.count || 0) + 1
+      };
+    }, { originalRevenue: 0, totalDiscount: 0, finalRevenue: 0, count: 0 });
   };
 
   return (
@@ -178,11 +186,32 @@ export default function ReportsPage() {
                   </div>
                   <div className="glass p-4 text-center">
                     <div className="text-2xl font-bold text-green-600">
-                      ฿{calculateDailyRevenue().toLocaleString()}
+                      ฿{calculateDailyRevenue().finalRevenue.toLocaleString()}
                     </div>
-                    <div className="text-sm text-gray-600">รายได้</div>
+                    <div className="text-sm text-gray-600">รายได้สุทธิ</div>
                   </div>
                 </div>
+
+                {/* Revenue Summary */}
+                {calculateDailyRevenue().count > 0 && (
+                  <div className="glass p-4 mb-6">
+                    <h3 className="font-semibold text-gray-800 mb-3">สรุปรายได้</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">รายได้เดิม:</span>
+                        <span className="font-medium">฿{calculateDailyRevenue().originalRevenue.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">ส่วนลดรวม:</span>
+                        <span className="font-medium text-red-600">-฿{calculateDailyRevenue().totalDiscount.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between border-t pt-2">
+                        <span className="text-gray-800 font-semibold">รายได้สุทธิ:</span>
+                        <span className="font-bold text-green-600">฿{calculateDailyRevenue().finalRevenue.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {dailyBookings.length === 0 ? (
@@ -197,8 +226,9 @@ export default function ReportsPage() {
                         const therapist = therapists.find(t => t.id === booking.therapistId);
                         const service = services.find(s => s.id === booking.serviceId);
                         const startTime = new Date(booking.startTime);
-                        const revenue = booking.status === 'done' ? 
-                          (service?.priceByDuration?.[booking.duration] || 0) : 0;
+                        const originalPrice = service?.priceByDuration?.[booking.duration] || 0;
+                        const finalPrice = booking.finalPrice || originalPrice;
+                        const discount = originalPrice - finalPrice;
                         
                         return (
                           <div key={booking.id} className="glass p-4 border-l-4 border-indigo-400">
@@ -219,7 +249,7 @@ export default function ReportsPage() {
                               </div>
                             </div>
                             
-                            <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                            <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-2">
                               <div>
                                 <span className="font-medium">เวลา:</span> {startTime.toLocaleTimeString('th-TH', {
                                   hour: '2-digit',
@@ -233,10 +263,36 @@ export default function ReportsPage() {
                                 <span className="font-medium">หมอนวด:</span> {therapist?.name}
                               </div>
                               <div>
-                                <span className="font-medium">รายได้:</span> 
-                                <span className="text-green-600 font-bold ml-1">฿{revenue.toLocaleString()}</span>
+                                <span className="font-medium">ระยะเวลา:</span> {booking.duration} นาที
                               </div>
                             </div>
+
+                            {/* Revenue Information for completed bookings */}
+                            {booking.status === 'done' && (
+                              <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                  <div>
+                                    <span className="text-gray-600">ราคาเดิม:</span>
+                                    <span className="ml-2 font-medium">฿{originalPrice.toLocaleString()}</span>
+                                  </div>
+                                  {booking.discountType && discount > 0 && (
+                                    <div>
+                                      <span className="text-gray-600">ส่วนลด:</span>
+                                      <span className="ml-2 font-medium text-red-600">
+                                        {booking.discountType === 'percentage' 
+                                          ? `${booking.discountValue}%` 
+                                          : `฿${booking.discountValue.toLocaleString()}`
+                                        } (-฿{discount.toLocaleString()})
+                                      </span>
+                                    </div>
+                                  )}
+                                  <div className="col-span-2 border-t border-green-300 pt-2 mt-1">
+                                    <span className="text-gray-800 font-semibold">รายได้สุทธิ:</span>
+                                    <span className="ml-2 text-green-600 font-bold">฿{finalPrice.toLocaleString()}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         );
                       })

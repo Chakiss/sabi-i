@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getTodayBookings, getTherapists, getServices, updateBookingStatus } from '@/lib/firestore';
 import { toast } from 'react-hot-toast';
-import { ArrowLeftIcon, ClockIcon, UserIcon, CheckCircleIcon, PlayCircleIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, ClockIcon, UserIcon, CheckCircleIcon, PlayCircleIcon, PencilIcon, SparklesIcon, PhoneIcon } from '@heroicons/react/24/outline';
 import EditBookingModal from '@/components/EditBookingModal';
 import DiscountModal from '@/components/DiscountModal';
 import BookingModal from '@/components/BookingModal';
@@ -183,27 +183,27 @@ export default function QueuePage() {
   return (
     <div className="min-h-screen thai-pattern">
       {/* Header */}
-      <div className="glass-header sticky top-0 z-50">
+      <div className="bg-gradient-to-br from-blue-50/90 via-indigo-50/80 to-purple-50/70 backdrop-blur-xl border-b border-white/20 shadow-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Link
                 href="/"
-                className="p-2 rounded-lg glass-button hover:bg-white/20 transition-all duration-200"
+                className="p-3 rounded-xl bg-white/80 hover:bg-white/90 text-gray-600 hover:text-gray-800 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
               >
-                <ArrowLeftIcon className="h-6 w-6 text-gray-600" />
+                <ArrowLeftIcon className="h-6 w-6" />
               </Link>
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xl font-bold shadow-lg">
-                📋
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-xl">
+                <SparklesIcon className="h-7 w-7" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
                   จัดการคิววันนี้
                 </h1>
-                <p className="text-gray-600 mt-1">
+                <p className="text-gray-600 mt-1 font-medium">
                   อัพเดทสถานะและติดตามคิว ({sortedBookings.length} คิว)
-                  <span className="block text-sm text-gray-500 mt-1">
-                    * คิวที่เสร็จแล้วไม่สามารถแก้ไขได้
+                  <span className="block text-sm text-gray-500 mt-1 font-normal">
+                    ✨ คิวที่เสร็จแล้วไม่สามารถแก้ไขได้
                   </span>
                 </p>
               </div>
@@ -211,15 +211,19 @@ export default function QueuePage() {
             <div className="flex space-x-3">
               <button
                 onClick={handleNewBooking}
-                className="glass-button px-4 py-2 bg-gradient-to-r from-blue-400 to-blue-600 text-white font-medium hover:shadow-lg transition-all duration-200 flex items-center"
+                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 flex items-center space-x-2"
               >
-                📝 จองคิวใหม่
+                <SparklesIcon className="h-5 w-5" />
+                <span>จองคิวใหม่</span>
               </button>
               <button
                 onClick={fetchData}
-                className="glass-button px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                className="px-6 py-3 bg-white/80 hover:bg-white/90 text-gray-700 hover:text-gray-900 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 flex items-center space-x-2"
               >
-                🔄 รีเฟรช
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>รีเฟรช</span>
               </button>
             </div>
           </div>
@@ -228,40 +232,46 @@ export default function QueuePage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {sortedBookings.length === 0 ? (
-          <div className="glass-card p-12 text-center">
-            <div className="text-6xl mb-4">📅</div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">ยังไม่มีคิววันนี้</h2>
-            <p className="text-gray-600 mb-6">เมื่อมีการจองคิว รายการจะปรากฏที่นี่</p>
+          <div className="bg-gradient-to-br from-white/90 to-blue-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-16 text-center border border-white/30">
+            <div className="text-8xl mb-6">🌸</div>
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-700 to-gray-600 bg-clip-text text-transparent mb-4">
+              ยังไม่มีคิววันนี้
+            </h2>
+            <p className="text-gray-600 mb-8 text-lg">เมื่อมีการจองคิว รายการจะปรากฏที่นี่</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/booking"
-                className="inline-flex items-center justify-center px-6 py-3 glass-button bg-gradient-to-r from-blue-400 to-blue-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-200"
+                className="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 space-x-2"
               >
-                📝 จองคิวใหม่
+                <SparklesIcon className="h-6 w-6" />
+                <span>จองคิวใหม่</span>
               </Link>
               <button
                 onClick={fetchData}
-                className="inline-flex items-center justify-center px-6 py-3 glass-button bg-gradient-to-r from-gray-400 to-gray-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-200"
+                className="inline-flex items-center justify-center px-8 py-4 bg-white/80 hover:bg-white/90 text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 space-x-2"
               >
-                🔄 รีเฟรชข้อมูล
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>รีเฟรชข้อมูล</span>
               </button>
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* รอคิว */}
-            <div className="glass-card p-6">
-              <div className="flex items-center mb-6">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-white text-sm font-bold mr-3">
+            <div className="bg-gradient-to-br from-yellow-50/90 to-orange-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-yellow-200/50">
+              <div className="flex items-center mb-8">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg">
                   ⏳
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-800">รอคิว</h2>
-                  <p className="text-sm text-gray-600">{pendingBookings.length} คิว</p>
+                  <h2 className="text-2xl font-bold text-yellow-800">รอคิว</h2>
+                  <p className="text-yellow-600 font-medium">{pendingBookings.length} คิว</p>
                 </div>
               </div>
               
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {pendingBookings.map((booking) => {
                   const therapist = therapists.find(t => t.id === booking.therapistId);
                   const service = services.find(s => s.id === booking.serviceId);
@@ -281,23 +291,24 @@ export default function QueuePage() {
                 })}
                 
                 {pendingBookings.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    <ClockIcon className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-                    <p>ไม่มีคิวที่รอ</p>
+                  <div className="text-center py-12 text-yellow-600">
+                    <ClockIcon className="h-16 w-16 mx-auto mb-4 text-yellow-400" />
+                    <p className="text-lg font-medium">ไม่มีคิวที่รอ</p>
+                    <p className="text-sm text-yellow-500 mt-2">คิวใหม่จะปรากฏที่นี่</p>
                   </div>
                 )}
               </div>
             </div>
 
             {/* กำลังนวด */}
-            <div className="glass-card p-6">
-              <div className="flex items-center mb-6">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold mr-3">
+            <div className="bg-gradient-to-br from-blue-50/90 to-indigo-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-blue-200/50">
+              <div className="flex items-center mb-8">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg">
                   💆‍♀️
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-800">กำลังนวด</h2>
-                  <p className="text-sm text-gray-600">{inProgressBookings.length} คิว</p>
+                  <h2 className="text-2xl font-bold text-blue-800">กำลังนวด</h2>
+                  <p className="text-blue-600 font-medium">{inProgressBookings.length} คิว</p>
                 </div>
               </div>
               
@@ -416,10 +427,28 @@ function BookingCard({ booking, therapist, service, startTime, onStatusUpdate, o
   
   const getNextStatusText = (currentStatus) => {
     switch (currentStatus) {
-      case 'pending': return '▶️ เริ่มนวด';
-      case 'in_progress': return '✅ เสร็จแล้ว';
+      case 'pending': return '🚀 เริ่มนวด';
+      case 'in_progress': return '✨ เสร็จแล้ว';
       case 'done': return null;
       default: return null;
+    }
+  };
+
+  const getCardGradient = (status) => {
+    switch (status) {
+      case 'pending': return 'bg-gradient-to-br from-white/95 to-yellow-50/90';
+      case 'in_progress': return 'bg-gradient-to-br from-white/95 to-blue-50/90';
+      case 'done': return 'bg-gradient-to-br from-white/95 to-green-50/90';
+      default: return 'bg-gradient-to-br from-white/95 to-gray-50/90';
+    }
+  };
+
+  const getBorderColor = (status) => {
+    switch (status) {
+      case 'pending': return 'border-l-yellow-400';
+      case 'in_progress': return 'border-l-blue-400';
+      case 'done': return 'border-l-green-400';
+      default: return 'border-l-gray-400';
     }
   };
   
@@ -443,84 +472,118 @@ function BookingCard({ booking, therapist, service, startTime, onStatusUpdate, o
   };
 
   return (
-    <div className="glass p-4 border-l-4 border-blue-400">
-      <div className="flex justify-between items-start mb-3">
-        <div>
-          <h3 className="font-bold text-gray-800 text-lg">{booking.customerName}</h3>
-          {booking.customerPhone && (
-            <p className="text-gray-500 text-sm">📞 {booking.customerPhone}</p>
+    <div className={`${getCardGradient(booking.status)} backdrop-blur-xl rounded-2xl shadow-xl p-6 border-l-4 ${getBorderColor(booking.status)} border-white/30 transition-all duration-300 hover:shadow-2xl hover:scale-[1.02]`}>
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex-1">
+          <div className="flex items-center space-x-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold shadow-lg">
+              {booking.customerName.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-800 text-lg">{booking.customerName}</h3>
+              {booking.customerPhone && (
+                <div className="flex items-center text-gray-600 text-sm mt-1">
+                  <PhoneIcon className="h-4 w-4 mr-1 text-green-500" />
+                  {booking.customerPhone}
+                </div>
+              )}
+            </div>
+          </div>
+          {booking.channel && (
+            <span className="inline-block px-3 py-1 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 text-xs font-semibold rounded-full border border-purple-200">
+              📍 {booking.channel}
+            </span>
           )}
         </div>
         <div className="text-right">
-          <p className="text-sm text-gray-600 font-medium">
-            {startTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
-            -
-            {endTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
-          </p>
-          <p className="text-xs text-gray-500">{booking.duration} นาที</p>
+          <div className="bg-white/80 rounded-xl p-3 shadow-md">
+            <p className="text-sm text-gray-600 font-bold flex items-center justify-end">
+              <ClockIcon className="h-4 w-4 mr-1 text-blue-500" />
+              {startTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
+              <span className="mx-1">-</span>
+              {endTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
+            </p>
+            <p className="text-xs text-gray-500 text-center mt-1">⏱️ {booking.duration} นาที</p>
+          </div>
         </div>
       </div>
       
-      <div className="grid grid-cols-1 gap-2 text-sm mb-4">
-        <div>
-          <span className="text-gray-600">คอร์ส:</span>
-          <span className="ml-2 font-semibold text-gray-800">{service?.name}</span>
-          {service?.priceByDuration?.[booking.duration] && (
-            <span className="ml-2 text-gray-500">(฿{service.priceByDuration[booking.duration].toLocaleString()})</span>
-          )}
-        </div>
-        <div>
-          <span className="text-gray-600">หมอนวด:</span>
-          <span className="ml-2 font-semibold text-gray-800">{therapist?.name}</span>
+      <div className="bg-white/70 rounded-xl p-4 mb-4 shadow-sm">
+        <div className="space-y-3 text-sm">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600 font-medium flex items-center">
+              <SparklesIcon className="h-4 w-4 mr-1 text-purple-500" />
+              คอร์ส:
+            </span>
+            <div className="text-right">
+              <span className="font-bold text-gray-800">{service?.name}</span>
+              {service?.priceByDuration?.[booking.duration] && (
+                <div className="text-green-600 font-bold text-lg">
+                  ฿{service.priceByDuration[booking.duration].toLocaleString()}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600 font-medium flex items-center">
+              <UserIcon className="h-4 w-4 mr-1 text-blue-500" />
+              หมอนวด:
+            </span>
+            <span className="font-bold text-gray-800">🌟 {therapist?.name}</span>
+          </div>
         </div>
         
         {/* Show discount info for completed bookings */}
         {booking.status === 'done' && booking.discountType && (
-          <div className="mt-2 p-3 bg-green-50 rounded-lg border border-green-200">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">ราคาเดิม:</span>
-              <span>฿{(service?.priceByDuration?.[booking.duration] || 0).toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">ส่วนลด:</span>
-              <span className="text-red-600">
-                {booking.discountType === 'percentage' 
-                  ? `${booking.discountValue}%` 
-                  : `฿${booking.discountValue.toLocaleString()}`
-                }
-                {' (-฿'}{((service?.priceByDuration?.[booking.duration] || 0) - (booking.finalPrice || 0)).toLocaleString()})
-              </span>
-            </div>
-            <div className="flex justify-between text-sm font-semibold border-t border-green-300 mt-1 pt-1">
-              <span className="text-gray-800">ราคาสุทธิ:</span>
-              <span className="text-green-600">฿{(booking.finalPrice || 0).toLocaleString()}</span>
+          <div className="mt-4 p-4 bg-gradient-to-r from-green-50/90 to-emerald-50/80 rounded-xl border border-green-200/50 shadow-sm">
+            <h4 className="font-semibold text-green-800 mb-3 flex items-center">
+              💰 สรุปการชำระเงิน
+            </h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">ราคาเดิม:</span>
+                <span className="font-medium">฿{(service?.priceByDuration?.[booking.duration] || 0).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">ส่วนลด:</span>
+                <span className="text-red-600 font-medium">
+                  {booking.discountType === 'percentage' 
+                    ? `${booking.discountValue}%` 
+                    : `฿${booking.discountValue.toLocaleString()}`
+                  }
+                  {' (-฿'}{((service?.priceByDuration?.[booking.duration] || 0) - (booking.finalPrice || 0)).toLocaleString()})
+                </span>
+              </div>
+              <div className="flex justify-between text-lg font-bold border-t border-green-300 pt-2">
+                <span className="text-green-800">ราคาสุทธิ:</span>
+                <span className="text-green-600">฿{(booking.finalPrice || 0).toLocaleString()}</span>
+              </div>
             </div>
           </div>
         )}
       </div>
       
-      <div className="flex space-x-2">
+      <div className="flex space-x-3">
         {nextStatus ? (
           <>
             <button
               onClick={handleStatusClick}
-              className="flex-1 px-4 py-2 glass-button bg-gradient-to-r from-blue-400 to-blue-600 text-white text-sm font-semibold rounded-lg hover:shadow-md transition-all duration-200"
+              className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 flex items-center justify-center space-x-2"
             >
-              {nextStatusText}
+              <span>{nextStatusText}</span>
             </button>
             <button
               onClick={() => onEdit(booking)}
-              className="px-3 py-2 glass-button bg-gray-100 text-gray-800 text-sm font-semibold rounded-lg hover:shadow-md transition-all duration-200 flex items-center"
+              className="px-4 py-3 bg-white/80 hover:bg-white/90 text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 flex items-center justify-center"
             >
-              <PencilIcon className="h-4 w-4 mr-1" />
-              แก้ไข
+              <PencilIcon className="h-5 w-5" />
             </button>
           </>
         ) : (
           /* คิวที่เสร็จแล้ว - ไม่สามารถแก้ไขได้ */
           <div className="w-full text-center">
-            <div className="px-4 py-3 glass bg-green-50 border border-green-200 text-green-700 text-sm font-medium rounded-lg flex items-center justify-center">
-              <CheckCircleIcon className="h-4 w-4 mr-2" />
+            <div className="px-6 py-4 bg-gradient-to-r from-green-100/90 to-emerald-100/80 border-2 border-green-300/50 text-green-700 font-bold rounded-xl flex items-center justify-center shadow-md">
+              <CheckCircleIcon className="h-6 w-6 mr-2" />
               เสร็จสิ้นแล้ว
             </div>
           </div>

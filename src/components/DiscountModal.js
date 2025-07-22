@@ -2,14 +2,30 @@
 
 import { useState, useEffect } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { getConfig } from '@/lib/firestore';
 
 export default function DiscountModal({ isOpen, onClose, booking, onComplete }) {
   const [discountType, setDiscountType] = useState('none');
   const [discountValue, setDiscountValue] = useState('');
   const [finalPrice, setFinalPrice] = useState(0);
+  const [config, setConfig] = useState(null);
 
   // Get service price
   const originalPrice = booking?.servicePrice || 0;
+
+  // Load config
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const configData = await getConfig();
+        setConfig(configData);
+      } catch (error) {
+        console.error('Error loading config:', error);
+      }
+    };
+    
+    loadConfig();
+  }, []);
 
   // Calculate final price when discount changes
   useEffect(() => {
@@ -33,7 +49,10 @@ export default function DiscountModal({ isOpen, onClose, booking, onComplete }) 
     const discountData = {
       discountType: discountType === 'none' ? null : discountType,
       discountValue: discountType === 'none' ? 0 : parseFloat(discountValue) || 0,
-      finalPrice: finalPrice
+      finalPrice: finalPrice,
+      // Calculate commission and shop revenue
+      therapistCommission: Math.floor(finalPrice * (config?.commissionRate || 0.4)),
+      shopRevenue: Math.floor(finalPrice * (1 - (config?.commissionRate || 0.4)))
     };
     
     onComplete(booking.id, discountData);
@@ -169,6 +188,33 @@ export default function DiscountModal({ isOpen, onClose, booking, onComplete }) 
               </div>
             )}
           </div>
+
+          {/* Commission Breakdown */}
+          {config && finalPrice > 0 && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 backdrop-blur-sm border border-blue-200/50 rounded-lg">
+              <h4 className="font-semibold text-gray-800 mb-3">การแบ่งรายได้</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">หมอนวดได้ ({(config.commissionRate * 100).toFixed(0)}%):</span>
+                  <span className="font-semibold text-blue-600">
+                    ฿{Math.floor(finalPrice * config.commissionRate).toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">ร้านได้ ({(100 - config.commissionRate * 100).toFixed(0)}%):</span>
+                  <span className="font-semibold text-indigo-600">
+                    ฿{Math.floor(finalPrice * (1 - config.commissionRate)).toLocaleString()}
+                  </span>
+                </div>
+                <div className="border-t border-blue-300 pt-2 mt-2">
+                  <div className="flex justify-between">
+                    <span className="font-semibold text-gray-800">รวมทั้งหมด:</span>
+                    <span className="font-bold text-green-600">฿{finalPrice.toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex space-x-3">

@@ -328,6 +328,8 @@ export const updateBookingStatus = async (bookingId, status, discountData = null
       updateData.discountType = discountData.discountType;
       updateData.discountValue = discountData.discountValue;
       updateData.finalPrice = discountData.finalPrice;
+      updateData.therapistCommission = discountData.therapistCommission;
+      updateData.shopRevenue = discountData.shopRevenue;
       updateData.completedAt = Timestamp.now();
     }
 

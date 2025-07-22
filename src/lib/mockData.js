@@ -129,6 +129,21 @@ export const mockBookings = [
 ];
 
 export const mockConfig = {
-  commissionRate: 0.4,
-  insuranceMin: 500
+  commissionRate: 0.4, // 40% ค่ามือ
+  taxRate: 0.07, // 7% ภาษี
+  insuranceMin: 500,
+  businessHours: {
+    open: '09:00',
+    close: '22:00'
+  },
+  channels: [
+    'Facebook',
+    'Instagram', 
+    'Google',
+    'Walk-in',
+    'Referral',
+    'Line',
+    'Website',
+    'Other'
+  ]
 };

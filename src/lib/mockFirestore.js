@@ -212,6 +212,8 @@ export const updateBookingStatusMock = async (bookingId, status, discountData = 
       updateData.discountType = discountData.discountType;
       updateData.discountValue = discountData.discountValue;
       updateData.finalPrice = discountData.finalPrice;
+      updateData.therapistCommission = discountData.therapistCommission;
+      updateData.shopRevenue = discountData.shopRevenue;
       updateData.completedAt = new Date();
     }
 

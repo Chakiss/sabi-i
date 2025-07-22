@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getTodayBookings, getTherapists, getServices } from '@/lib/firestore';
-import { CalendarDaysIcon, ClipboardDocumentListIcon, CurrencyDollarIcon, ChartBarIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import { CalendarDaysIcon, ClipboardDocumentListIcon, CurrencyDollarIcon, ChartBarIcon, UserGroupIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 
 export default function HomePage() {
@@ -165,6 +165,14 @@ export default function HomePage() {
       bgPattern: 'bg-gradient-to-br from-purple-50 to-purple-100'
     },
     {
+      title: 'ตารางคิวล่วงหน้า',
+      description: 'ดูคิวทั้งหมดในแต่ละวัน',
+      icon: CalendarDaysIcon,
+      href: '/schedule',
+      color: 'from-purple-400 to-purple-600',
+      bgPattern: 'bg-gradient-to-br from-purple-50 to-purple-100'
+    },
+    {
       title: 'รายงานและสถิติ',
       description: 'ดูคิวย้อนหลัง รายได้รายเดือน',
       icon: ChartBarIcon,
@@ -184,10 +192,41 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center thai-pattern">
-        <div className="glass-card p-8 text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-transparent border-t-yellow-400 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">🌸 กำลังโหลดข้อมูล...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50/90 via-purple-50/80 to-blue-50/70">
+        <div className="bg-gradient-to-br from-white/95 to-purple-50/90 backdrop-blur-xl rounded-3xl shadow-2xl p-12 text-center border border-white/30 max-w-md mx-4">
+          {/* Animated Logo */}
+          <div className="relative mb-8">
+            <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500 flex items-center justify-center shadow-2xl animate-pulse">
+              <SparklesIcon className="h-10 w-10 text-white" />
+            </div>
+            {/* Floating particles */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-4 h-4 bg-pink-400 rounded-full animate-bounce delay-0 absolute -top-2 -left-2"></div>
+              <div className="w-3 h-3 bg-purple-400 rounded-full animate-bounce delay-75 absolute -bottom-1 -right-1"></div>
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce delay-150 absolute top-1 right-4"></div>
+            </div>
+          </div>
+          
+          {/* Loading Spinner */}
+          <div className="relative mb-6">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-transparent border-t-purple-500 border-r-pink-500 mx-auto"></div>
+            <div className="absolute inset-0 animate-spin rounded-full h-16 w-16 border-4 border-transparent border-b-blue-500 border-l-purple-300 mx-auto" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+          </div>
+          
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">
+            กำลังโหลดข้อมูล
+          </h2>
+          <p className="text-gray-600 font-medium">
+            <SparklesIcon className="h-4 w-4 inline mr-1" />
+            กรุณารอสักครู่...
+          </p>
+          
+          {/* Progress dots */}
+          <div className="flex justify-center space-x-2 mt-6">
+            <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+            <div className="w-2 h-2 bg-pink-500 rounded-full animate-pulse delay-75"></div>
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse delay-150"></div>
+          </div>
         </div>
       </div>
     );
@@ -196,18 +235,18 @@ export default function HomePage() {
   return (
     <div className="min-h-screen thai-pattern">
       {/* Header */}
-      <div className="glass-header sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="bg-gradient-to-br from-pink-50/90 via-purple-50/80 to-blue-50/70 backdrop-blur-xl border-b border-white/20 shadow-lg sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-white text-xl font-bold shadow-lg">
-                🌸
+            <div className="flex items-center space-x-6">
+              <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500 flex items-center justify-center text-white shadow-2xl transform rotate-3">
+                <SparklesIcon className="h-8 w-8" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-yellow-600 to-yellow-500 bg-clip-text text-transparent">
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
                   Saba-i Massage
                 </h1>
-                <p className="text-gray-600 mt-1">ระบบจัดการร้านนวดไทย</p>
+                <p className="text-gray-600 mt-2 text-lg font-medium">✨ ระบบจัดการร้านนวดไทย</p>
               </div>
             </div>
             
@@ -215,10 +254,10 @@ export default function HomePage() {
             <div className="flex items-center">
               {/* Desktop Version */}
               <div className="hidden sm:block">
-                <div className="glass-card px-4 py-3 shadow-sm">
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-4 shadow-xl border border-white/30">
                   <div className="text-right">
-                    <div className="text-xs text-gray-500 font-medium uppercase tracking-wide">วันนี้</div>
-                    <div className="text-lg font-bold bg-gradient-to-r from-yellow-600 to-yellow-500 bg-clip-text text-transparent">
+                    <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">วันนี้</div>
+                    <div className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                       {currentTime.toLocaleDateString('th-TH', {
                         weekday: 'short',
                         day: 'numeric',
@@ -226,8 +265,8 @@ export default function HomePage() {
                         year: 'numeric'
                       })}
                     </div>
-                    <div className="text-sm text-gray-600 font-medium">
-                      {currentTime.toLocaleTimeString('th-TH', {
+                    <div className="text-sm text-gray-600 font-semibold mt-1">
+                      ⏰ {currentTime.toLocaleTimeString('th-TH', {
                         hour: '2-digit',
                         minute: '2-digit'
                       })}
@@ -238,15 +277,15 @@ export default function HomePage() {
               
               {/* Mobile Version */}
               <div className="sm:hidden">
-                <div className="glass-card px-3 py-2">
+                <div className="bg-white/80 backdrop-blur-sm rounded-xl px-4 py-3 shadow-lg border border-white/30">
                   <div className="text-right">
-                    <div className="text-sm font-bold bg-gradient-to-r from-yellow-600 to-yellow-500 bg-clip-text text-transparent">
+                    <div className="text-sm font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                       {currentTime.toLocaleDateString('th-TH', {
                         day: 'numeric',
                         month: 'short'
                       })}
                     </div>
-                    <div className="text-xs text-gray-600">
+                    <div className="text-xs text-gray-600 font-medium">
                       {currentTime.toLocaleTimeString('th-TH', {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -262,7 +301,7 @@ export default function HomePage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Refresh Button */}
-        <div className="flex justify-end mb-6">
+        <div className="flex justify-end mb-8">
           <button
             onClick={async () => {
               setLoading(true);
@@ -299,9 +338,12 @@ export default function HomePage() {
                 setLoading(false);
               }
             }}
-            className="glass-button px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+            className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 flex items-center space-x-2"
           >
-            🔄 รีเฟรช
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>รีเฟรชข้อมูล</span>
           </button>
         </div>
         
@@ -615,34 +657,47 @@ export default function HomePage() {
             <Link
               key={index}
               href={item.href}
-              className="glass-card p-8 group relative overflow-hidden"
+              className="group relative bg-gradient-to-br from-white/90 to-purple-50/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/30 p-8 overflow-hidden transition-all duration-300 hover:shadow-3xl hover:scale-[1.02] hover:border-purple-300/50"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              {/* Background Pattern */}
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-100/30 via-pink-50/20 to-blue-100/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              {/* Floating Elements */}
+              <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-purple-300/20 to-pink-300/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+              <div className="absolute bottom-4 left-4 w-12 h-12 bg-gradient-to-br from-blue-300/20 to-purple-300/20 rounded-full blur-lg group-hover:scale-125 transition-transform duration-500"></div>
               
               <div className="relative z-10">
-                <div className="flex items-center mb-4">
-                  <div className={`p-4 rounded-xl bg-gradient-to-br ${item.color} shadow-lg group-hover:scale-110 transition-all duration-300`}>
-                    <item.icon className="h-8 w-8 text-white" />
+                {/* Icon Container */}
+                <div className="flex items-center justify-center mb-6">
+                  <div className={`p-5 rounded-2xl bg-gradient-to-br ${item.color} shadow-2xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
+                    <item.icon className="h-10 w-10 text-white" />
                   </div>
                 </div>
                 
-                <h3 className="text-2xl font-bold text-gray-800 mb-2 group-hover:text-gray-900 transition-colors">
+                {/* Title */}
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-700 bg-clip-text text-transparent mb-3 group-hover:from-purple-700 group-hover:to-pink-600 transition-all duration-300 text-center">
                   {item.title}
                 </h3>
-                <p className="text-gray-600 leading-relaxed group-hover:text-gray-700 transition-colors">
+                
+                {/* Description */}
+                <p className="text-gray-600 leading-relaxed group-hover:text-gray-700 transition-colors text-center font-medium">
                   {item.description}
                 </p>
                 
-                <div className="mt-6 flex items-center text-yellow-600 font-semibold">
-                  <span>เข้าใช้งาน</span>
-                  <svg className="ml-2 w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                {/* Call to Action */}
+                <div className="mt-8 flex items-center justify-center">
+                  <div className="flex items-center text-purple-600 font-bold group-hover:text-pink-600 transition-colors">
+                    <SparklesIcon className="h-5 w-5 mr-2" />
+                    <span>เข้าใช้งาน</span>
+                    <svg className="ml-2 w-5 h-5 transform group-hover:translate-x-2 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5-5 5M6 12h12" />
+                    </svg>
+                  </div>
                 </div>
               </div>
 
-              {/* Decorative element */}
-              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-400/20 to-transparent rounded-full transform translate-x-8 -translate-y-8"></div>
+              {/* Shine Effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-all duration-1000 ease-out"></div>
             </Link>
           ))}
         </div>

@@ -31,6 +31,7 @@ export const mockCustomers = [
     email: '',
     address: '',
     notes: '',
+    preferredChannel: 'facebook',
     totalVisits: 1,
     lastVisit: new Date(),
     createdAt: new Date('2024-01-15'),
@@ -42,10 +43,35 @@ export const mockCustomers = [
     email: 'customer.b@email.com',
     address: '123 ถนนสุขุมวิท กรุงเทพ',
     notes: 'ชอบนวดแรงๆ',
+    preferredChannel: 'friend',
     totalVisits: 3,
     lastVisit: new Date(),
     createdAt: new Date('2024-02-01'),
     updatedAt: new Date()
+  },
+  {
+    phone: '095-123-4567',
+    name: 'คุณสุดา ใจดี',
+    email: '',
+    address: '',
+    notes: '',
+    preferredChannel: 'tiktok',
+    totalVisits: 2,
+    lastVisit: new Date('2024-07-15'),
+    createdAt: new Date('2024-06-01'),
+    updatedAt: new Date('2024-07-15')
+  },
+  {
+    phone: '092-888-9999',
+    name: 'คุณอนันต์ สบายดี',
+    email: 'anan@email.com',
+    address: '',
+    notes: 'มาเป็นประจำ',
+    preferredChannel: 'walk-in',
+    totalVisits: 5,
+    lastVisit: new Date('2024-07-20'),
+    createdAt: new Date('2024-05-01'),  
+    updatedAt: new Date('2024-07-20')
   }
 ];
 

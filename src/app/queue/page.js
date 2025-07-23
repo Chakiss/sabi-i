@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getTodayBookings, getTherapists, getServices, updateBookingStatus } from '@/lib/firestore';
+import { dateTimeUtils } from '@/lib/dateTimeUtils';
 import { toast } from 'react-hot-toast';
 import { ArrowLeftIcon, ClockIcon, UserIcon, CheckCircleIcon, PlayCircleIcon, PencilIcon, SparklesIcon, PhoneIcon } from '@heroicons/react/24/outline';
 import EditBookingModal from '@/components/EditBookingModal';
@@ -499,9 +500,9 @@ function BookingCard({ booking, therapist, service, startTime, onStatusUpdate, o
           <div className="bg-white/80 rounded-xl p-3 shadow-md">
             <p className="text-sm text-gray-600 font-bold flex items-center justify-end">
               <ClockIcon className="h-4 w-4 mr-1 text-blue-500" />
-              {startTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
+              {dateTimeUtils.formatTime(startTime)}
               <span className="mx-1">-</span>
-              {endTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
+              {dateTimeUtils.formatTime(endTime)}
             </p>
             <p className="text-xs text-gray-500 text-center mt-1">⏱️ {booking.duration} นาที</p>
           </div>
@@ -519,7 +520,7 @@ function BookingCard({ booking, therapist, service, startTime, onStatusUpdate, o
               <span className="font-bold text-gray-800">{service?.name}</span>
               {service?.priceByDuration?.[booking.duration] && (
                 <div className="text-green-600 font-bold text-lg">
-                  ฿{service.priceByDuration[booking.duration].toLocaleString()}
+                  {dateTimeUtils.formatCurrency(service.priceByDuration[booking.duration])}
                 </div>
               )}
             </div>
@@ -542,21 +543,21 @@ function BookingCard({ booking, therapist, service, startTime, onStatusUpdate, o
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600">ราคาเดิม:</span>
-                <span className="font-medium">฿{(service?.priceByDuration?.[booking.duration] || 0).toLocaleString()}</span>
+                <span className="font-medium">{dateTimeUtils.formatCurrency(service?.priceByDuration?.[booking.duration] || 0)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">ส่วนลด:</span>
                 <span className="text-red-600 font-medium">
                   {booking.discountType === 'percentage' 
                     ? `${booking.discountValue}%` 
-                    : `฿${booking.discountValue.toLocaleString()}`
+                    : dateTimeUtils.formatCurrency(booking.discountValue)
                   }
-                  {' (-฿'}{((service?.priceByDuration?.[booking.duration] || 0) - (booking.finalPrice || 0)).toLocaleString()})
+                  {' (-'}{dateTimeUtils.formatCurrency((service?.priceByDuration?.[booking.duration] || 0) - (booking.finalPrice || 0))})
                 </span>
               </div>
               <div className="flex justify-between text-lg font-bold border-t border-green-300 pt-2">
                 <span className="text-green-800">ราคาสุทธิ:</span>
-                <span className="text-green-600">฿{(booking.finalPrice || 0).toLocaleString()}</span>
+                <span className="text-green-600">{dateTimeUtils.formatCurrency(booking.finalPrice || 0)}</span>
               </div>
             </div>
           </div>

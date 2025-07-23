@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getTherapists, getServices, addBooking, getTodayBookings, getCustomers, getCustomerByPhone } from '@/lib/firestore';
+import { dateTimeUtils } from '@/lib/dateTimeUtils';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
@@ -57,11 +58,17 @@ export default function BookingPage() {
 
   // Handle phone number input and search
   const handlePhoneChange = async (value) => {
-    setFormData(prev => ({ ...prev, customerPhone: value }));
+    // ตรวจสอบให้มีแค่ตัวเลขและไม่เกิน 10 หลัก
+    const phoneNumber = value.replace(/\D/g, '');
+    if (phoneNumber.length > 10) {
+      return; // ไม่ให้ใส่เกิน 10 หลัก
+    }
     
-    if (value.length >= 3) {
+    setFormData(prev => ({ ...prev, customerPhone: phoneNumber }));
+    
+    if (phoneNumber.length >= 3) {
       const results = customers.filter(customer =>
-        customer.phone.includes(value) || customer.name.includes(value)
+        customer.phone.includes(phoneNumber) || customer.name.includes(value)
       );
       setPhoneSearchResults(results);
       setShowPhoneSuggestions(results.length > 0);
@@ -87,6 +94,12 @@ export default function BookingPage() {
     
     if (!formData.customerName || !formData.customerPhone || !formData.serviceId || !formData.therapistId || !formData.startTime) {
       toast.error('กรุณากรอกข้อมูลให้ครบทุกช่อง');
+      return;
+    }
+
+    // ตรวจสอบเบอร์โทรศัพท์ให้มี 10 หลัก
+    if (formData.customerPhone.length !== 10) {
+      toast.error('เบอร์โทรศัพท์ต้องมี 10 หลักเท่านั้น');
       return;
     }
 
@@ -232,7 +245,9 @@ export default function BookingPage() {
                     setTimeout(() => setShowPhoneSuggestions(false), 200);
                   }}
                   className="w-full px-4 py-3 glass-input text-gray-800 placeholder-gray-500"
-                  placeholder="กรอกเบอร์ติดต่อ (เช่น 081-234-5678)"
+                  placeholder="0812345678"
+                  maxLength="10"
+                  pattern="[0-9]{10}"
                 />
                 {showPhoneSuggestions && phoneSearchResults.length > 0 && (
                   <div className="absolute z-10 mt-1 w-full bg-white rounded-lg shadow-lg max-h-60 overflow-auto border border-gray-200">
@@ -303,7 +318,7 @@ export default function BookingPage() {
                     >
                       {Object.entries(selectedService.priceByDuration || {}).map(([duration, price]) => (
                         <option key={duration} value={duration}>
-                          {duration} นาที - ฿{price.toLocaleString()}
+                          {duration} นาที - {dateTimeUtils.formatCurrency(price)}
                         </option>
                       ))}
                     </select>
@@ -397,10 +412,7 @@ export default function BookingPage() {
                           <span className="font-semibold">หมอนวด:</span> {therapist?.name}
                         </p>
                         <p className="text-gray-600">
-                          <span className="font-semibold">เวลา:</span> {new Date(booking.startTime).toLocaleTimeString('th-TH', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
+                          <span className="font-semibold">เวลา:</span> {dateTimeUtils.formatTime(booking.startTime)}
                         </p>
                       </div>
                     </div>

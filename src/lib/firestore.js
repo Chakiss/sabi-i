@@ -251,6 +251,19 @@ export const deleteService = async (serviceId) => {
   }
 };
 
+// Generate booking ID with format BYYYYMMDDHHMMSS
+const generateBookingId = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hour = String(now.getHours()).padStart(2, '0');
+  const minute = String(now.getMinutes()).padStart(2, '0');
+  const second = String(now.getSeconds()).padStart(2, '0');
+  
+  return `B${year}${month}${day}${hour}${minute}${second}`;
+};
+
 // Bookings Collection
 export const addBooking = async (bookingData) => {
   if (shouldUseMock()) {
@@ -262,19 +275,23 @@ export const addBooking = async (bookingData) => {
     if (bookingData.customerName && bookingData.customerPhone) {
       await upsertCustomer({
         phone: bookingData.customerPhone,
-        name: bookingData.customerName
+        name: bookingData.customerName,
+        preferredChannel: bookingData.channel // Save channel as preferred channel
       });
     }
     
-    const bookingsRef = collection(db, 'bookings');
-    const docRef = await addDoc(bookingsRef, {
+    // Generate custom booking ID
+    const bookingId = generateBookingId();
+    
+    const bookingRef = doc(db, 'bookings', bookingId);
+    await setDoc(bookingRef, {
       ...bookingData,
       startTime: Timestamp.fromDate(new Date(bookingData.startTime)),
       status: 'pending',
       isExtended: false,
       createdAt: Timestamp.now()
     });
-    return docRef.id;
+    return bookingId;
   } catch (error) {
     console.error('Error adding booking:', error);
     console.warn('Falling back to mock data');
@@ -283,7 +300,10 @@ export const addBooking = async (bookingData) => {
 };
 
 export const getTodayBookings = async () => {
+  console.log('📅 getTodayBookings called');
+  
   if (shouldUseMock()) {
+    console.log('🎭 Using mock data for today bookings');
     return getTodayBookingsMock();
   }
   
@@ -293,6 +313,8 @@ export const getTodayBookings = async () => {
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
     
+    console.log('🗓️ Querying bookings for date range:', { startOfDay, endOfDay });
+    
     const q = query(
       bookingsRef,
       where('startTime', '>=', Timestamp.fromDate(startOfDay)),
@@ -301,18 +323,26 @@ export const getTodayBookings = async () => {
     );
     
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
+    const bookings = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
       startTime: doc.data().startTime?.toDate()
     }));
+    
+    console.log('🔥 Firebase bookings fetched:', bookings.map(b => ({ id: b.id, status: b.status, customer: b.customerName })));
+    
+    return bookings;
   } catch (error) {
+    console.error('❌ Error fetching today bookings from Firebase:', error);
     return handleFirebaseError(error, getTodayBookingsMock);
   }
 };
 
 export const updateBookingStatus = async (bookingId, status, discountData = null) => {
+  console.log('📝 updateBookingStatus called:', { bookingId, status, discountData });
+  
   if (shouldUseMock()) {
+    console.log('🎭 Using mock data for booking status update');
     return updateBookingStatusMock(bookingId, status, discountData);
   }
   
@@ -333,10 +363,12 @@ export const updateBookingStatus = async (bookingId, status, discountData = null
       updateData.completedAt = Timestamp.now();
     }
 
+    console.log('🔥 Updating Firebase document:', { bookingId, updateData });
     await updateDoc(docRef, updateData);
+    console.log('✅ Firebase booking status updated successfully');
   } catch (error) {
-    console.error('Error updating booking status:', error);
-    console.warn('Falling back to mock data');
+    console.error('❌ Error updating booking status in Firebase:', error);
+    console.warn('🎭 Falling back to mock data');
     return updateBookingStatusMock(bookingId, status, discountData);
   }
 };
@@ -453,9 +485,11 @@ export const upsertCustomer = async (customerData) => {
       ...data,
       phone,
       totalVisits: existingCustomer ? existingCustomer.totalVisits + 1 : 1,
-      lastVisit: new Date(),
-      updatedAt: new Date(),
-      ...(existingCustomer ? {} : { createdAt: new Date() })
+      lastVisit: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+      // Update preferred channel only if provided, otherwise keep existing
+      preferredChannel: data.preferredChannel || existingCustomer?.preferredChannel,
+      ...(existingCustomer ? {} : { createdAt: Timestamp.now() })
     };
 
     await setDoc(doc(db, 'customers', phone), customerDoc);

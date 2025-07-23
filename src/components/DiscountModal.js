@@ -9,6 +9,7 @@ export default function DiscountModal({ isOpen, onClose, booking, onComplete }) 
   const [discountValue, setDiscountValue] = useState('');
   const [finalPrice, setFinalPrice] = useState(0);
   const [config, setConfig] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Get service price
   const originalPrice = booking?.servicePrice || 0;
@@ -27,6 +28,16 @@ export default function DiscountModal({ isOpen, onClose, booking, onComplete }) 
     loadConfig();
   }, []);
 
+  // Calculate discount amount and final price when discount changes
+  const discountAmount = (() => {
+    if (discountType === 'percentage' && discountValue) {
+      return (originalPrice * parseFloat(discountValue)) / 100;
+    } else if (discountType === 'amount' && discountValue) {
+      return parseFloat(discountValue);
+    }
+    return 0;
+  })();
+
   // Calculate final price when discount changes
   useEffect(() => {
     if (!booking) return;
@@ -43,29 +54,43 @@ export default function DiscountModal({ isOpen, onClose, booking, onComplete }) 
     setFinalPrice(calculatedPrice);
   }, [discountType, discountValue, originalPrice, booking]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     
-    const discountData = {
-      discountType: discountType === 'none' ? null : discountType,
-      discountValue: discountType === 'none' ? 0 : parseFloat(discountValue) || 0,
-      finalPrice: finalPrice,
-      // Calculate commission and shop revenue
-      therapistCommission: Math.floor(finalPrice * (config?.commissionRate || 0.4)),
-      shopRevenue: Math.floor(finalPrice * (1 - (config?.commissionRate || 0.4)))
-    };
-    
-    onComplete(booking.id, discountData);
+    try {
+      const discountData = {
+        discountType: discountType === 'none' ? null : discountType,
+        discountValue: discountType === 'none' ? 0 : parseFloat(discountValue) || 0,
+        finalPrice: finalPrice,
+        // Calculate commission and shop revenue
+        therapistCommission: Math.floor(finalPrice * (config?.commissionRate || 0.4)),
+        shopRevenue: Math.floor(finalPrice * (1 - (config?.commissionRate || 0.4)))
+      };
+      
+      await onComplete(booking.id, discountData);
+    } catch (error) {
+      console.error('Error completing booking:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Reset form when modal opens/closes
   useEffect(() => {
-    if (isOpen) {
-      setDiscountType('none');
-      setDiscountValue('');
-      setFinalPrice(originalPrice);
+    if (isOpen && booking) {
+      // Check if booking already has discount data
+      if (booking.discountType && booking.discountType !== 'none') {
+        setDiscountType(booking.discountType);
+        setDiscountValue(booking.discountValue?.toString() || '');
+        setFinalPrice(booking.finalPrice || originalPrice);
+      } else {
+        setDiscountType('none');
+        setDiscountValue('');
+        setFinalPrice(originalPrice);
+      }
     }
-  }, [isOpen, originalPrice]);
+  }, [isOpen, originalPrice, booking]);
 
   // Handle ESC key to close modal
   useEffect(() => {
@@ -96,140 +121,216 @@ export default function DiscountModal({ isOpen, onClose, booking, onComplete }) 
       onClick={handleBackdropClick}
     >
       <div 
-        className="bg-white/95 backdrop-blur-md rounded-xl shadow-2xl max-w-md w-full mx-4 border border-white/20"
+        className="bg-white/95 backdrop-blur-md rounded-xl shadow-2xl max-w-lg w-full mx-4 my-8 border border-white/20 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-white/10 bg-white/80 backdrop-blur-sm rounded-t-xl">
-          <h2 className="text-xl font-bold text-gray-800">เสร็จสิ้นบริการ</h2>
+        <div className="flex items-center justify-between p-5 border-b border-white/10 bg-gradient-to-r from-green-50/90 to-emerald-50/80 backdrop-blur-sm rounded-t-xl">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white shadow-lg">
+              ✅
+            </div>
+            <div>
+              <h2 className="text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                เสร็จสิ้นบริการ
+              </h2>
+              <p className="text-xs text-gray-600 font-medium">สรุปค่าใช้จ่ายสำหรับลูกค้า</p>
+            </div>
+          </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/50 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-red-100/50 hover:text-red-600 rounded-lg transition-all duration-200 text-gray-500"
           >
             <XMarkIcon className="h-5 w-5" />
           </button>
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSubmit} className="p-6 bg-white/60 backdrop-blur-sm rounded-b-xl">
-          {/* Customer Info */}
-          <div className="mb-4 p-4 bg-white/60 backdrop-blur-sm rounded-lg border border-white/20">
-            <h3 className="font-semibold text-gray-800">{booking.customerName}</h3>
-            <p className="text-sm text-gray-600">บริการ: {booking.serviceName}</p>
-          </div>
-
-          {/* Original Price */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              ราคาเดิม
-            </label>
-            <div className="text-2xl font-bold text-gray-800">
-              ฿{originalPrice.toLocaleString()}
-            </div>
-          </div>
-
-          {/* Discount Type */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              ประเภทส่วนลด
-            </label>
-            <select
-              value={discountType}
-              onChange={(e) => {
-                setDiscountType(e.target.value);
-                setDiscountValue('');
-              }}
-              className="w-full p-3 border border-white/30 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/70 backdrop-blur-sm"
-            >
-              <option value="none">ไม่มีส่วนลด</option>
-              <option value="percentage">เปอร์เซ็นต์ (%)</option>
-              <option value="amount">จำนวนเงิน (บาท)</option>
-            </select>
-          </div>
-
-          {/* Discount Value */}
-          {discountType !== 'none' && (
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {discountType === 'percentage' ? 'เปอร์เซ็นต์ส่วนลด' : 'จำนวนเงินส่วนลด'}
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  value={discountValue}
-                  onChange={(e) => setDiscountValue(e.target.value)}
-                  min="0"
-                  max={discountType === 'percentage' ? '100' : originalPrice}
-                  step={discountType === 'percentage' ? '1' : '1'}
-                  className="w-full p-3 border border-white/30 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-12 bg-white/70 backdrop-blur-sm"
-                  placeholder={discountType === 'percentage' ? '0-100' : '0'}
-                />
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                  <span className="text-gray-500 text-sm">
-                    {discountType === 'percentage' ? '%' : '฿'}
-                  </span>
-                </div>
+        <form onSubmit={handleSubmit} className="p-5 bg-gradient-to-br from-white/80 to-green-50/50 backdrop-blur-sm rounded-b-xl space-y-4">
+          
+          {/* Customer Service Summary */}
+          <div className="bg-gradient-to-r from-blue-50/90 to-indigo-50/80 backdrop-blur-sm border border-blue-200/30 rounded-lg p-4">
+            <h3 className="text-base font-bold text-blue-800 mb-3 flex items-center">
+              <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              ข้อมูลการบริการ
+            </h3>
+            <div className="grid grid-cols-1 gap-2">
+              <div className="flex justify-between items-center p-2.5 bg-white/60 rounded-lg">
+                <span className="text-gray-700 font-medium text-sm">👤 ลูกค้า:</span>
+                <span className="font-bold text-gray-800 text-sm">{booking.customerName}</span>
+              </div>
+              <div className="flex justify-between items-center p-2.5 bg-white/60 rounded-lg">
+                <span className="text-gray-700 font-medium text-sm">✨ บริการ:</span>
+                <span className="font-bold text-gray-800 text-sm">{booking.serviceName}</span>
+              </div>
+              <div className="flex justify-between items-center p-2.5 bg-white/60 rounded-lg">
+                <span className="text-gray-700 font-medium text-sm">⏱️ เวลา:</span>
+                <span className="font-bold text-gray-800 text-sm">
+                  {new Date(booking.startTime || Date.now()).toLocaleString('th-TH', {
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </span>
               </div>
             </div>
-          )}
+          </div>
 
-          {/* Final Price */}
-          <div className="mb-6 p-4 bg-gradient-to-r from-green-50/80 to-emerald-50/80 backdrop-blur-sm border border-green-200/50 rounded-lg">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-gray-700">ราคาหลังหักส่วนลด:</span>
-              <span className="text-2xl font-bold text-green-600">
-                ฿{finalPrice.toLocaleString()}
-              </span>
+          {/* Price Calculation Section */}
+          <div className="bg-gradient-to-r from-yellow-50/90 to-orange-50/80 backdrop-blur-sm border border-yellow-200/30 rounded-lg p-4">
+            <h3 className="text-base font-bold text-orange-800 mb-3 flex items-center">
+              <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              คำนวณค่าบริการ
+            </h3>
+            
+            {/* Original Price Display */}
+            <div className="mb-3 p-3 bg-white/70 rounded-lg border-l-4 border-blue-400">
+              <div className="flex justify-between items-center">
+                <span className="text-base font-semibold text-gray-700">💰 ราคาตามเมนู:</span>
+                <span className="text-xl font-bold text-blue-600">
+                  ฿{originalPrice.toLocaleString()}
+                </span>
+              </div>
             </div>
-            {discountType !== 'none' && discountValue && (
-              <div className="text-sm text-gray-500 mt-1">
-                ส่วนลด: {discountType === 'percentage' ? `${discountValue}%` : `฿${parseFloat(discountValue).toLocaleString()}`} 
-                (-฿{(originalPrice - finalPrice).toLocaleString()})
+
+            {/* Discount Type Selection */}
+            <div className="mb-3">
+              <label className="block text-sm font-bold text-gray-700 mb-2">
+                🎁 ส่วนลดพิเศษ (ถ้ามี)
+              </label>
+              <select
+                value={discountType}
+                onChange={(e) => {
+                  setDiscountType(e.target.value);
+                  setDiscountValue('');
+                }}
+                className="w-full p-3 border border-yellow-200/50 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md text-sm"
+              >
+                <option value="none">🚫 ไม่มีส่วนลด</option>
+                <option value="percentage">📊 ส่วนลดเปอร์เซ็นต์ (%)</option>
+                <option value="amount">💸 ส่วนลดจำนวนเงิน (บาท)</option>
+              </select>
+            </div>
+
+            {/* Discount Value Input */}
+            {discountType !== 'none' && (
+              <div className="mb-3">
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  {discountType === 'percentage' ? '📊 ระบุเปอร์เซ็นต์ส่วนลด' : '💸 ระบุจำนวนเงินส่วนลด'}
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={discountValue}
+                    onChange={(e) => setDiscountValue(e.target.value)}
+                    min="0"
+                    max={discountType === 'percentage' ? '100' : originalPrice}
+                    step={discountType === 'percentage' ? '1' : '10'}
+                    className="w-full p-3 border border-yellow-200/50 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 pr-12 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md font-semibold text-sm"
+                    placeholder={discountType === 'percentage' ? 'เช่น 10' : 'เช่น 100'}
+                  />
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <span className="text-orange-600 font-bold text-sm">
+                      {discountType === 'percentage' ? '%' : '฿'}
+                    </span>
+                  </div>
+                </div>
+                {discountType === 'percentage' && (
+                  <p className="text-xs text-orange-600 mt-1 flex items-center">
+                    💡 ระบุเปอร์เซ็นต์ 0-100
+                  </p>
+                )}
               </div>
             )}
           </div>
 
-          {/* Commission Breakdown */}
-          {config && finalPrice > 0 && (
-            <div className="mb-6 p-4 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 backdrop-blur-sm border border-blue-200/50 rounded-lg">
-              <h4 className="font-semibold text-gray-800 mb-3">การแบ่งรายได้</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">หมอนวดได้ ({(config.commissionRate * 100).toFixed(0)}%):</span>
-                  <span className="font-semibold text-blue-600">
-                    ฿{Math.floor(finalPrice * config.commissionRate).toLocaleString()}
-                  </span>
+          {/* Final Price */}
+                    {/* Final Price Summary */}
+          <div className="bg-gradient-to-r from-green-50/90 to-emerald-50/80 backdrop-blur-sm border-2 border-green-300/50 rounded-lg p-4 shadow-lg">
+            <h3 className="text-base font-bold text-green-800 mb-3 flex items-center">
+              <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              สรุปค่าใช้จ่าย
+            </h3>
+            
+            <div className="space-y-3">
+              {/* Discount Applied Display */}
+              {discountAmount > 0 && (
+                <div className="p-3 bg-red-50/70 rounded-lg border-l-4 border-red-400">
+                  <div className="flex justify-between items-center">
+                    <span className="text-base font-semibold text-red-700 flex items-center">
+                      🎁 ส่วนลดที่ได้รับ:
+                    </span>
+                    <span className="text-lg font-bold text-red-600">
+                      -฿{discountAmount.toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="text-xs text-red-600 mt-1">
+                    {discountType === 'percentage' 
+                      ? `ส่วนลด ${discountValue}% จากราคาเดิม` 
+                      : `ส่วนลดจำนวน ${discountValue} บาท`
+                    }
+                  </p>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">ร้านได้ ({(100 - config.commissionRate * 100).toFixed(0)}%):</span>
-                  <span className="font-semibold text-indigo-600">
-                    ฿{Math.floor(finalPrice * (1 - config.commissionRate)).toLocaleString()}
+              )}
+
+              {/* Net Amount */}
+              <div className="p-4 bg-gradient-to-r from-green-100/80 to-emerald-100/70 rounded-lg border-2 border-green-400/40 shadow-inner">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-bold text-green-800 flex items-center">
+                    💰 ยอดสุทธิที่ชำระ:
                   </span>
-                </div>
-                <div className="border-t border-blue-300 pt-2 mt-2">
-                  <div className="flex justify-between">
-                    <span className="font-semibold text-gray-800">รวมทั้งหมด:</span>
-                    <span className="font-bold text-green-600">฿{finalPrice.toLocaleString()}</span>
+                  <div className="text-right">
+                    <span className="text-2xl font-extrabold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                      ฿{finalPrice.toLocaleString()}
+                    </span>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* Actions */}
-          <div className="flex space-x-3">
+              {/* Payment Method Note */}
+              <div className="p-3 bg-blue-50/70 rounded-lg border border-blue-200/50">
+                <div className="flex items-center text-blue-800">
+                  <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="font-semibold text-sm">💳 วิธีการชำระเงิน: เงินสด / โอนเงิน</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex space-x-3 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-white/40 text-gray-700 rounded-lg hover:bg-white/30 font-medium backdrop-blur-sm transition-all"
+              className="flex-1 px-4 py-2.5 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-lg font-semibold hover:from-gray-200 hover:to-gray-300 transition-all duration-200 shadow-sm hover:shadow-md border border-gray-300/50 text-sm"
             >
-              ยกเลิก
+              ❌ ยกเลิก
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-green-600/90 hover:bg-green-700/90 text-white rounded-lg font-medium backdrop-blur-sm transition-all"
+              disabled={isLoading}
+              className="flex-1 px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-bold hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 text-sm"
             >
-              ✅ เสร็จสิ้น
+              {isLoading ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  กำลังบันทึก...
+                </span>
+              ) : (
+                '✅ เสร็จสิ้นบริการ'
+              )}
             </button>
           </div>
         </form>

@@ -1,10 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { ArrowLeftIcon, CalendarDaysIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import { getBookingsByDate, getTherapists, getServices } from '@/lib/firestore';
+import { getTodayBookings, getTherapists, getServices } from '@/lib/firestore';
+import { dateTimeUtils } from '@/lib/dateTimeUtils';
 import { toast } from 'react-hot-toast';
+import Link from 'next/link';
+import { 
+  ArrowLeftIcon, 
+  ChevronLeftIcon, 
+  ChevronRightIcon,
+  CalendarDaysIcon,
+  ClockIcon,
+  UserIcon,
+  SparklesIcon
+} from '@heroicons/react/24/outline';
 
 export default function SchedulePage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -160,10 +169,7 @@ export default function SchedulePage() {
                 </button>
                 
                 <h2 className="text-xl font-bold text-gray-800">
-                  {currentMonth.toLocaleDateString('th-TH', { 
-                    month: 'long', 
-                    year: 'numeric' 
-                  })}
+                  {dateTimeUtils.formatMonthYear(currentMonth)}
                 </h2>
                 
                 <button
@@ -211,12 +217,7 @@ export default function SchedulePage() {
               <div className="flex items-center mb-4">
                 <CalendarDaysIcon className="h-6 w-6 text-purple-600 mr-2" />
                 <h3 className="text-lg font-bold text-gray-800">
-                  {selectedDate.toLocaleDateString('th-TH', {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric'
-                  })}
+                  {dateTimeUtils.formatWeekdayDate(selectedDate)}
                 </h3>
               </div>
               
@@ -285,7 +286,7 @@ export default function SchedulePage() {
         <div className="mt-8">
           <div className="glass-card p-6">
             <h3 className="text-xl font-bold text-gray-800 mb-6">
-              คิววันที่ {selectedDate.toLocaleDateString('th-TH')}
+              คิววันที่ {dateTimeUtils.formatDate(selectedDate, { day: 'numeric', month: 'long', year: 'numeric' })}
             </h3>
 
             {loading ? (
@@ -332,13 +333,7 @@ export default function SchedulePage() {
                         <div>
                           <span className="text-gray-600">เวลา:</span>
                           <div className="font-semibold">
-                            {startTime.toLocaleTimeString('th-TH', {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })} - {endTime.toLocaleTimeString('th-TH', {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
+                            {dateTimeUtils.formatTime(startTime)} - {dateTimeUtils.formatTime(endTime)}
                           </div>
                         </div>
                         <div>

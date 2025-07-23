@@ -2,9 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getTodayBookings, getTherapists, getServices } from '@/lib/firestore';
-import { CalendarDaysIcon, ClipboardDocumentListIcon, CurrencyDollarIcon, ChartBarIcon, UserGroupIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import { getTodayBookings, getTherapists, getServices, updateBookingStatus, getConfig } from '@/lib/firestore';
+import { CalendarDaysIcon, ClipboardDocumentListIcon, CurrencyDollarIcon, ChartBarIcon, UserGroupIcon, SparklesIcon, ArrowLeftIcon, ClockIcon, UserIcon, CheckCircleIcon, PlayCircleIcon, PencilIcon, PhoneIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
+import { dateTimeUtils } from '@/lib/dateTimeUtils';
+import EditBookingModal from '@/components/EditBookingModal';
+import DiscountModal from '@/components/DiscountModal';
+import BookingModal from '@/components/BookingModal';
 
 export default function HomePage() {
   const [todayStats, setTodayStats] = useState({
@@ -21,10 +25,19 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [showTodayBookings, setShowTodayBookings] = useState(false);
   const [showAvailableTherapists, setShowAvailableTherapists] = useState(false);
+  const [showRevenueDetails, setShowRevenueDetails] = useState(false);
   const [todayBookings, setTodayBookings] = useState([]);
   const [therapists, setTherapists] = useState([]);
   const [services, setServices] = useState([]);
   const [currentTime, setCurrentTime] = useState(new Date());
+  
+  // Queue management states
+  const [editingBooking, setEditingBooking] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [completingBooking, setCompletingBooking] = useState(null);
+  const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [showQueueSection, setShowQueueSection] = useState(true);
 
   // Update current time every minute
   useEffect(() => {
@@ -38,18 +51,32 @@ export default function HomePage() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [bookings, therapists, services] = await Promise.all([
+        const [bookings, therapists, services, config] = await Promise.all([
           getTodayBookings(),
           getTherapists(),
-          getServices()
+          getServices(),
+          getConfig()
         ]);
 
         const activeTherapists = therapists.filter(t => t.status === 'active');
         const completedBookings = bookings.filter(b => b.status === 'done');
+        
+        // Calculate shop revenue (after commission)
         const totalRevenue = completedBookings.reduce((sum, booking) => {
           const service = services.find(s => s.id === booking.serviceId);
           const finalPrice = booking.finalPrice || (service?.priceByDuration?.[booking.duration] || 0);
-          return sum + finalPrice;
+          
+          // If booking already has shopRevenue stored, use it
+          if (booking.shopRevenue !== undefined) {
+            return sum + booking.shopRevenue;
+          }
+          
+          // Otherwise calculate: finalPrice - therapist commission
+          const commissionRate = config?.commissionRate || 0.4;
+          const therapistCommission = Math.floor(finalPrice * commissionRate);
+          const shopRevenue = finalPrice - therapistCommission;
+          
+          return sum + shopRevenue;
         }, 0);
 
         // Calculate available therapists (not currently working)
@@ -105,6 +132,12 @@ export default function HomePage() {
         setTodayBookings(bookings);
         setTherapists(therapists);
         setServices(services);
+        
+        // Debug logging
+        console.log('🔄 Fetched dashboard data:', {
+          bookings: bookings.length,
+          bookingStatuses: bookings.map(b => ({ id: b.id, status: b.status, customer: b.customerName }))
+        });
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -130,6 +163,154 @@ export default function HomePage() {
       window.removeEventListener('focus', handleFocus);
     };
   }, []);
+
+  // Queue management functions
+  const fetchDashboardData = async () => {
+    try {
+      const [bookings, therapists, services, config] = await Promise.all([
+        getTodayBookings(),
+        getTherapists(),
+        getServices(),
+        getConfig()
+      ]);
+
+      const activeTherapists = therapists.filter(t => t.status === 'active');
+      const completedBookings = bookings.filter(b => b.status === 'done');
+      
+      // Calculate shop revenue (after commission)
+      const totalRevenue = completedBookings.reduce((sum, booking) => {
+        const service = services.find(s => s.id === booking.serviceId);
+        const finalPrice = booking.finalPrice || (service?.priceByDuration?.[booking.duration] || 0);
+        
+        // If booking already has shopRevenue stored, use it
+        if (booking.shopRevenue !== undefined) {
+          return sum + booking.shopRevenue;
+        }
+        
+        // Otherwise calculate: finalPrice - therapist commission
+        const commissionRate = config?.commissionRate || 0.4;
+        const therapistCommission = Math.floor(finalPrice * commissionRate);
+        const shopRevenue = finalPrice - therapistCommission;
+        
+        return sum + shopRevenue;
+      }, 0);
+
+      // Calculate available therapists (not currently working)
+      const currentTime = new Date();
+      const currentTimeMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
+      
+      const therapistStatus = new Map();
+      
+      // Check for therapists who are currently in sessions
+      bookings
+        .filter(b => b.status === 'in_progress' || b.status === 'pending')
+        .forEach(booking => {
+          const startTime = new Date(booking.startTime);
+          const endTime = new Date(startTime.getTime() + booking.duration * 60000);
+          const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
+          const endMinutes = endTime.getHours() * 60 + endTime.getMinutes();
+          
+          // If current time is within the booking window
+          if (currentTimeMinutes >= startMinutes && currentTimeMinutes <= endMinutes) {
+            const service = services.find(s => s.id === booking.serviceId);
+            therapistStatus.set(booking.therapistId, {
+              status: 'busy',
+              booking: booking,
+              customer: booking.customerName,
+              service: service?.name || 'ไม่ระบุคอร์ส',
+              endTime: endTime
+            });
+          }
+        });
+      
+      const availableTherapists = activeTherapists.filter(therapist => 
+        !therapistStatus.has(therapist.id)
+      );
+
+      const busyTherapists = activeTherapists.filter(therapist => 
+        therapistStatus.has(therapist.id)
+      ).map(therapist => ({
+        ...therapist,
+        ...therapistStatus.get(therapist.id)
+      }));
+
+      setTodayStats({
+        bookings: bookings.length,
+        activeTherapists: activeTherapists.length,
+        totalRevenue,
+        completedSessions: completedBookings.length,
+        availableTherapists: availableTherapists,
+        availableCount: availableTherapists.length,
+        busyTherapists: busyTherapists,
+        busyCount: busyTherapists.length
+      });
+
+      setTodayBookings(bookings);
+      setTherapists(therapists);
+      setServices(services);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    }
+  };
+
+  const handleStatusUpdate = async (bookingId, newStatus, discountData = null) => {
+    try {
+      console.log('🔄 Updating booking status:', { bookingId, newStatus, discountData });
+      
+      await updateBookingStatus(bookingId, newStatus, discountData);
+      toast.success('อัพเดทสถานะสำเร็จ! ✨');
+      
+      console.log('✅ Status updated successfully, refreshing data...');
+      
+      // Refresh data
+      fetchDashboardData();
+    } catch (error) {
+      console.error('Error updating booking status:', error);
+      toast.error('เกิดข้อผิดพลาดในการอัพเดทสถานะ');
+    }
+  };
+
+  const handleEditBooking = (booking) => {
+    setEditingBooking(booking);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditModalClose = () => {
+    setIsEditModalOpen(false);
+    setEditingBooking(null);
+  };
+
+  const handleBookingUpdate = () => {
+    fetchDashboardData(); // Refresh data after update
+  };
+
+  const handleCompleteBooking = (booking) => {
+    setCompletingBooking(booking);
+    setIsDiscountModalOpen(true);
+  };
+
+  const handleDiscountModalClose = () => {
+    setIsDiscountModalOpen(false);
+    setCompletingBooking(null);
+  };
+
+  const handleCompleteWithDiscount = async (bookingId, discountData) => {
+    await handleStatusUpdate(bookingId, 'done', discountData);
+    setIsDiscountModalOpen(false);
+    setCompletingBooking(null);
+  };
+
+  const handleNewBooking = () => {
+    setIsBookingModalOpen(true);
+  };
+
+  const handleBookingModalClose = () => {
+    setIsBookingModalOpen(false);
+  };
+
+  const handleBookingAdded = () => {
+    fetchDashboardData(); // Refresh data after new booking
+  };
 
   const menuItems = [
     {
@@ -232,6 +413,23 @@ export default function HomePage() {
     );
   }
 
+  // Sort bookings by start time
+  const sortedBookings = todayBookings.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+  
+  // Group by status
+  const pendingBookings = sortedBookings.filter(b => b.status === 'pending');
+  const inProgressBookings = sortedBookings.filter(b => b.status === 'in_progress');
+  const doneBookings = sortedBookings.filter(b => b.status === 'done');
+
+  // Debug logging
+  console.log('📊 Dashboard Booking Status:', {
+    total: sortedBookings.length,
+    pending: pendingBookings.length,
+    inProgress: inProgressBookings.length,
+    done: doneBookings.length,
+    allBookings: sortedBookings.map(b => ({ id: b.id, status: b.status, customer: b.customerName }))
+  });
+
   return (
     <div className="min-h-screen thai-pattern">
       {/* Header */}
@@ -306,17 +504,32 @@ export default function HomePage() {
             onClick={async () => {
               setLoading(true);
               try {
-                const [bookings, therapists, services] = await Promise.all([
+                const [bookings, therapists, services, config] = await Promise.all([
                   getTodayBookings(),
                   getTherapists(),
-                  getServices()
+                  getServices(),
+                  getConfig()
                 ]);
 
                 const activeTherapists = therapists.filter(t => t.status === 'active').length;
                 const completedBookings = bookings.filter(b => b.status === 'done');
+                
+                // Calculate shop revenue (after commission)
                 const totalRevenue = completedBookings.reduce((sum, booking) => {
                   const service = services.find(s => s.id === booking.serviceId);
-                  return sum + (service?.priceByDuration?.[booking.duration] || 0);
+                  const finalPrice = booking.finalPrice || (service?.priceByDuration?.[booking.duration] || 0);
+                  
+                  // If booking already has shopRevenue stored, use it
+                  if (booking.shopRevenue !== undefined) {
+                    return sum + booking.shopRevenue;
+                  }
+                  
+                  // Otherwise calculate: finalPrice - therapist commission
+                  const commissionRate = config?.commissionRate || 0.4;
+                  const therapistCommission = Math.floor(finalPrice * commissionRate);
+                  const shopRevenue = finalPrice - therapistCommission;
+                  
+                  return sum + shopRevenue;
                 }, 0);
 
                 setTodayStats({
@@ -346,6 +559,181 @@ export default function HomePage() {
             <span>รีเฟรชข้อมูล</span>
           </button>
         </div>
+        
+        {/* Queue Management Section - Moved to top */}
+        {showQueueSection && (
+          <div className="bg-gradient-to-br from-white/90 to-blue-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/30 mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-xl">
+                  <ClipboardDocumentListIcon className="h-7 w-7" />
+                </div>
+                <div>
+                  <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    จัดการคิววันนี้
+                  </h2>
+                  <p className="text-gray-600 font-medium">
+                    ({sortedBookings.length} คิว) อัพเดทสถานะและติดตามคิว
+                  </p>
+                </div>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleNewBooking}
+                  className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 flex items-center space-x-2"
+                >
+                  <SparklesIcon className="h-5 w-5" />
+                  <span>จองคิวใหม่</span>
+                </button>
+                <button
+                  onClick={() => setShowQueueSection(!showQueueSection)}
+                  className="px-6 py-3 bg-white/80 hover:bg-white/90 text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                >
+                  {showQueueSection ? '🙈 ซ่อนคิว' : '👁️ แสดงคิว'}
+                </button>
+              </div>
+            </div>
+
+            {sortedBookings.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="text-8xl mb-6">🌸</div>
+                <h3 className="text-2xl font-bold text-gray-700 mb-4">ยังไม่มีคิววันนี้</h3>
+                <p className="text-gray-600 mb-6">เมื่อมีการจองคิว รายการจะปรากฏที่นี่</p>
+                <button
+                  onClick={handleNewBooking}
+                  className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                >
+                  <SparklesIcon className="h-6 w-6 inline mr-2" />
+                  จองคิวใหม่
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* รอคิว */}
+                <div className="bg-gradient-to-br from-yellow-50/90 to-orange-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-yellow-200/50">
+                  <div className="flex items-center mb-8">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg">
+                      ⏳
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-yellow-800">รอคิว</h2>
+                      <p className="text-yellow-600 font-medium">{pendingBookings.length} คิว</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-6">
+                    {pendingBookings.map((booking) => {
+                      const therapist = therapists.find(t => t.id === booking.therapistId);
+                      const service = services.find(s => s.id === booking.serviceId);
+                      const startTime = new Date(booking.startTime);
+                      
+                      return (
+                        <BookingCard 
+                          key={booking.id}
+                          booking={booking}
+                          therapist={therapist}
+                          service={service}
+                          startTime={startTime}
+                          onStatusUpdate={handleStatusUpdate}
+                          onEdit={handleEditBooking}
+                        />
+                      );
+                    })}
+                    
+                    {pendingBookings.length === 0 && (
+                      <div className="text-center py-12 text-yellow-600">
+                        <ClockIcon className="h-16 w-16 mx-auto mb-4 text-yellow-400" />
+                        <p className="text-lg font-medium">ไม่มีคิวที่รอ</p>
+                        <p className="text-sm text-yellow-500 mt-2">คิวใหม่จะปรากฏที่นี่</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* กำลังนวด */}
+                <div className="bg-gradient-to-br from-blue-50/90 to-indigo-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-blue-200/50">
+                  <div className="flex items-center mb-8">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg">
+                      💆‍♀️
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-blue-800">กำลังนวด</h2>
+                      <p className="text-blue-600 font-medium">{inProgressBookings.length} คิว</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {inProgressBookings.map((booking) => {
+                      const therapist = therapists.find(t => t.id === booking.therapistId);
+                      const service = services.find(s => s.id === booking.serviceId);
+                      const startTime = new Date(booking.startTime);
+                      
+                      return (
+                        <BookingCard 
+                          key={booking.id}
+                          booking={booking}
+                          therapist={therapist}
+                          service={service}
+                          startTime={startTime}
+                          onStatusUpdate={handleStatusUpdate}
+                          onEdit={handleEditBooking}
+                          onComplete={handleCompleteBooking}
+                        />
+                      );
+                    })}
+                    
+                    {inProgressBookings.length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        <PlayCircleIcon className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                        <p>ไม่มีคิวที่กำลังนวด</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* เสร็จแล้ว */}
+                <div className="bg-gradient-to-br from-green-50/90 to-emerald-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-green-200/50">
+                  <div className="flex items-center mb-8">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg">
+                      ✅
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-green-800">เสร็จแล้ว</h2>
+                      <p className="text-green-600 font-medium">{doneBookings.length} คิว</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {doneBookings.map((booking) => {
+                      const therapist = therapists.find(t => t.id === booking.therapistId);
+                      const service = services.find(s => s.id === booking.serviceId);
+                      const startTime = new Date(booking.startTime);
+                      
+                      return (
+                        <BookingCard 
+                          key={booking.id}
+                          booking={booking}
+                          therapist={therapist}
+                          service={service}
+                          startTime={startTime}
+                          onStatusUpdate={handleStatusUpdate}
+                          onEdit={handleEditBooking}
+                        />
+                      );
+                    })}
+                    
+                    {doneBookings.length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        <CheckCircleIcon className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                        <p>ยังไม่มีคิวที่เสร็จ</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -413,16 +801,23 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="glass-stat p-6">
+          <div 
+            className="glass-stat p-6 cursor-pointer hover:scale-105 transition-all duration-200"
+            onClick={() => setShowRevenueDetails(!showRevenueDetails)}
+          >
             <div className="flex items-center">
               <div className="p-3 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg">
                 <CurrencyDollarIcon className="h-8 w-8 text-white" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wider">รายได้วันนี้</p>
+              <div className="ml-4 flex-1">
+                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wider">รายได้ร้านวันนี้</p>
                 <p className="text-3xl font-bold bg-gradient-to-r from-yellow-600 to-yellow-500 bg-clip-text text-transparent">
                   ฿{todayStats.totalRevenue.toLocaleString()}
                 </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <p className="text-xs text-yellow-600 font-medium">คลิกเพื่อดูรายละเอียด</p>
+                  <p className="text-xs text-gray-500">💡 หลังหักค่าคอม</p>
+                </div>
               </div>
             </div>
           </div>
@@ -651,6 +1046,39 @@ export default function HomePage() {
           </div>
         )}
 
+        {/* Revenue Details Section */}
+        {showRevenueDetails && (
+          <div className="glass-card p-8 mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-white text-sm font-bold mr-3">
+                  💰
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800">รายละเอียดรายได้วันนี้</h2>
+              </div>
+              <button
+                onClick={() => setShowRevenueDetails(false)}
+                className="p-2 rounded-lg glass-button hover:bg-white/20 transition-all duration-200"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {todayBookings.filter(b => b.status === 'done').length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-4xl mb-4">💰</div>
+                <p className="text-gray-500 text-lg">ยังไม่มีรายได้วันนี้</p>
+              </div>
+            ) : (
+              <RevenueBreakdown 
+                completedBookings={todayBookings.filter(b => b.status === 'done')}
+                therapists={therapists}
+                services={services}
+              />
+            )}
+          </div>
+        )}
+
         {/* Menu Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {menuItems.map((item, index) => (
@@ -701,6 +1129,376 @@ export default function HomePage() {
             </Link>
           ))}
         </div>
+      </div>
+
+      {/* Modals */}
+      <EditBookingModal
+        booking={editingBooking}
+        isOpen={isEditModalOpen}
+        onClose={handleEditModalClose}
+        onUpdate={handleBookingUpdate}
+      />
+
+      <DiscountModal
+        booking={completingBooking}
+        isOpen={isDiscountModalOpen}
+        onClose={handleDiscountModalClose}
+        onComplete={handleCompleteWithDiscount}
+      />
+
+      <BookingModal
+        isOpen={isBookingModalOpen}
+        onClose={handleBookingModalClose}
+        therapists={therapists}
+        services={services}
+        onBookingAdded={handleBookingAdded}
+      />
+    </div>
+  );
+}
+
+// Booking Card Component
+function BookingCard({ booking, therapist, service, startTime, onStatusUpdate, onEdit, onComplete }) {
+  const endTime = new Date(startTime.getTime() + booking.duration * 60000);
+  
+  const getNextStatus = (currentStatus) => {
+    switch (currentStatus) {
+      case 'pending': return 'in_progress';
+      case 'in_progress': return 'done';
+      case 'done': return null;
+      default: return null;
+    }
+  };
+  
+  const getNextStatusText = (currentStatus) => {
+    switch (currentStatus) {
+      case 'pending': return '🚀 เริ่มนวด';
+      case 'in_progress': return '✨ เสร็จแล้ว';
+      case 'done': return null;
+      default: return null;
+    }
+  };
+
+  const getCardGradient = (status) => {
+    switch (status) {
+      case 'pending': return 'bg-gradient-to-br from-white/95 to-yellow-50/90';
+      case 'in_progress': return 'bg-gradient-to-br from-white/95 to-blue-50/90';
+      case 'done': return 'bg-gradient-to-br from-white/95 to-green-50/90';
+      default: return 'bg-gradient-to-br from-white/95 to-gray-50/90';
+    }
+  };
+
+  const getBorderColor = (status) => {
+    switch (status) {
+      case 'pending': return 'border-l-yellow-400';
+      case 'in_progress': return 'border-l-blue-400';
+      case 'done': return 'border-l-green-400';
+      default: return 'border-l-gray-400';
+    }
+  };
+  
+  const nextStatus = getNextStatus(booking.status);
+  const nextStatusText = getNextStatusText(booking.status);
+
+  // Handle status update - if completing, use onComplete function
+  const handleStatusClick = () => {
+    if (booking.status === 'in_progress' && nextStatus === 'done') {
+      // Create booking object with service price for discount calculation
+      const servicePrice = service?.priceByDuration?.[booking.duration] || 0;
+      const bookingWithPrice = {
+        ...booking,
+        serviceName: service?.name,
+        servicePrice: servicePrice
+      };
+      onComplete(bookingWithPrice);
+    } else if (nextStatus) {
+      onStatusUpdate(booking.id, nextStatus);
+    }
+  };
+
+  return (
+    <div className={`${getCardGradient(booking.status)} backdrop-blur-xl rounded-2xl shadow-xl p-6 border-l-4 ${getBorderColor(booking.status)} border-white/30 transition-all duration-300 hover:shadow-2xl hover:scale-[1.02]`}>
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex-1">
+          <div className="flex items-center space-x-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold shadow-lg">
+              {booking.customerName.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-800 text-lg">{booking.customerName}</h3>
+              {booking.customerPhone && (
+                <div className="flex items-center text-gray-600 text-sm mt-1">
+                  <PhoneIcon className="h-4 w-4 mr-1 text-green-500" />
+                  {booking.customerPhone}
+                </div>
+              )}
+            </div>
+          </div>
+          {booking.channel && (
+            <span className="inline-block px-3 py-1 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 text-xs font-semibold rounded-full border border-purple-200">
+              📍 {booking.channel}
+            </span>
+          )}
+        </div>
+        <div className="text-right">
+          <div className="bg-white/80 rounded-xl p-3 shadow-md">
+            <p className="text-sm text-gray-600 font-bold flex items-center justify-end">
+              <ClockIcon className="h-4 w-4 mr-1 text-blue-500" />
+              {dateTimeUtils.formatTime(startTime)}
+              <span className="mx-1">-</span>
+              {dateTimeUtils.formatTime(endTime)}
+            </p>
+            <p className="text-xs text-gray-500 text-center mt-1">⏱️ {booking.duration} นาที</p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="bg-white/70 rounded-xl p-4 mb-4 shadow-sm">
+        <div className="space-y-3 text-sm">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600 font-medium flex items-center">
+              <SparklesIcon className="h-4 w-4 mr-1 text-purple-500" />
+              คอร์ส:
+            </span>
+            <div className="text-right">
+              <span className="font-bold text-gray-800">{service?.name}</span>
+              {service?.priceByDuration?.[booking.duration] && (
+                <div className="space-y-1">
+                  {/* Original Price */}
+                  {booking.discountType && booking.finalPrice !== undefined ? (
+                    <div className="text-gray-500 text-sm line-through">
+                      {dateTimeUtils.formatCurrency(service.priceByDuration[booking.duration])}
+                    </div>
+                  ) : (
+                    <div className="text-green-600 font-bold text-lg">
+                      {dateTimeUtils.formatCurrency(service.priceByDuration[booking.duration])}
+                    </div>
+                  )}
+                  
+                  {/* Discounted Price */}
+                  {booking.discountType && booking.finalPrice !== undefined && (
+                    <div className="text-green-600 font-bold text-lg">
+                      {dateTimeUtils.formatCurrency(booking.finalPrice)}
+                      <span className="text-xs text-red-600 ml-1">
+                        ({booking.discountType === 'percentage' ? `${booking.discountValue}%` : `฿${booking.discountValue}`} ลด)
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600 font-medium flex items-center">
+              <UserIcon className="h-4 w-4 mr-1 text-blue-500" />
+              หมอนวด:
+            </span>
+            <span className="font-bold text-gray-800">🌟 {therapist?.name}</span>
+          </div>
+        </div>
+        
+        {/* Show discount info for bookings with discount (all statuses) */}
+        {booking.discountType && booking.finalPrice !== undefined && (
+          <div className="mt-4 p-4 bg-gradient-to-r from-blue-50/90 to-indigo-50/80 rounded-xl border border-blue-200/50 shadow-sm">
+            <h4 className="font-semibold text-blue-800 mb-3 flex items-center">
+              💰 ข้อมูลราคาและส่วนลด
+            </h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">ราคาเดิม:</span>
+                <span className="font-medium">{dateTimeUtils.formatCurrency(service?.priceByDuration?.[booking.duration] || 0)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">ส่วนลด:</span>
+                <span className="text-red-600 font-medium">
+                  {booking.discountType === 'percentage' 
+                    ? `${booking.discountValue}%` 
+                    : dateTimeUtils.formatCurrency(booking.discountValue)
+                  }
+                  {' (-'}{dateTimeUtils.formatCurrency((service?.priceByDuration?.[booking.duration] || 0) - (booking.finalPrice || 0))})
+                </span>
+              </div>
+              <div className="flex justify-between text-lg font-bold border-t border-blue-300 pt-2">
+                <span className="text-blue-800">ราคาที่ลูกค้าจ่าย:</span>
+                <span className="text-green-600">{dateTimeUtils.formatCurrency(booking.finalPrice || 0)}</span>
+              </div>
+
+              {/* Show commission breakdown for completed bookings */}
+              {booking.status === 'done' && (
+                <div className="border-t border-gray-300 pt-2 mt-2 space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-orange-600">ค่าคอมหมอนวด:</span>
+                    <span className="text-orange-600 font-bold">
+                      {dateTimeUtils.formatCurrency(booking.therapistCommission || 0)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-indigo-600">ร้านได้:</span>
+                    <span className="text-indigo-600 font-bold">
+                      {dateTimeUtils.formatCurrency(booking.shopRevenue || ((booking.finalPrice || 0) - (booking.therapistCommission || 0)))}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+      
+      <div className="flex space-x-3">
+        {nextStatus ? (
+          <>
+            <button
+              onClick={handleStatusClick}
+              className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 flex items-center justify-center space-x-2"
+            >
+              <span>{nextStatusText}</span>
+            </button>
+            <button
+              onClick={() => onEdit(booking)}
+              className="px-4 py-3 bg-white/80 hover:bg-white/90 text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 flex items-center justify-center"
+            >
+              <PencilIcon className="h-5 w-5" />
+            </button>
+          </>
+        ) : (
+          /* คิวที่เสร็จแล้ว - ไม่สามารถแก้ไขได้ */
+          <div className="w-full text-center">
+            <div className="px-6 py-4 bg-gradient-to-r from-green-100/90 to-emerald-100/80 border-2 border-green-300/50 text-green-700 font-bold rounded-xl flex items-center justify-center shadow-md">
+              <CheckCircleIcon className="h-6 w-6 mr-2" />
+              เสร็จสิ้นแล้ว
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Revenue Breakdown Component  
+function RevenueBreakdown({ completedBookings, therapists, services }) {
+  const [config, setConfig] = useState(null);
+
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const configData = await getConfig();
+        setConfig(configData);
+      } catch (error) {
+        console.error('Error loading config:', error);
+      }
+    };
+    loadConfig();
+  }, []);
+
+  if (!config) return <div>กำลังโหลดข้อมูล...</div>;
+
+  // Calculate summary
+  let totalOriginalPrice = 0;
+  let totalFinalPrice = 0;
+  let totalTherapistCommission = 0;
+  let totalShopRevenue = 0;
+  let totalDiscount = 0;
+
+  const bookingDetails = completedBookings.map(booking => {
+    const service = services.find(s => s.id === booking.serviceId);
+    const therapist = therapists.find(t => t.id === booking.therapistId);
+    
+    const originalPrice = service?.priceByDuration?.[booking.duration] || 0;
+    const finalPrice = booking.finalPrice || originalPrice;
+    const discount = originalPrice - finalPrice;
+    
+    const therapistCommission = booking.therapistCommission || Math.floor(finalPrice * config.commissionRate);
+    const shopRevenue = booking.shopRevenue || (finalPrice - therapistCommission);
+    
+    totalOriginalPrice += originalPrice;
+    totalFinalPrice += finalPrice;
+    totalDiscount += discount;
+    totalTherapistCommission += therapistCommission;
+    totalShopRevenue += shopRevenue;
+
+    return {
+      booking,
+      service,
+      therapist,
+      originalPrice,
+      finalPrice,
+      discount,
+      therapistCommission,
+      shopRevenue
+    };
+  });
+
+  return (
+    <div className="space-y-6">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="glass p-4 text-center">
+          <div className="text-2xl font-bold text-blue-600">฿{totalOriginalPrice.toLocaleString()}</div>
+          <div className="text-sm text-gray-600">ราคาเต็ม</div>
+        </div>
+        <div className="glass p-4 text-center">
+          <div className="text-2xl font-bold text-red-600">-฿{totalDiscount.toLocaleString()}</div>
+          <div className="text-sm text-gray-600">ส่วนลดรวม</div>
+        </div>
+        <div className="glass p-4 text-center">
+          <div className="text-2xl font-bold text-orange-600">-฿{totalTherapistCommission.toLocaleString()}</div>
+          <div className="text-sm text-gray-600">ค่าคอมหมอนวด</div>
+        </div>
+        <div className="glass p-4 text-center">
+          <div className="text-2xl font-bold text-green-600">฿{totalShopRevenue.toLocaleString()}</div>
+          <div className="text-sm text-gray-600">รายได้ร้าน</div>
+        </div>
+      </div>
+
+      {/* Formula */}
+      <div className="glass p-4">
+        <div className="text-center text-lg font-semibold text-gray-800 mb-2">
+          📊 สูตรคำนวณ
+        </div>
+        <div className="text-center text-gray-700">
+          <span className="text-blue-600 font-bold">฿{totalOriginalPrice.toLocaleString()}</span>
+          <span className="mx-2">-</span>
+          <span className="text-red-600 font-bold">฿{totalDiscount.toLocaleString()}</span>
+          <span className="mx-2">-</span>
+          <span className="text-orange-600 font-bold">฿{totalTherapistCommission.toLocaleString()}</span>
+          <span className="mx-2">=</span>
+          <span className="text-green-600 font-bold text-xl">฿{totalShopRevenue.toLocaleString()}</span>
+        </div>
+        <div className="text-center text-sm text-gray-500 mt-2">
+          ราคาเต็ม - ส่วนลด - ค่าคอมหมอนวด ({(config.commissionRate * 100).toFixed(0)}%) = รายได้ร้าน
+        </div>
+      </div>
+
+      {/* Detailed List */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-800">รายละเอียดแต่ละคิว</h3>
+        {bookingDetails.map(({ booking, service, therapist, originalPrice, finalPrice, discount, therapistCommission, shopRevenue }) => (
+          <div key={booking.id} className="glass p-4">
+            <div className="flex justify-between items-start mb-3">
+              <div>
+                <h4 className="font-bold text-gray-800">{booking.customerName}</h4>
+                <p className="text-sm text-gray-600">
+                  {service?.name} • {therapist?.name} • {booking.duration} นาที
+                </p>
+                <p className="text-xs text-gray-500">
+                  {new Date(booking.startTime).toLocaleTimeString('th-TH', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              </div>
+              <div className="text-right text-sm">
+                <div className="text-gray-600">ราคาเต็ม: ฿{originalPrice.toLocaleString()}</div>
+                {discount > 0 && (
+                  <div className="text-red-600">ส่วนลด: -฿{discount.toLocaleString()}</div>
+                )}
+                <div className="text-orange-600">ค่าคอม: -฿{therapistCommission.toLocaleString()}</div>
+                <div className="text-green-600 font-bold">ร้านได้: ฿{shopRevenue.toLocaleString()}</div>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -134,6 +134,19 @@ export const deleteServiceMock = (serviceId) => {
 };
 
 // Mock Bookings functions
+// Generate booking ID with format BYYYYMMDDHHMMSS
+const generateMockBookingId = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hour = String(now.getHours()).padStart(2, '0');
+  const minute = String(now.getMinutes()).padStart(2, '0');
+  const second = String(now.getSeconds()).padStart(2, '0');
+  
+  return `B${year}${month}${day}${hour}${minute}${second}`;
+};
+
 export const addBookingMock = async (bookingData) => {
   await delay();
   
@@ -141,12 +154,13 @@ export const addBookingMock = async (bookingData) => {
   if (bookingData.customerName && bookingData.customerPhone) {
     await upsertCustomerMock({
       phone: bookingData.customerPhone,
-      name: bookingData.customerName
+      name: bookingData.customerName,
+      preferredChannel: bookingData.channel // Save channel as preferred channel
     });
   }
   
   const newBooking = {
-    id: Date.now().toString(),
+    id: generateMockBookingId(),
     ...bookingData,
     status: 'pending',
     isExtended: false,
@@ -261,14 +275,17 @@ export const upsertCustomerMock = async (customerData) => {
   
   const { phone, ...data } = customerData;
   const existingIndex = mockCustomersStorage.findIndex(c => c.phone === phone);
+  const existingCustomer = existingIndex >= 0 ? mockCustomersStorage[existingIndex] : null;
   
   const customerDoc = {
     phone,
     ...data,
-    totalVisits: existingIndex >= 0 ? mockCustomersStorage[existingIndex].totalVisits + 1 : 1,
+    totalVisits: existingCustomer ? existingCustomer.totalVisits + 1 : 1,
     lastVisit: new Date(),
     updatedAt: new Date(),
-    ...(existingIndex >= 0 ? {} : { createdAt: new Date() })
+    // Update preferred channel only if provided, otherwise keep existing
+    preferredChannel: data.preferredChannel || existingCustomer?.preferredChannel,
+    ...(existingCustomer ? {} : { createdAt: new Date() })
   };
   
   if (existingIndex >= 0) {

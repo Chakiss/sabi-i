@@ -24,7 +24,14 @@ export default function EditBookingModal({ booking, isOpen, onClose, onUpdate })
     if (isOpen && booking) {
       // Load booking data into form
       const startDateTime = new Date(booking.startTime);
-      const formattedDateTime = startDateTime.toISOString().slice(0, 16); // Format for datetime-local input
+      
+      // Format for datetime-local input (consider timezone)
+      const year = startDateTime.getFullYear();
+      const month = String(startDateTime.getMonth() + 1).padStart(2, '0');
+      const day = String(startDateTime.getDate()).padStart(2, '0');
+      const hours = String(startDateTime.getHours()).padStart(2, '0');
+      const minutes = String(startDateTime.getMinutes()).padStart(2, '0');
+      const formattedDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
       
       setFormData({
         customerName: booking.customerName || '',
@@ -62,6 +69,12 @@ export default function EditBookingModal({ booking, isOpen, onClose, onUpdate })
     
     if (!formData.customerName || !formData.customerPhone || !formData.serviceId || !formData.therapistId || !formData.startTime) {
       toast.error('กรุณากรอกข้อมูลให้ครบทุกช่อง');
+      return;
+    }
+
+    // ตรวจสอบเบอร์โทรศัพท์ให้มี 10 หลัก
+    if (formData.customerPhone.length !== 10) {
+      toast.error('เบอร์โทรศัพท์ต้องมี 10 หลักเท่านั้น');
       return;
     }
 
@@ -186,9 +199,17 @@ export default function EditBookingModal({ booking, isOpen, onClose, onUpdate })
                   <input
                     type="tel"
                     value={formData.customerPhone}
-                    onChange={(e) => setFormData({...formData, customerPhone: e.target.value})}
+                    onChange={(e) => {
+                      // ตรวจสอบให้มีแค่ตัวเลขและไม่เกิน 10 หลัก
+                      const phoneNumber = e.target.value.replace(/\D/g, '');
+                      if (phoneNumber.length <= 10) {
+                        setFormData({...formData, customerPhone: phoneNumber});
+                      }
+                    }}
                     className="w-full px-5 py-4 border border-blue-200/50 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md font-medium"
-                    placeholder="08x-xxx-xxxx"
+                    placeholder="0812345678"
+                    maxLength="10"
+                    pattern="[0-9]{10}"
                   />
                 </div>
               </div>

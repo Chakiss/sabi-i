@@ -11,6 +11,9 @@ export default function TherapistsPage() {
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingTherapist, setEditingTherapist] = useState(null);
+  const [showDayOffModal, setShowDayOffModal] = useState(false);
+  const [selectedTherapist, setSelectedTherapist] = useState(null);
+  const [dayOffDate, setDayOffDate] = useState('');
   
   const [formData, setFormData] = useState({
     name: '',
@@ -92,6 +95,54 @@ export default function TherapistsPage() {
         endDate: new Date()
       });
       toast.success('อัพเดทสถานะสำเร็จ!');
+      fetchTherapists();
+    } catch (error) {
+      console.error('Error updating therapist status:', error);
+      toast.error('เกิดข้อผิดพลาดในการอัพเดทสถานะ');
+    }
+  };
+
+  const handleDayOff = async (therapist) => {
+    if (therapist.status === 'day_off') {
+      // กลับมาทำงาน - ไม่ต้องใส่วันที่
+      if (!confirm(`ต้องการให้ ${therapist.name} กลับมาทำงานใช่หรือไม่?`)) {
+        return;
+      }
+
+      try {
+        await updateTherapist(therapist.id, {
+          status: 'active',
+          dayOffDate: null // ลบวันที่หยุด
+        });
+        toast.success('อัพเดทสถานะสำเร็จ!');
+        fetchTherapists();
+      } catch (error) {
+        console.error('Error updating therapist status:', error);
+        toast.error('เกิดข้อผิดพลาดในการอัพเดทสถานะ');
+      }
+    } else {
+      // หยุดงาน - ต้องใส่วันที่
+      setSelectedTherapist(therapist);
+      setDayOffDate(new Date().toISOString().split('T')[0]);
+      setShowDayOffModal(true);
+    }
+  };
+
+  const handleConfirmDayOff = async () => {
+    if (!dayOffDate) {
+      toast.error('กรุณาเลือกวันที่หยุด');
+      return;
+    }
+
+    try {
+      await updateTherapist(selectedTherapist.id, {
+        status: 'day_off',
+        dayOffDate: dayOffDate
+      });
+      toast.success('อัพเดทสถานะสำเร็จ!');
+      setShowDayOffModal(false);
+      setSelectedTherapist(null);
+      setDayOffDate('');
       fetchTherapists();
     } catch (error) {
       console.error('Error updating therapist status:', error);
@@ -185,6 +236,7 @@ export default function TherapistsPage() {
                   className="w-full px-4 py-3 glass-input text-gray-800"
                 >
                   <option value="active">ทำงานอยู่</option>
+                  <option value="day_off">วันหยุด</option>
                   <option value="resigned">ลาออกแล้ว</option>
                 </select>
               </div>
@@ -263,6 +315,9 @@ export default function TherapistsPage() {
                       📅 วันลาออก
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">
+                      🏖️ วันหยุด
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">
                       ⚙️ การจัดการ
                     </th>
                   </tr>
@@ -284,9 +339,15 @@ export default function TherapistsPage() {
                         <span className={`inline-flex px-3 py-2 text-sm font-bold rounded-full shadow-sm ${
                           therapist.status === 'active' 
                             ? 'bg-gradient-to-r from-green-400 to-green-500 text-white' 
+                            : therapist.status === 'day_off'
+                            ? 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-white'
                             : 'bg-gradient-to-r from-red-400 to-red-500 text-white'
                         }`}>
-                          {therapist.status === 'active' ? '✅ ทำงานอยู่' : '❌ ลาออกแล้ว'}
+                          {therapist.status === 'active' 
+                            ? '✅ ทำงานอยู่' 
+                            : therapist.status === 'day_off' 
+                            ? '🏖️ วันหยุด'
+                            : '❌ ลาออกแล้ว'}
                         </span>
                       </td>
                       <td className="px-6 py-5 whitespace-nowrap text-sm font-medium text-gray-700">
@@ -294,6 +355,9 @@ export default function TherapistsPage() {
                       </td>
                       <td className="px-6 py-5 whitespace-nowrap text-sm font-medium text-gray-700">
                         {therapist.endDate ? new Date(therapist.endDate).toLocaleDateString('th-TH') : '-'}
+                      </td>
+                      <td className="px-6 py-5 whitespace-nowrap text-sm font-medium text-gray-700">
+                        {therapist.dayOffDate ? new Date(therapist.dayOffDate).toLocaleDateString('th-TH') : '-'}
                       </td>
                       <td className="px-6 py-5 whitespace-nowrap text-sm font-medium space-x-3">
                         <button
@@ -303,6 +367,18 @@ export default function TherapistsPage() {
                           <PencilIcon className="h-4 w-4 mr-2" />
                           แก้ไข
                         </button>
+                        {(therapist.status === 'active' || therapist.status === 'day_off') && (
+                          <button
+                            onClick={() => handleDayOff(therapist)}
+                            className={`px-4 py-2 backdrop-blur-sm text-white rounded-lg transition-all duration-200 text-sm font-bold ${
+                              therapist.status === 'day_off' 
+                                ? 'bg-green-400/80 hover:bg-green-500/80' 
+                                : 'bg-yellow-400/80 hover:bg-yellow-500/80'
+                            }`}
+                          >
+                            {therapist.status === 'day_off' ? '🏢 กลับมาทำงาน' : '🏖️ วันหยุด'}
+                          </button>
+                        )}
                         {therapist.status === 'active' && (
                           <button
                             onClick={() => handleResign(therapist)}
@@ -320,6 +396,53 @@ export default function TherapistsPage() {
           )}
         </div>
       </div>
+
+      {/* Day Off Modal */}
+      {showDayOffModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 w-full max-w-md">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                🏖️ ตั้งวันหยุดสำหรับ {selectedTherapist?.name}
+              </h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    📅 วันที่หยุด
+                  </label>
+                  <input
+                    type="date"
+                    value={dayOffDate}
+                    onChange={(e) => setDayOffDate(e.target.value)}
+                    className="w-full px-4 py-3 glass-input text-gray-800"
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+              </div>
+
+              <div className="flex space-x-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowDayOffModal(false);
+                    setSelectedTherapist(null);
+                    setDayOffDate('');
+                  }}
+                  className="flex-1 px-4 py-3 bg-gray-300/80 backdrop-blur-sm text-gray-700 rounded-lg hover:bg-gray-400/80 transition-all duration-200 font-bold"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  onClick={handleConfirmDayOff}
+                  className="flex-1 px-4 py-3 bg-yellow-400/80 backdrop-blur-sm text-white rounded-lg hover:bg-yellow-500/80 transition-all duration-200 font-bold"
+                >
+                  ยืนยันวันหยุด
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

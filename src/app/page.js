@@ -560,9 +560,9 @@ export default function HomePage() {
           </button>
         </div>
         
-        {/* Queue Management Section - Moved to top */}
-        {showQueueSection && (
-          <div className="bg-gradient-to-br from-white/90 to-blue-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/30 mb-8">
+        {/* Queue Management Section - Collapsible */}
+        <div className="bg-gradient-to-br from-white/90 to-blue-50/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/30 mb-8 transition-all duration-300">
+          <div className="p-8">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-4">
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-xl">
@@ -587,219 +587,169 @@ export default function HomePage() {
                 </button>
                 <button
                   onClick={() => setShowQueueSection(!showQueueSection)}
-                  className="px-6 py-3 bg-white/80 hover:bg-white/90 text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                  className="px-6 py-3 bg-white/80 hover:bg-white/90 text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 flex items-center space-x-2"
                 >
-                  {showQueueSection ? '🙈 ซ่อนคิว' : '👁️ แสดงคิว'}
+                  <div className={`transform transition-transform duration-200 ${showQueueSection ? 'rotate-180' : 'rotate-0'}`}>
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                  <span>{showQueueSection ? 'ย่อคิว' : 'ขยายคิว'}</span>
                 </button>
               </div>
             </div>
 
-            {sortedBookings.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="text-8xl mb-6">🌸</div>
-                <h3 className="text-2xl font-bold text-gray-700 mb-4">ยังไม่มีคิววันนี้</h3>
-                <p className="text-gray-600 mb-6">เมื่อมีการจองคิว รายการจะปรากฏที่นี่</p>
-                <button
-                  onClick={handleNewBooking}
-                  className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                >
-                  <SparklesIcon className="h-6 w-6 inline mr-2" />
-                  จองคิวใหม่
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* รอคิว */}
-                <div className="bg-gradient-to-br from-yellow-50/90 to-orange-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-yellow-200/50">
-                  <div className="flex items-center mb-8">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg">
-                      ⏳
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-yellow-800">รอคิว</h2>
-                      <p className="text-yellow-600 font-medium">{pendingBookings.length} คิว</p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-6">
-                    {pendingBookings.map((booking) => {
-                      const therapist = therapists.find(t => t.id === booking.therapistId);
-                      const service = services.find(s => s.id === booking.serviceId);
-                      const startTime = new Date(booking.startTime);
-                      
-                      return (
-                        <BookingCard 
-                          key={booking.id}
-                          booking={booking}
-                          therapist={therapist}
-                          service={service}
-                          startTime={startTime}
-                          onStatusUpdate={handleStatusUpdate}
-                          onEdit={handleEditBooking}
-                        />
-                      );
-                    })}
-                    
-                    {pendingBookings.length === 0 && (
-                      <div className="text-center py-12 text-yellow-600">
-                        <ClockIcon className="h-16 w-16 mx-auto mb-4 text-yellow-400" />
-                        <p className="text-lg font-medium">ไม่มีคิวที่รอ</p>
-                        <p className="text-sm text-yellow-500 mt-2">คิวใหม่จะปรากฏที่นี่</p>
-                      </div>
-                    )}
-                  </div>
+            {/* Collapsible Content */}
+            <div className={`overflow-hidden transition-all duration-500 ease-in-out ${
+              showQueueSection ? 'max-h-none opacity-100' : 'max-h-0 opacity-0'
+            }`}>
+              {sortedBookings.length === 0 ? (
+                <div className="text-center py-16">
+                  <div className="text-8xl mb-6">🌸</div>
+                  <h3 className="text-2xl font-bold text-gray-700 mb-4">ยังไม่มีคิววันนี้</h3>
+                  <p className="text-gray-600 mb-6">เมื่อมีการจองคิว รายการจะปรากฏที่นี่</p>
+                  <button
+                    onClick={handleNewBooking}
+                    className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                  >
+                    <SparklesIcon className="h-6 w-6 inline mr-2" />
+                    จองคิวใหม่
+                  </button>
                 </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* รอคิว */}
+                  <div className="bg-gradient-to-br from-yellow-50/90 to-orange-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-yellow-200/50">
+                    <div className="flex items-center mb-8">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg">
+                        ⏳
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-bold text-yellow-800">รอคิว</h2>
+                        <p className="text-yellow-600 font-medium">{pendingBookings.length} คิว</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-6">
+                      {pendingBookings.map((booking) => {
+                        const therapist = therapists.find(t => t.id === booking.therapistId);
+                        const service = services.find(s => s.id === booking.serviceId);
+                        const startTime = new Date(booking.startTime);
+                        
+                        return (
+                          <BookingCard 
+                            key={booking.id}
+                            booking={booking}
+                            therapist={therapist}
+                            service={service}
+                            startTime={startTime}
+                            onStatusUpdate={handleStatusUpdate}
+                            onEdit={handleEditBooking}
+                          />
+                        );
+                      })}
+                      
+                      {pendingBookings.length === 0 && (
+                        <div className="text-center py-12 text-yellow-600">
+                          <ClockIcon className="h-16 w-16 mx-auto mb-4 text-yellow-400" />
+                          <p className="text-lg font-medium">ไม่มีคิวที่รอ</p>
+                          <p className="text-sm text-yellow-500 mt-2">คิวใหม่จะปรากฏที่นี่</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-                {/* กำลังนวด */}
-                <div className="bg-gradient-to-br from-blue-50/90 to-indigo-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-blue-200/50">
-                  <div className="flex items-center mb-8">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg">
-                      💆‍♀️
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-blue-800">กำลังนวด</h2>
-                      <p className="text-blue-600 font-medium">{inProgressBookings.length} คิว</p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    {inProgressBookings.map((booking) => {
-                      const therapist = therapists.find(t => t.id === booking.therapistId);
-                      const service = services.find(s => s.id === booking.serviceId);
-                      const startTime = new Date(booking.startTime);
-                      
-                      return (
-                        <BookingCard 
-                          key={booking.id}
-                          booking={booking}
-                          therapist={therapist}
-                          service={service}
-                          startTime={startTime}
-                          onStatusUpdate={handleStatusUpdate}
-                          onEdit={handleEditBooking}
-                          onComplete={handleCompleteBooking}
-                        />
-                      );
-                    })}
-                    
-                    {inProgressBookings.length === 0 && (
-                      <div className="text-center py-8 text-gray-500">
-                        <PlayCircleIcon className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-                        <p>ไม่มีคิวที่กำลังนวด</p>
+                  {/* กำลังนวด */}
+                  <div className="bg-gradient-to-br from-blue-50/90 to-indigo-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-blue-200/50">
+                    <div className="flex items-center mb-8">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg">
+                        💆‍♀️
                       </div>
-                    )}
+                      <div>
+                        <h2 className="text-2xl font-bold text-blue-800">กำลังนวด</h2>
+                        <p className="text-blue-600 font-medium">{inProgressBookings.length} คิว</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-6">
+                      {inProgressBookings.map((booking) => {
+                        const therapist = therapists.find(t => t.id === booking.therapistId);
+                        const service = services.find(s => s.id === booking.serviceId);
+                        const startTime = new Date(booking.startTime);
+                        
+                        return (
+                          <BookingCard 
+                            key={booking.id}
+                            booking={booking}
+                            therapist={therapist}
+                            service={service}
+                            startTime={startTime}
+                            onStatusUpdate={handleStatusUpdate}
+                            onEdit={handleEditBooking}
+                            onComplete={handleCompleteBooking}
+                          />
+                        );
+                      })}
+                      
+                      {inProgressBookings.length === 0 && (
+                        <div className="text-center py-12 text-blue-600">
+                          <PlayCircleIcon className="h-16 w-16 mx-auto mb-4 text-blue-400" />
+                          <p className="text-lg font-medium">ไม่มีคิวที่กำลังนวด</p>
+                          <p className="text-sm text-blue-500 mt-2">คิวที่เริ่มแล้วจะปรากฏที่นี่</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {/* เสร็จแล้ว */}
-                <div className="bg-gradient-to-br from-green-50/90 to-emerald-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-green-200/50">
-                  <div className="flex items-center mb-8">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg">
-                      ✅
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-green-800">เสร็จแล้ว</h2>
-                      <p className="text-green-600 font-medium">{doneBookings.length} คิว</p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    {doneBookings.map((booking) => {
-                      const therapist = therapists.find(t => t.id === booking.therapistId);
-                      const service = services.find(s => s.id === booking.serviceId);
-                      const startTime = new Date(booking.startTime);
-                      
-                      return (
-                        <BookingCard 
-                          key={booking.id}
-                          booking={booking}
-                          therapist={therapist}
-                          service={service}
-                          startTime={startTime}
-                          onStatusUpdate={handleStatusUpdate}
-                          onEdit={handleEditBooking}
-                        />
-                      );
-                    })}
-                    
-                    {doneBookings.length === 0 && (
-                      <div className="text-center py-8 text-gray-500">
-                        <CheckCircleIcon className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-                        <p>ยังไม่มีคิวที่เสร็จ</p>
+                  {/* เสร็จแล้ว */}
+                  <div className="bg-gradient-to-br from-green-50/90 to-emerald-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-green-200/50">
+                    <div className="flex items-center mb-8">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg">
+                        ✅
                       </div>
-                    )}
+                      <div>
+                        <h2 className="text-2xl font-bold text-green-800">เสร็จแล้ว</h2>
+                        <p className="text-green-600 font-medium">{doneBookings.length} คิว</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-6">
+                      {doneBookings.map((booking) => {
+                        const therapist = therapists.find(t => t.id === booking.therapistId);
+                        const service = services.find(s => s.id === booking.serviceId);
+                        const startTime = new Date(booking.startTime);
+                        
+                        return (
+                          <BookingCard 
+                            key={booking.id}
+                            booking={booking}
+                            therapist={therapist}
+                            service={service}
+                            startTime={startTime}
+                            onStatusUpdate={handleStatusUpdate}
+                            onEdit={handleEditBooking}
+                          />
+                        );
+                      })}
+                      
+                      {doneBookings.length === 0 && (
+                        <div className="text-center py-12 text-green-600">
+                          <CheckCircleIcon className="h-16 w-16 mx-auto mb-4 text-green-400" />
+                          <p className="text-lg font-medium">ยังไม่มีคิวที่เสร็จ</p>
+                          <p className="text-sm text-green-500 mt-2">คิวที่เสร็จแล้วจะปรากฏที่นี่</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        )}
+        </div>
         
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div 
-            className="glass-stat p-6 cursor-pointer hover:scale-105 transition-all duration-200"
-            onClick={() => setShowTodayBookings(!showTodayBookings)}
-          >
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 shadow-lg">
-                <CalendarDaysIcon className="h-8 w-8 text-white" />
-              </div>
-              <div className="ml-4 flex-1">
-                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wider">คิววันนี้</p>
-                <p className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
-                  {todayStats.bookings}
-                </p>
-                <div className="flex items-center gap-2 mt-2">
-                  <p className="text-xs text-blue-600 font-medium">คลิกเพื่อดูรายละเอียด</p>
-                  <Link 
-                    href="/queue" 
-                    className="text-xs text-orange-600 font-bold hover:text-orange-700 transition-colors px-2 py-1 rounded bg-orange-50 hover:bg-orange-100"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    📋 จัดการ
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div 
-            className="glass-stat p-6 cursor-pointer hover:scale-105 transition-all duration-200"
-            onClick={() => setShowAvailableTherapists(!showAvailableTherapists)}
-          >
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 shadow-lg">
-                <UserGroupIcon className="h-8 w-8 text-white" />
-              </div>
-              <div className="ml-4 flex-1">
-                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wider">หมอว่างตอนนี้</p>
-                <p className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent">
-                  {todayStats.availableCount}
-                </p>
-                <div className="flex items-center gap-2 mt-2">
-                  <p className="text-xs text-green-600 font-medium">คลิกเพื่อดูรายชื่อ</p>
-                  <span className="text-xs text-gray-500">
-                    /{todayStats.activeTherapists} คน
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="glass-stat p-6">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 shadow-lg">
-                <ClipboardDocumentListIcon className="h-8 w-8 text-white" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wider">เสร็จแล้ว</p>
-                <p className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">
-                  {todayStats.completedSessions}
-                </p>
-              </div>
-            </div>
-          </div>
+      
 
           <div 
             className="glass-stat p-6 cursor-pointer hover:scale-105 transition-all duration-200"

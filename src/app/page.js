@@ -65,15 +65,16 @@ export default function HomePage() {
         const totalRevenue = completedBookings.reduce((sum, booking) => {
           const service = services.find(s => s.id === booking.serviceId);
           const finalPrice = booking.finalPrice || (service?.priceByDuration?.[booking.duration] || 0);
+          const originalPrice = service?.priceByDuration?.[booking.duration] || 0;
           
           // If booking already has shopRevenue stored, use it
           if (booking.shopRevenue !== undefined) {
             return sum + booking.shopRevenue;
           }
           
-          // Otherwise calculate: finalPrice - therapist commission
+          // ✅ แก้ไข: คำนวณค่าคอมจากราคาเต็ม ไม่ใช่ราคาหลังลด
           const commissionRate = config?.commissionRate || 0.4;
-          const therapistCommission = Math.floor(finalPrice * commissionRate);
+          const therapistCommission = Math.floor(originalPrice * commissionRate);
           const shopRevenue = finalPrice - therapistCommission;
           
           return sum + shopRevenue;
@@ -181,15 +182,16 @@ export default function HomePage() {
       const totalRevenue = completedBookings.reduce((sum, booking) => {
         const service = services.find(s => s.id === booking.serviceId);
         const finalPrice = booking.finalPrice || (service?.priceByDuration?.[booking.duration] || 0);
+        const originalPrice = service?.priceByDuration?.[booking.duration] || 0;
         
         // If booking already has shopRevenue stored, use it
         if (booking.shopRevenue !== undefined) {
           return sum + booking.shopRevenue;
         }
         
-        // Otherwise calculate: finalPrice - therapist commission
+        // ✅ แก้ไข: คำนวณค่าคอมจากราคาเต็ม ไม่ใช่ราคาหลังลด
         const commissionRate = config?.commissionRate || 0.4;
-        const therapistCommission = Math.floor(finalPrice * commissionRate);
+        const therapistCommission = Math.floor(originalPrice * commissionRate);
         const shopRevenue = finalPrice - therapistCommission;
         
         return sum + shopRevenue;

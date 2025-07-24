@@ -431,20 +431,23 @@ export default function HomePage() {
   });
 
   return (
-    <div className="min-h-screen thai-pattern">
+    <div className="min-h-screen thai-pattern-enhanced">
       {/* Header */}
-      <div className="bg-gradient-to-br from-pink-50/90 via-purple-50/80 to-blue-50/70 backdrop-blur-xl border-b border-white/20 shadow-lg sticky top-0 z-50">
+      <div className="bg-gradient-to-br from-pink-50/95 via-purple-50/85 to-blue-50/75 backdrop-blur-xl border-b border-white/30 shadow-xl sticky top-0 z-50">
         <div className="w-full px-6 lg:px-12 py-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
-              <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500 flex items-center justify-center text-white shadow-2xl transform rotate-3">
+              <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500 flex items-center justify-center text-white shadow-2xl transform rotate-3 hover:rotate-6 transition-transform duration-300">
                 <SparklesIcon className="h-8 w-8" />
               </div>
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
                   Saba-i Massage
                 </h1>
-                <p className="text-gray-600 mt-2 text-lg font-medium">✨ ระบบจัดการร้านนวดไทย</p>
+                <p className="text-gray-600 mt-2 text-lg font-medium flex items-center">
+                  <SparklesIcon className="h-5 w-5 mr-2 text-purple-500" />
+                  ระบบจัดการร้านนวดไทย
+                </p>
               </div>
             </div>
             
@@ -452,7 +455,7 @@ export default function HomePage() {
             <div className="flex items-center">
               {/* Desktop Version */}
               <div className="hidden sm:block">
-                <div className="bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-4 shadow-xl border border-white/30">
+                <div className="bg-white/85 backdrop-blur-sm rounded-2xl px-6 py-4 shadow-xl border border-white/40 hover:shadow-2xl transition-all duration-300">
                   <div className="text-right">
                     <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">วันนี้</div>
                     <div className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
@@ -463,8 +466,9 @@ export default function HomePage() {
                         year: 'numeric'
                       })}
                     </div>
-                    <div className="text-sm text-gray-600 font-semibold mt-1">
-                      ⏰ {currentTime.toLocaleTimeString('th-TH', {
+                    <div className="text-sm text-gray-600 font-semibold mt-1 flex items-center justify-end">
+                      <ClockIcon className="h-4 w-4 mr-1 text-blue-500" />
+                      {currentTime.toLocaleTimeString('th-TH', {
                         hour: '2-digit',
                         minute: '2-digit'
                       })}
@@ -475,7 +479,7 @@ export default function HomePage() {
               
               {/* Mobile Version */}
               <div className="sm:hidden">
-                <div className="bg-white/80 backdrop-blur-sm rounded-xl px-4 py-3 shadow-lg border border-white/30">
+                <div className="bg-white/85 backdrop-blur-sm rounded-xl px-4 py-3 shadow-lg border border-white/40">
                   <div className="text-right">
                     <div className="text-sm font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                       {currentTime.toLocaleDateString('th-TH', {
@@ -483,7 +487,8 @@ export default function HomePage() {
                         month: 'short'
                       })}
                     </div>
-                    <div className="text-xs text-gray-600 font-medium">
+                    <div className="text-xs text-gray-600 font-medium flex items-center justify-end">
+                      <ClockIcon className="h-3 w-3 mr-1" />
                       {currentTime.toLocaleTimeString('th-TH', {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -497,8 +502,8 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="w-full px-6 lg:px-12 py-12">
-        {/* Refresh Button */}
+      <div className="w-full px-6 lg:px-12 py-12 full-width-container">
+        {/* Refresh Button with Enhanced Design */}
         <div className="flex justify-end mb-8">
           <button
             onClick={async () => {
@@ -543,7 +548,7 @@ export default function HomePage() {
                 setTherapists(therapists);
                 setServices(services);
                 
-                toast.success('รีเฟรชข้อมูลแล้ว');
+                toast.success('รีเฟรชข้อมูลแล้ว ✨');
               } catch (error) {
                 console.error('Error refreshing data:', error);
                 toast.error('เกิดข้อผิดพลาดในการรีเฟรชข้อมูล');
@@ -551,211 +556,541 @@ export default function HomePage() {
                 setLoading(false);
               }
             }}
-            className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 flex items-center space-x-2"
+            className="group relative px-8 py-4 bg-gradient-to-r from-purple-500 via-pink-500 to-blue-600 text-white font-bold rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105 flex items-center space-x-3 overflow-hidden"
           >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            <span>รีเฟรชข้อมูล</span>
+            {/* Animated Background */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            
+            {/* Content */}
+            <div className="relative z-10 flex items-center space-x-3">
+              <svg className="h-6 w-6 group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span className="text-lg">รีเฟรชข้อมูล</span>
+              <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+            </div>
+            
+            {/* Shine Effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700 skew-x-12"></div>
           </button>
         </div>
         
-        {/* Queue Management Section - Moved to top */}
+        {/* Enhanced Queue Management Section */}
         {showQueueSection && (
-          <div className="bg-gradient-to-br from-white/90 to-blue-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/30 mb-8 min-h-[calc(100vh-12rem)]">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-xl">
-                  <ClipboardDocumentListIcon className="h-7 w-7" />
+          <div className="bg-gradient-to-br from-white/95 to-blue-50/85 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/40 mb-8 min-h-[calc(100vh-12rem)] relative overflow-hidden">
+            {/* Animated Background Elements */}
+            <div className="absolute top-10 right-10 w-24 h-24 bg-gradient-to-br from-blue-300/20 to-purple-300/20 rounded-full blur-2xl animate-pulse"></div>
+            <div className="absolute bottom-10 left-10 w-32 h-32 bg-gradient-to-br from-pink-300/20 to-yellow-300/20 rounded-full blur-2xl animate-pulse delay-1000"></div>
+            
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center space-x-4">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-xl transform hover:rotate-6 transition-transform duration-300">
+                    <ClipboardDocumentListIcon className="h-8 w-8" />
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                      จัดการคิววันนี้
+                    </h2>
+                    <p className="text-gray-600 font-medium flex items-center">
+                      <span className="w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse inline-block"></span>
+                      ({sortedBookings.length} คิว) อัพเดทสถานะและติดตามคิว
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                    จัดการคิววันนี้
-                  </h2>
-                  <p className="text-gray-600 font-medium">
-                    ({sortedBookings.length} คิว) อัพเดทสถานะและติดตามคิว
-                  </p>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={handleNewBooking}
+                    className="group relative px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 flex items-center space-x-2 overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative z-10 flex items-center space-x-2">
+                      <SparklesIcon className="h-5 w-5 group-hover:rotate-180 transition-transform duration-300" />
+                      <span>จองคิวใหม่</span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setShowQueueSection(!showQueueSection)}
+                    className="px-6 py-3 bg-white/80 hover:bg-white/90 text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 border border-white/50"
+                  >
+                    {showQueueSection ? '🙈 ซ่อนคิว' : '👁️ แสดงคิว'}
+                  </button>
                 </div>
               </div>
-              <div className="flex space-x-3">
-                <button
-                  onClick={handleNewBooking}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 flex items-center space-x-2"
-                >
-                  <SparklesIcon className="h-5 w-5" />
-                  <span>จองคิวใหม่</span>
-                </button>
-                <button
-                  onClick={() => setShowQueueSection(!showQueueSection)}
-                  className="px-6 py-3 bg-white/80 hover:bg-white/90 text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                >
-                  {showQueueSection ? '🙈 ซ่อนคิว' : '👁️ แสดงคิว'}
-                </button>
-              </div>
+
+              {sortedBookings.length === 0 ? (
+                <div className="text-center py-20">
+                  <div className="mb-8">
+                    <div className="text-8xl mb-4 animate-bounce">🌸</div>
+                    <div className="w-32 h-32 mx-auto bg-gradient-to-br from-pink-100 to-purple-100 rounded-full flex items-center justify-center shadow-xl mb-6">
+                      <CalendarDaysIcon className="h-16 w-16 text-purple-400" />
+                    </div>
+                  </div>
+                  <h3 className="text-3xl font-bold text-gray-700 mb-4">ยังไม่มีคิววันนี้</h3>
+                  <p className="text-gray-600 mb-8 text-lg">เมื่อมีการจองคิว รายการจะปรากฏที่นี่</p>
+                  <button
+                    onClick={handleNewBooking}
+                    className="group relative px-10 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 text-lg overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative z-10 flex items-center space-x-3">
+                      <SparklesIcon className="h-6 w-6 group-hover:rotate-180 transition-transform duration-500" />
+                      <span>จองคิวใหม่</span>
+                      <svg className="h-6 w-6 group-hover:translate-x-2 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5-5 5M6 12h12" />
+                      </svg>
+                    </div>
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
+                  {/* รอคิว - Enhanced */}
+                  <div className="bg-gradient-to-br from-yellow-50/95 to-orange-50/85 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-yellow-200/60 flex flex-col h-full relative overflow-hidden">
+                    <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-yellow-300/30 to-orange-300/30 rounded-full blur-xl"></div>
+                    
+                    <div className="flex items-center mb-6 relative z-10">
+                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg hover:scale-110 transition-transform duration-300">
+                        ⏳
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold text-yellow-800">รอคิว</h2>
+                        <p className="text-yellow-600 font-medium flex items-center">
+                          <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2 animate-pulse inline-block"></span>
+                          {pendingBookings.length} คิว
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4 flex-1 overflow-y-auto relative z-10">
+                      {pendingBookings.map((booking, index) => {
+                        const therapist = therapists.find(t => t.id === booking.therapistId);
+                        const service = services.find(s => s.id === booking.serviceId);
+                        const startTime = new Date(booking.startTime);
+                        
+                        return (
+                          <div
+                            key={booking.id}
+                            className="transform hover:scale-[1.02] transition-all duration-200"
+                            style={{
+                              animationName: 'slideInUp',
+                              animationDuration: '0.5s',
+                              animationTimingFunction: 'ease-out',
+                              animationFillMode: 'forwards',
+                              animationDelay: `${index * 100}ms`
+                            }}
+                          >
+                            <BookingCard 
+                              booking={booking}
+                              therapist={therapist}
+                              service={service}
+                              startTime={startTime}
+                              onStatusUpdate={handleStatusUpdate}
+                              onEdit={handleEditBooking}
+                            />
+                          </div>
+                        );
+                      })}
+                      
+                      {pendingBookings.length === 0 && (
+                        <div className="text-center py-12 text-yellow-600 flex-1 flex flex-col justify-center">
+                          <div className="w-20 h-20 mx-auto bg-yellow-100 rounded-full flex items-center justify-center mb-4 shadow-lg">
+                            <ClockIcon className="h-10 w-10 text-yellow-400" />
+                          </div>
+                          <p className="text-base font-medium">ไม่มีคิวที่รอ</p>
+                          <p className="text-sm text-yellow-500 mt-1">คิวใหม่จะปรากฏที่นี่</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* กำลังนวด - Enhanced */}
+                  <div className="bg-gradient-to-br from-blue-50/95 to-indigo-50/85 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-blue-200/60 flex flex-col h-full relative overflow-hidden">
+                    <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-blue-300/30 to-indigo-300/30 rounded-full blur-xl animate-pulse"></div>
+                    
+                    <div className="flex items-center mb-6 relative z-10">
+                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg hover:scale-110 transition-transform duration-300">
+                        💆‍♀️
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold text-blue-800">กำลังนวด</h2>
+                        <p className="text-blue-600 font-medium flex items-center">
+                          <span className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse inline-block"></span>
+                          {inProgressBookings.length} คิว
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4 flex-1 overflow-y-auto relative z-10">
+                      {inProgressBookings.map((booking, index) => {
+                        const therapist = therapists.find(t => t.id === booking.therapistId);
+                        const service = services.find(s => s.id === booking.serviceId);
+                        const startTime = new Date(booking.startTime);
+                        
+                        return (
+                          <div
+                            key={booking.id}
+                            className="transform hover:scale-[1.02] transition-all duration-200"
+                            style={{
+                              animationName: 'slideInUp',
+                              animationDuration: '0.5s',
+                              animationTimingFunction: 'ease-out',
+                              animationFillMode: 'forwards',
+                              animationDelay: `${index * 100}ms`
+                            }}
+                          >
+                            <BookingCard 
+                              booking={booking}
+                              therapist={therapist}
+                              service={service}
+                              startTime={startTime}
+                              onStatusUpdate={handleStatusUpdate}
+                              onEdit={handleEditBooking}
+                              onComplete={handleCompleteBooking}
+                            />
+                          </div>
+                        );
+                      })}
+                      
+                      {inProgressBookings.length === 0 && (
+                        <div className="text-center py-12 text-gray-500 flex-1 flex flex-col justify-center">
+                          <div className="w-20 h-20 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-4 shadow-lg">
+                            <PlayCircleIcon className="h-10 w-10 text-blue-400" />
+                          </div>
+                          <p className="text-base font-medium">ไม่มีคิวที่กำลังนวด</p>
+                          <p className="text-sm text-gray-400 mt-1">คิวที่เริ่มแล้วจะปรากฏที่นี่</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* เสร็จแล้ว - Enhanced */}
+                  <div className="bg-gradient-to-br from-green-50/95 to-emerald-50/85 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-green-200/60 flex flex-col h-full relative overflow-hidden">
+                    <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-green-300/30 to-emerald-300/30 rounded-full blur-xl"></div>
+                    
+                    <div className="flex items-center mb-6 relative z-10">
+                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg hover:scale-110 transition-transform duration-300">
+                        ✅
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold text-green-800">เสร็จแล้ว</h2>
+                        <p className="text-green-600 font-medium flex items-center">
+                          <span className="w-2 h-2 bg-green-500 rounded-full mr-2 inline-block"></span>
+                          {doneBookings.length} คิว
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4 flex-1 overflow-y-auto relative z-10">
+                      {doneBookings.map((booking, index) => {
+                        const therapist = therapists.find(t => t.id === booking.therapistId);
+                        const service = services.find(s => s.id === booking.serviceId);
+                        const startTime = new Date(booking.startTime);
+                        
+                        return (
+                          <div
+                            key={booking.id}
+                            className="transform hover:scale-[1.02] transition-all duration-200"
+                            style={{
+                              animationName: 'slideInUp',
+                              animationDuration: '0.5s',
+                              animationTimingFunction: 'ease-out',
+                              animationFillMode: 'forwards',
+                              animationDelay: `${index * 100}ms`
+                            }}
+                          >
+                            <BookingCard 
+                              booking={booking}
+                              therapist={therapist}
+                              service={service}
+                              startTime={startTime}
+                              onStatusUpdate={handleStatusUpdate}
+                              onEdit={handleEditBooking}
+                            />
+                          </div>
+                        );
+                      })}
+                      
+                      {doneBookings.length === 0 && (
+                        <div className="text-center py-12 text-gray-500 flex-1 flex flex-col justify-center">
+                          <div className="w-20 h-20 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-4 shadow-lg">
+                            <CheckCircleIcon className="h-10 w-10 text-green-400" />
+                          </div>
+                          <p className="text-base font-medium">ยังไม่มีคิวที่เสร็จ</p>
+                          <p className="text-sm text-gray-400 mt-1">คิวที่เสร็จแล้วจะปรากฏที่นี่</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-
-            {sortedBookings.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="text-8xl mb-6">🌸</div>
-                <h3 className="text-2xl font-bold text-gray-700 mb-4">ยังไม่มีคิววันนี้</h3>
-                <p className="text-gray-600 mb-6">เมื่อมีการจองคิว รายการจะปรากฏที่นี่</p>
-                <button
-                  onClick={handleNewBooking}
-                  className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                >
-                  <SparklesIcon className="h-6 w-6 inline mr-2" />
-                  จองคิวใหม่
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
-                {/* รอคิว */}
-                <div className="bg-gradient-to-br from-yellow-50/90 to-orange-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-yellow-200/50 flex flex-col h-full">
-                  <div className="flex items-center mb-6">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg">
-                      ⏳
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-bold text-yellow-800">รอคิว</h2>
-                      <p className="text-yellow-600 font-medium">{pendingBookings.length} คิว</p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4 flex-1 overflow-y-auto">
-                    {pendingBookings.map((booking) => {
-                      const therapist = therapists.find(t => t.id === booking.therapistId);
-                      const service = services.find(s => s.id === booking.serviceId);
-                      const startTime = new Date(booking.startTime);
-                      
-                      return (
-                        <BookingCard 
-                          key={booking.id}
-                          booking={booking}
-                          therapist={therapist}
-                          service={service}
-                          startTime={startTime}
-                          onStatusUpdate={handleStatusUpdate}
-                          onEdit={handleEditBooking}
-                        />
-                      );
-                    })}
-                    
-                    {pendingBookings.length === 0 && (
-                      <div className="text-center py-8 text-yellow-600 flex-1 flex flex-col justify-center">
-                        <ClockIcon className="h-12 w-12 mx-auto mb-3 text-yellow-400" />
-                        <p className="text-base font-medium">ไม่มีคิวที่รอ</p>
-                        <p className="text-sm text-yellow-500 mt-1">คิวใหม่จะปรากฏที่นี่</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* กำลังนวด */}
-                <div className="bg-gradient-to-br from-blue-50/90 to-indigo-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-blue-200/50 flex flex-col h-full">
-                  <div className="flex items-center mb-6">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg">
-                      💆‍♀️
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-bold text-blue-800">กำลังนวด</h2>
-                      <p className="text-blue-600 font-medium">{inProgressBookings.length} คิว</p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4 flex-1 overflow-y-auto">
-                    {inProgressBookings.map((booking) => {
-                      const therapist = therapists.find(t => t.id === booking.therapistId);
-                      const service = services.find(s => s.id === booking.serviceId);
-                      const startTime = new Date(booking.startTime);
-                      
-                      return (
-                        <BookingCard 
-                          key={booking.id}
-                          booking={booking}
-                          therapist={therapist}
-                          service={service}
-                          startTime={startTime}
-                          onStatusUpdate={handleStatusUpdate}
-                          onEdit={handleEditBooking}
-                          onComplete={handleCompleteBooking}
-                        />
-                      );
-                    })}
-                    
-                    {inProgressBookings.length === 0 && (
-                      <div className="text-center py-8 text-gray-500 flex-1 flex flex-col justify-center">
-                        <PlayCircleIcon className="h-12 w-12 mx-auto mb-3 text-gray-400" />
-                        <p className="text-base font-medium">ไม่มีคิวที่กำลังนวด</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* เสร็จแล้ว */}
-                <div className="bg-gradient-to-br from-green-50/90 to-emerald-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-green-200/50 flex flex-col h-full">
-                  <div className="flex items-center mb-6">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg">
-                      ✅
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-bold text-green-800">เสร็จแล้ว</h2>
-                      <p className="text-green-600 font-medium">{doneBookings.length} คิว</p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4 flex-1 overflow-y-auto">
-                    {doneBookings.map((booking) => {
-                      const therapist = therapists.find(t => t.id === booking.therapistId);
-                      const service = services.find(s => s.id === booking.serviceId);
-                      const startTime = new Date(booking.startTime);
-                      
-                      return (
-                        <BookingCard 
-                          key={booking.id}
-                          booking={booking}
-                          therapist={therapist}
-                          service={service}
-                          startTime={startTime}
-                          onStatusUpdate={handleStatusUpdate}
-                          onEdit={handleEditBooking}
-                        />
-                      );
-                    })}
-                    
-                    {doneBookings.length === 0 && (
-                      <div className="text-center py-8 text-gray-500 flex-1 flex flex-col justify-center">
-                        <CheckCircleIcon className="h-12 w-12 mx-auto mb-3 text-gray-400" />
-                        <p className="text-base font-medium">ยังไม่มีคิวที่เสร็จ</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         )}
         
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6 mb-8">
-      
-
-          <div 
-            className="glass-stat p-6 cursor-pointer hover:scale-105 transition-all duration-200"
-            onClick={() => setShowRevenueDetails(!showRevenueDetails)}
-          >
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg">
-                <CurrencyDollarIcon className="h-8 w-8 text-white" />
+        {/* Stats Overview - Comprehensive Dashboard */}
+        <div className="bg-gradient-to-br from-white/95 to-purple-50/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/30 p-8 mb-8">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center space-x-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-xl">
+                <ChartBarIcon className="h-8 w-8" />
               </div>
-              <div className="ml-4 flex-1">
-                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wider">รายได้ร้านวันนี้</p>
-                <p className="text-3xl font-bold bg-gradient-to-r from-yellow-600 to-yellow-500 bg-clip-text text-transparent">
-                  ฿{todayStats.totalRevenue.toLocaleString()}
+              <div>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  สรุปภาพรวมวันนี้
+                </h2>
+                <p className="text-gray-600 font-medium">
+                  ข้อมูลสถิติและผลการดำเนินงาน • อัพเดทแบบเรียลไทม์
                 </p>
-                <div className="flex items-center gap-2 mt-2">
-                  <p className="text-xs text-yellow-600 font-medium">คลิกเพื่อดูรายละเอียด</p>
-                  <p className="text-xs text-gray-500">💡 หลังหักค่าคอม</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2 bg-white/80 px-4 py-2 rounded-xl shadow-lg">
+              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-sm font-semibold text-gray-700">Live</span>
+            </div>
+          </div>
+
+          {/* Main Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {/* Total Bookings */}
+            <div 
+              className="bg-gradient-to-br from-blue-50/90 to-indigo-50/80 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-blue-200/50 cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-2xl"
+              onClick={() => setShowTodayBookings(!showTodayBookings)}
+            >
+              <div className="flex items-center">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg transform rotate-3">
+                  <CalendarDaysIcon className="h-8 w-8 text-white" />
                 </div>
+                <div className="ml-4 flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold text-blue-700 uppercase tracking-wider">คิวทั้งหมด</p>
+                    <div className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-bold">วันนี้</div>
+                  </div>
+                  <p className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mt-2">
+                    {todayStats.bookings}
+                  </p>
+                  <div className="flex items-center gap-2 mt-3">
+                    <p className="text-xs text-blue-600 font-bold">👆 คลิกดูรายละเอียด</p>
+                    <div className="flex-1 h-0.5 bg-gradient-to-r from-blue-300 to-transparent"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Active Therapists */}
+            <div 
+              className="bg-gradient-to-br from-green-50/90 to-emerald-50/80 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-green-200/50 cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-2xl"
+              onClick={() => setShowAvailableTherapists(!showAvailableTherapists)}
+            >
+              <div className="flex items-center">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg transform -rotate-3">
+                  <UserGroupIcon className="h-8 w-8 text-white" />
+                </div>
+                <div className="ml-4 flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold text-green-700 uppercase tracking-wider">หมอนวดเข้าเวร</p>
+                    <div className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold">Active</div>
+                  </div>
+                  <div className="flex items-baseline mt-2">
+                    <p className="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                      {todayStats.activeTherapists}
+                    </p>
+                    <p className="text-lg text-gray-500 ml-2">คน</p>
+                  </div>
+                  <div className="flex items-center gap-2 mt-3">
+                    <div className="flex items-center gap-1 text-xs">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-green-600 font-bold">{todayStats.availableCount} ว่าง</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs">
+                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                      <span className="text-red-600 font-bold">{todayStats.busyCount} ไม่ว่าง</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Completed Sessions */}
+            <div className="bg-gradient-to-br from-purple-50/90 to-violet-50/80 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-purple-200/50 hover:scale-105 transition-all duration-300 hover:shadow-2xl">
+              <div className="flex items-center">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-500 to-violet-600 shadow-lg transform rotate-6">
+                  <CheckCircleIcon className="h-8 w-8 text-white" />
+                </div>
+                <div className="ml-4 flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold text-purple-700 uppercase tracking-wider">งานที่เสร็จ</p>
+                    <div className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-bold">Done</div>
+                  </div>
+                  <div className="flex items-baseline mt-2">
+                    <p className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+                      {todayStats.completedSessions}
+                    </p>
+                    <p className="text-lg text-gray-500 ml-2">คิว</p>
+                  </div>
+                  <div className="flex items-center gap-2 mt-3">
+                    <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-purple-500 to-violet-500 transition-all duration-500"
+                        style={{
+                          width: todayStats.bookings > 0 ? `${(todayStats.completedSessions / todayStats.bookings) * 100}%` : '0%'
+                        }}
+                      ></div>
+                    </div>
+                    <span className="text-xs text-purple-600 font-bold">
+                      {todayStats.bookings > 0 ? Math.round((todayStats.completedSessions / todayStats.bookings) * 100) : 0}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Revenue */}
+            <div 
+              className="bg-gradient-to-br from-yellow-50/90 to-orange-50/80 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-yellow-200/50 cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-2xl"
+              onClick={() => setShowRevenueDetails(!showRevenueDetails)}
+            >
+              <div className="flex items-center">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-600 shadow-lg transform -rotate-6">
+                  <CurrencyDollarIcon className="h-8 w-8 text-white" />
+                </div>
+                <div className="ml-4 flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold text-yellow-700 uppercase tracking-wider">รายได้ร้าน</p>
+                    <div className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full font-bold">Net</div>
+                  </div>
+                  <p className="text-3xl font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent mt-2">
+                    ฿{todayStats.totalRevenue.toLocaleString()}
+                  </p>
+                  <div className="flex items-center gap-2 mt-3">
+                    <p className="text-xs text-yellow-700 font-bold">💰 หลังหักค่าคอม</p>
+                    <div className="flex-1 h-0.5 bg-gradient-to-r from-yellow-300 to-transparent"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Additional Stats Row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Queue Status */}
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/50">
+              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center mr-3">
+                  <ClockIcon className="h-4 w-4 text-white" />
+                </div>
+                สถานะคิว
+              </h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
+                    <span className="text-sm font-medium text-gray-700">รอคิว</span>
+                  </div>
+                  <span className="text-lg font-bold text-yellow-600">
+                    {sortedBookings.filter(b => b.status === 'pending').length}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                    <span className="text-sm font-medium text-gray-700">กำลังนวด</span>
+                  </div>
+                  <span className="text-lg font-bold text-blue-600">
+                    {sortedBookings.filter(b => b.status === 'in_progress').length}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                    <span className="text-sm font-medium text-gray-700">เสร็จแล้ว</span>
+                  </div>
+                  <span className="text-lg font-bold text-green-600">
+                    {sortedBookings.filter(b => b.status === 'done').length}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Performance Metrics */}
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/50">
+              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center mr-3">
+                  <ChartBarIcon className="h-4 w-4 text-white" />
+                </div>
+                ประสิทธิภาพ
+              </h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">อัตราการเสร็จงาน</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-16 bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="h-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full transition-all duration-500"
+                        style={{
+                          width: todayStats.bookings > 0 ? `${(todayStats.completedSessions / todayStats.bookings) * 100}%` : '0%'
+                        }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-bold text-green-600">
+                      {todayStats.bookings > 0 ? Math.round((todayStats.completedSessions / todayStats.bookings) * 100) : 0}%
+                    </span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">การใช้งานหมอนวด</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-16 bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500"
+                        style={{
+                          width: todayStats.activeTherapists > 0 ? `${(todayStats.busyCount / todayStats.activeTherapists) * 100}%` : '0%'
+                        }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-bold text-blue-600">
+                      {todayStats.activeTherapists > 0 ? Math.round((todayStats.busyCount / todayStats.activeTherapists) * 100) : 0}%
+                    </span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">รายได้เฉลี่ย/คิว</span>
+                  <span className="text-sm font-bold text-purple-600">
+                    ฿{todayStats.completedSessions > 0 ? Math.round(todayStats.totalRevenue / todayStats.completedSessions).toLocaleString() : 0}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/50">
+              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mr-3">
+                  <SparklesIcon className="h-4 w-4 text-white" />
+                </div>
+                การดำเนินการด่วน
+              </h3>
+              <div className="space-y-3">
+                <button
+                  onClick={handleNewBooking}
+                  className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 text-sm flex items-center justify-center"
+                >
+                  <CalendarDaysIcon className="h-4 w-4 mr-2" />
+                  จองคิวใหม่
+                </button>
+                <Link
+                  href="/queue"
+                  className="w-full px-4 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 text-sm flex items-center justify-center"
+                >
+                  <ClipboardDocumentListIcon className="h-4 w-4 mr-2" />
+                  จัดการคิว
+                </Link>
+                <Link
+                  href="/reports"
+                  className="w-full px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 text-sm flex items-center justify-center"
+                >
+                  <ChartBarIcon className="h-4 w-4 mr-2" />
+                  ดูรายงาน
+                </Link>
               </div>
             </div>
           </div>
@@ -916,7 +1251,7 @@ export default function HomePage() {
                             </div>
                           </div>
                           <div className="inline-flex items-center px-3 py-1 rounded-full bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 text-sm font-medium">
-                            <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                            <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse inline-block"></span>
                             พร้อมให้บริการ
                           </div>
                         </div>
@@ -961,7 +1296,7 @@ export default function HomePage() {
                           </div>
                           
                           <div className="inline-flex items-center px-3 py-1 rounded-full bg-gradient-to-r from-red-100 to-orange-100 text-red-700 text-sm font-medium">
-                            <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
+                            <span className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse inline-block"></span>
                             กำลังให้บริการ
                           </div>
                         </div>
@@ -1017,55 +1352,107 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* Menu Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8">
-          {menuItems.map((item, index) => (
-            <Link
-              key={index}
-              href={item.href}
-              className="group relative bg-gradient-to-br from-white/90 to-purple-50/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/30 p-8 overflow-hidden transition-all duration-300 hover:shadow-3xl hover:scale-[1.02] hover:border-purple-300/50"
-            >
-              {/* Background Pattern */}
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-100/30 via-pink-50/20 to-blue-100/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              
-              {/* Floating Elements */}
-              <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-purple-300/20 to-pink-300/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
-              <div className="absolute bottom-4 left-4 w-12 h-12 bg-gradient-to-br from-blue-300/20 to-purple-300/20 rounded-full blur-lg group-hover:scale-125 transition-transform duration-500"></div>
-              
-              <div className="relative z-10">
-                {/* Icon Container */}
-                <div className="flex items-center justify-center mb-6">
-                  <div className={`p-5 rounded-2xl bg-gradient-to-br ${item.color} shadow-2xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
-                    <item.icon className="h-10 w-10 text-white" />
-                  </div>
+        {/* Enhanced Menu Cards Section */}
+        <div className="bg-gradient-to-br from-white/95 to-indigo-50/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/30 p-8">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center space-x-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-xl">
+                <SparklesIcon className="h-8 w-8" />
+              </div>
+              <div>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  เมนูการจัดการ
+                </h2>
+                <p className="text-gray-600 font-medium">
+                  เลือกฟีเจอร์ที่ต้องการใช้งาน • ออกแบบให้ใช้งานง่าย
+                </p>
+              </div>
+            </div>
+            <div className="hidden lg:flex items-center space-x-3">
+              <div className="flex -space-x-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 border-2 border-white shadow-lg"></div>
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 border-2 border-white shadow-lg"></div>
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 border-2 border-white shadow-lg"></div>
+              </div>
+              <span className="text-sm font-semibold text-gray-600">7 ฟีเจอร์หลัก</span>
+            </div>
+          </div>
+
+          {/* Menu Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+            {menuItems.map((item, index) => (
+              <Link
+                key={index}
+                href={item.href}
+                className="group relative bg-gradient-to-br from-white/95 to-gray-50/80 backdrop-blur-xl rounded-3xl shadow-lg border border-white/40 p-8 overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] hover:border-purple-300/50 hover:from-white hover:to-purple-50/60"
+              >
+                {/* Animated Background Particles */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+                  <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-purple-300/30 to-pink-300/30 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+                  <div className="absolute bottom-4 left-4 w-12 h-12 bg-gradient-to-br from-blue-300/30 to-purple-300/30 rounded-full blur-lg group-hover:scale-125 transition-transform duration-500"></div>
+                  <div className="absolute top-1/2 left-1/2 w-8 h-8 bg-gradient-to-br from-pink-300/20 to-yellow-300/20 rounded-full blur-md transform -translate-x-1/2 -translate-y-1/2 group-hover:scale-200 transition-transform duration-1000"></div>
                 </div>
                 
-                {/* Title */}
-                <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-700 bg-clip-text text-transparent mb-3 group-hover:from-purple-700 group-hover:to-pink-600 transition-all duration-300 text-center">
-                  {item.title}
-                </h3>
-                
-                {/* Description */}
-                <p className="text-gray-600 leading-relaxed group-hover:text-gray-700 transition-colors text-center font-medium">
-                  {item.description}
-                </p>
-                
-                {/* Call to Action */}
-                <div className="mt-8 flex items-center justify-center">
-                  <div className="flex items-center text-purple-600 font-bold group-hover:text-pink-600 transition-colors">
-                    <SparklesIcon className="h-5 w-5 mr-2" />
-                    <span>เข้าใช้งาน</span>
-                    <svg className="ml-2 w-5 h-5 transform group-hover:translate-x-2 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5-5 5M6 12h12" />
-                    </svg>
+                <div className="relative z-10">
+                  {/* Icon Container with Enhanced Animation */}
+                  <div className="flex items-center justify-center mb-6">
+                    <div className={`relative p-5 rounded-2xl bg-gradient-to-br ${item.color} shadow-2xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
+                      <item.icon className="h-10 w-10 text-white relative z-10" />
+                      {/* Icon Glow Effect */}
+                      <div className="absolute inset-0 rounded-2xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    </div>
                   </div>
+                  
+                  {/* Title with Gradient Text */}
+                  <h3 className="text-xl font-bold text-gray-800 mb-3 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-purple-600 group-hover:to-pink-600 transition-all duration-300 text-center">
+                    {item.title}
+                  </h3>
+                  
+                  {/* Description with Enhanced Typography */}
+                  <p className="text-gray-600 leading-relaxed group-hover:text-gray-700 transition-colors text-center font-medium text-sm mb-6">
+                    {item.description}
+                  </p>
+                  
+                  {/* Call to Action with Icon Animation */}
+                  <div className="flex items-center justify-center">
+                    <div className="flex items-center text-purple-600 font-bold group-hover:text-pink-600 transition-colors">
+                      <SparklesIcon className="h-5 w-5 mr-2 group-hover:rotate-180 transition-transform duration-500" />
+                      <span className="text-sm">เข้าใช้งาน</span>
+                      <svg className="ml-2 w-5 h-5 transform group-hover:translate-x-2 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5-5 5M6 12h12" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Shine Effect on Hover */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 group-hover:opacity-100 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-all duration-1000 ease-out"></div>
+                
+                {/* Gradient Border Effect */}
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-purple-500/50 via-pink-500/50 to-blue-500/50 opacity-0 group-hover:opacity-20 transition-opacity duration-300 -z-10 blur-sm"></div>
+              </Link>
+            ))}
+          </div>
+
+          {/* Footer Information */}
+          <div className="mt-8 p-6 bg-gradient-to-r from-blue-50/80 to-purple-50/60 rounded-2xl border border-blue-200/50">
+            <div className="flex items-center justify-center text-sm text-gray-600">
+              <div className="flex items-center space-x-6">
+                <div className="flex items-center">
+                  <span className="w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse inline-block"></span>
+                  <span className="font-medium">ระบบพร้อมใช้งาน</span>
+                </div>
+                <div className="flex items-center">
+                  <ClockIcon className="h-4 w-4 mr-2 text-blue-500" />
+                  <span className="font-medium">อัพเดทล่าสุด: {currentTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                <div className="flex items-center">
+                  <UserGroupIcon className="h-4 w-4 mr-2 text-purple-500" />
+                  <span className="font-medium">รองรับการใช้งานแบบ Multi-user</span>
                 </div>
               </div>
-
-              {/* Shine Effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-all duration-1000 ease-out"></div>
-            </Link>
-          ))}
+            </div>
+          </div>
         </div>
       </div>
 

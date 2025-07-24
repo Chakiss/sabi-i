@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { XMarkIcon, CalendarIcon, ClockIcon, UserIcon, PhoneIcon, SparklesIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
-import { addBooking, getConfig, getBookingsByDate, getCustomers } from '@/lib/firestore';
+import { addBooking, getConfig, getBookingsByDate, getCustomers, getCustomerByPhone, upsertCustomer } from '@/lib/firestore';
 import { toast } from 'react-hot-toast';
 
 // Helper function to handle different date formats from Firebase
@@ -286,6 +286,13 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
     }));
     setShowSuggestions(false);
     setFilteredCustomers([]);
+    
+    // Show customer info toast
+    const visitInfo = customer.totalVisits ? ` (มาแล้ว ${customer.totalVisits} ครั้ง)` : '';
+    toast.success(`✅ เลือกลูกค้า: ${customer.name}${visitInfo}`, {
+      duration: 2000,
+      icon: '👤'
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -360,6 +367,59 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
       const therapistCommission = Math.floor(finalPrice * commissionRate);
       const shopRevenue = finalPrice - therapistCommission;
 
+      // ============================================
+      // INTELLIGENT CUSTOMER MANAGEMENT
+      // ============================================
+      
+      console.log('🔍 Starting customer management process...');
+      console.log('📱 Customer phone:', formData.customerPhone.trim());
+      console.log('👤 Customer name:', formData.customerName.trim());
+      
+      // Check if customer exists by phone number
+      const existingCustomer = await getCustomerByPhone(formData.customerPhone.trim());
+      console.log('🔎 Existing customer search result:', existingCustomer);
+      
+      let customerMessage = '';
+      if (existingCustomer) {
+        // Update existing customer with new information
+        console.log('🔄 Updating existing customer...');
+        const updateData = {
+          phone: formData.customerPhone.trim(),
+          name: formData.customerName.trim(),
+          lastServiceId: formData.serviceId,
+          lastTherapistId: formData.therapistId
+        };
+        
+        // Only include preferredChannel if it has a valid value
+        if (formData.channel && formData.channel.trim() !== '') {
+          updateData.preferredChannel = formData.channel;
+        }
+        
+        const updatedCustomer = await upsertCustomer(updateData);
+        console.log('✅ Customer updated:', updatedCustomer);
+        customerMessage = ' 📝 อัพเดทข้อมูลลูกค้าเก่าแล้ว';
+        console.log('✅ Updated existing customer:', formData.customerPhone);
+      } else {
+        // Create new customer
+        console.log('🆕 Creating new customer...');
+        const newCustomerData = {
+          phone: formData.customerPhone.trim(),
+          name: formData.customerName.trim(),
+          lastServiceId: formData.serviceId,
+          lastTherapistId: formData.therapistId
+        };
+        
+        // Only include preferredChannel if it has a valid value
+        if (formData.channel && formData.channel.trim() !== '') {
+          newCustomerData.preferredChannel = formData.channel;
+        }
+        
+        const newCustomer = await upsertCustomer(newCustomerData);
+        console.log('✅ New customer created:', newCustomer);
+        customerMessage = ' 🆕 สร้างข้อมูลลูกค้าใหม่แล้ว';
+        console.log('✅ Created new customer:', formData.customerPhone);
+      }
+
       // Create booking data
       const bookingData = {
         customerName: formData.customerName.trim(),
@@ -381,10 +441,11 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
         })
       };
 
+      // Create the booking (this will not duplicate customer creation)
       await addBooking(bookingData);
       
-      // Success message with discount info
-      let successMessage = 'จองคิวสำเร็จแล้ว! 🎉';
+      // Success message with customer management and discount info
+      let successMessage = 'จองคิวสำเร็จแล้ว! 🎉' + customerMessage;
       if (formData.discountType !== 'none' && formData.discountValue) {
         const selectedService = services.find(s => s.id === formData.serviceId);
         const originalPrice = selectedService?.priceByDuration?.[formData.duration] || 0;
@@ -491,7 +552,7 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
                 {/* Helper text */}
                 <div className="text-xs text-gray-500 mt-1 flex items-center">
                   <InformationCircleIcon className="h-3 w-3 mr-1 text-blue-400" />
-                  💡 พิมพ์เบอร์โทรหรือชื่อลูกค้าเพื่อค้นหาข้อมูลเดิม
+                  💡 ระบบจะอัพเดทข้อมูลลูกค้าเก่า หรือสร้างใหม่ตามเบอร์โทร
                 </div>
                 
                 {/* Customer Suggestions Dropdown */}
@@ -512,29 +573,37 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1 mr-3">
-                            <div className="font-semibold text-gray-800 text-sm">
+                            <div className="font-semibold text-gray-800 text-sm flex items-center">
                               {customer.name}
+                              {customer.totalVisits > 1 && (
+                                <span className="ml-2 bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded-full font-medium">
+                                  ลูกค้าประจำ
+                                </span>
+                              )}
                             </div>
                             <div className="text-xs text-gray-600 flex items-center mt-1">
                               <PhoneIcon className="h-3 w-3 mr-1 text-green-500" />
                               {customer.phone}
                             </div>
-                            {customer.preferredChannel && (
-                              <div className="text-xs text-blue-600 flex items-center mt-1">
-                                <InformationCircleIcon className="h-3 w-3 mr-1 text-blue-400" />
-                                รู้จักจาก: {getChannelDisplayName(customer.preferredChannel)}
-                              </div>
-                            )}
+                            <div className="flex items-center gap-3 mt-1">
+                              {customer.preferredChannel && (
+                                <div className="text-xs text-blue-600 flex items-center">
+                                  <InformationCircleIcon className="h-3 w-3 mr-1 text-blue-400" />
+                                  {getChannelDisplayName(customer.preferredChannel)}
+                                </div>
+                              )}
+                              {customer.totalVisits && (
+                                <div className="text-xs text-green-600 flex items-center">
+                                  <span className="font-medium">{customer.totalVisits} ครั้ง</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                           <div className="text-xs text-gray-500 flex flex-col items-end">
-                            {customer.totalVisits && (
-                              <div className="bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium mb-1">
-                                {customer.totalVisits} ครั้ง
-                              </div>
-                            )}
                             {(customer.lastVisit !== null && customer.lastVisit !== undefined) && (
-                              <div className="text-xs text-gray-400">
-                                มาล่าสุด: {(() => {
+                              <div className="text-xs text-gray-400 flex items-center">
+                                <ClockIcon className="h-3 w-3 mr-1" />
+                                {(() => {
                                   const date = parseFirebaseDate(customer.lastVisit);
                                   if (!date) {
                                     console.log('Could not parse lastVisit for customer:', customer.name, 'value:', customer.lastVisit);

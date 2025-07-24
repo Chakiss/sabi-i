@@ -271,14 +271,8 @@ export const addBooking = async (bookingData) => {
   }
   
   try {
-    // First, save or update customer data
-    if (bookingData.customerName && bookingData.customerPhone) {
-      await upsertCustomer({
-        phone: bookingData.customerPhone,
-        name: bookingData.customerName,
-        preferredChannel: bookingData.channel // Save channel as preferred channel
-      });
-    }
+    // Note: Customer management is now handled in BookingModal.js
+    // This avoids duplicate customer operations
     
     // Generate custom booking ID
     const bookingId = generateBookingId();
@@ -454,32 +448,53 @@ export const getConfig = async () => {
 
 // Get customer by phone
 export const getCustomerByPhone = async (phone) => {
+  console.log('🔍 getCustomerByPhone called with phone:', phone);
+  console.log('🔍 shouldUseMock():', shouldUseMock());
+  
   if (shouldUseMock()) {
+    console.log('🎭 Using MOCK data for getCustomerByPhone');
     return getCustomerByPhoneMock(phone);
   }
 
+  console.log('🔥 Using FIREBASE for getCustomerByPhone');
   try {
     const customerDoc = await getDoc(doc(db, 'customers', phone));
+    console.log('🔍 Firebase customerDoc exists:', customerDoc.exists());
+    
     if (customerDoc.exists()) {
-      return { phone, ...customerDoc.data() };
+      const result = { phone, ...customerDoc.data() };
+      console.log('✅ Found customer in Firebase:', result);
+      return result;
     }
+    console.log('❌ No customer found in Firebase for phone:', phone);
     return null;
   } catch (error) {
+    console.error('❌ Firebase error in getCustomerByPhone:', error);
+    console.log('🎭 Falling back to mock due to error');
     return handleFirebaseError(error, getCustomerByPhoneMock, phone);
   }
 };
 
 // Add or update customer (upsert)
 export const upsertCustomer = async (customerData) => {
+  console.log('🔧 upsertCustomer called with:', customerData);
+  console.log('🔧 shouldUseMock():', shouldUseMock());
+  console.log('🔧 Firebase db object:', !!db);
+  console.log('🔧 NODE_ENV:', process.env.NODE_ENV);
+  console.log('🔧 NEXT_PUBLIC_USE_MOCK:', process.env.NEXT_PUBLIC_USE_MOCK);
+  
   if (shouldUseMock()) {
+    console.log('🎭 Using MOCK data for upsertCustomer');
     return upsertCustomerMock(customerData);
   }
 
+  console.log('🔥 Using FIREBASE for upsertCustomer');
   try {
     const { phone, ...data } = customerData;
     
     // Get existing customer
     const existingCustomer = await getCustomerByPhone(phone);
+    console.log('🔍 Existing customer from Firebase:', existingCustomer);
     
     const customerDoc = {
       ...data,
@@ -487,14 +502,21 @@ export const upsertCustomer = async (customerData) => {
       totalVisits: existingCustomer ? existingCustomer.totalVisits + 1 : 1,
       lastVisit: Timestamp.now(),
       updatedAt: Timestamp.now(),
-      // Update preferred channel only if provided, otherwise keep existing
-      preferredChannel: data.preferredChannel || existingCustomer?.preferredChannel,
+      // Only include preferredChannel if it has a valid value
+      ...(data.preferredChannel ? { preferredChannel: data.preferredChannel } : 
+         existingCustomer?.preferredChannel ? { preferredChannel: existingCustomer.preferredChannel } : {}),
       ...(existingCustomer ? {} : { createdAt: Timestamp.now() })
     };
 
+    console.log('📝 Saving to Firebase customers collection:', customerDoc);
     await setDoc(doc(db, 'customers', phone), customerDoc);
-    return { phone, ...customerDoc };
+    
+    const result = { phone, ...customerDoc };
+    console.log('✅ Firebase save successful:', result);
+    return result;
   } catch (error) {
+    console.error('❌ Firebase error in upsertCustomer:', error);
+    console.log('🎭 Falling back to mock due to error');
     return handleFirebaseError(error, upsertCustomerMock, customerData);
   }
 };

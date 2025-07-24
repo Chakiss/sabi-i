@@ -63,9 +63,9 @@ export default function DiscountModal({ isOpen, onClose, booking, onComplete }) 
         discountType: discountType === 'none' ? null : discountType,
         discountValue: discountType === 'none' ? 0 : parseFloat(discountValue) || 0,
         finalPrice: finalPrice,
-        // Calculate commission and shop revenue
-        therapistCommission: Math.floor(finalPrice * (config?.commissionRate || 0.4)),
-        shopRevenue: Math.floor(finalPrice * (1 - (config?.commissionRate || 0.4)))
+        // ✅ Calculate commission correctly - therapist gets commission from ORIGINAL price
+        therapistCommission: Math.floor(originalPrice * (config?.commissionRate || 0.4)), // From original price
+        shopRevenue: finalPrice - Math.floor(originalPrice * (config?.commissionRate || 0.4)) // What's left after paying therapist
       };
       
       await onComplete(booking.id, discountData);

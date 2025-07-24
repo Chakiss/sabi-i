@@ -362,10 +362,11 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
         }
       }
 
-      // Calculate commission and shop revenue for advance booking with discount
+      // ✅ Calculate commission correctly - therapist gets commission from ORIGINAL price
+      // ✅ Shop gets what customer actually pays minus therapist commission
       const commissionRate = config?.commissionRate || 0.4;
-      const therapistCommission = Math.floor(finalPrice * commissionRate);
-      const shopRevenue = finalPrice - therapistCommission;
+      const therapistCommission = Math.floor(originalPrice * commissionRate); // From original price
+      const shopRevenue = finalPrice - therapistCommission; // What's left after paying therapist
 
       // ============================================
       // INTELLIGENT CUSTOMER MANAGEMENT
@@ -874,10 +875,10 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
               }
             }
 
-            // Calculate commission preview if config is available
+            // ✅ Calculate commission preview correctly - therapist gets commission from ORIGINAL price
             const commissionRate = config?.commissionRate || 0.4;
-            const therapistCommission = Math.floor(finalPrice * commissionRate);
-            const shopRevenue = finalPrice - therapistCommission;
+            const therapistCommission = Math.floor(originalPrice * commissionRate); // From original price
+            const shopRevenue = finalPrice - therapistCommission; // What's left after paying therapist
 
             return (
               <div className="bg-gradient-to-r from-emerald-100/90 to-green-100/80 backdrop-blur-sm border-2 border-emerald-300/50 rounded-xl p-5 shadow-lg">

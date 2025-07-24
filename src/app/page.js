@@ -64,17 +64,18 @@ export default function HomePage() {
         // Calculate shop revenue (after commission)
         const totalRevenue = completedBookings.reduce((sum, booking) => {
           const service = services.find(s => s.id === booking.serviceId);
-          const finalPrice = booking.finalPrice || (service?.priceByDuration?.[booking.duration] || 0);
+          const originalPrice = service?.priceByDuration?.[booking.duration] || 0;
+          const finalPrice = booking.finalPrice || originalPrice;
           
           // If booking already has shopRevenue stored, use it
           if (booking.shopRevenue !== undefined) {
             return sum + booking.shopRevenue;
           }
           
-          // Otherwise calculate: finalPrice - therapist commission
+          // ✅ Calculate correctly: therapist commission from ORIGINAL price
           const commissionRate = config?.commissionRate || 0.4;
-          const therapistCommission = Math.floor(finalPrice * commissionRate);
-          const shopRevenue = finalPrice - therapistCommission;
+          const therapistCommission = Math.floor(originalPrice * commissionRate); // From original price
+          const shopRevenue = finalPrice - therapistCommission; // What's left after paying therapist
           
           return sum + shopRevenue;
         }, 0);
@@ -180,17 +181,18 @@ export default function HomePage() {
       // Calculate shop revenue (after commission)
       const totalRevenue = completedBookings.reduce((sum, booking) => {
         const service = services.find(s => s.id === booking.serviceId);
-        const finalPrice = booking.finalPrice || (service?.priceByDuration?.[booking.duration] || 0);
+        const originalPrice = service?.priceByDuration?.[booking.duration] || 0;
+        const finalPrice = booking.finalPrice || originalPrice;
         
         // If booking already has shopRevenue stored, use it
         if (booking.shopRevenue !== undefined) {
           return sum + booking.shopRevenue;
         }
         
-        // Otherwise calculate: finalPrice - therapist commission
+        // ✅ Calculate correctly: therapist commission from ORIGINAL price
         const commissionRate = config?.commissionRate || 0.4;
-        const therapistCommission = Math.floor(finalPrice * commissionRate);
-        const shopRevenue = finalPrice - therapistCommission;
+        const therapistCommission = Math.floor(originalPrice * commissionRate); // From original price
+        const shopRevenue = finalPrice - therapistCommission; // What's left after paying therapist
         
         return sum + shopRevenue;
       }, 0);
@@ -522,17 +524,18 @@ export default function HomePage() {
                 // Calculate shop revenue (after commission)
                 const totalRevenue = completedBookings.reduce((sum, booking) => {
                   const service = services.find(s => s.id === booking.serviceId);
-                  const finalPrice = booking.finalPrice || (service?.priceByDuration?.[booking.duration] || 0);
+                  const originalPrice = service?.priceByDuration?.[booking.duration] || 0;
+                  const finalPrice = booking.finalPrice || originalPrice;
                   
                   // If booking already has shopRevenue stored, use it
                   if (booking.shopRevenue !== undefined) {
                     return sum + booking.shopRevenue;
                   }
                   
-                  // Otherwise calculate: finalPrice - therapist commission
+                  // ✅ Calculate correctly: therapist commission from ORIGINAL price
                   const commissionRate = config?.commissionRate || 0.4;
-                  const therapistCommission = Math.floor(finalPrice * commissionRate);
-                  const shopRevenue = finalPrice - therapistCommission;
+                  const therapistCommission = Math.floor(originalPrice * commissionRate); // From original price
+                  const shopRevenue = finalPrice - therapistCommission; // What's left after paying therapist
                   
                   return sum + shopRevenue;
                 }, 0);
@@ -1733,8 +1736,9 @@ function RevenueBreakdown({ completedBookings, therapists, services }) {
     const finalPrice = booking.finalPrice || originalPrice;
     const discount = originalPrice - finalPrice;
     
-    const therapistCommission = booking.therapistCommission || Math.floor(finalPrice * config.commissionRate);
-    const shopRevenue = booking.shopRevenue || (finalPrice - therapistCommission);
+    // ✅ Calculate correctly: therapist commission from ORIGINAL price
+    const therapistCommission = booking.therapistCommission || Math.floor(originalPrice * config.commissionRate); // From original price
+    const shopRevenue = booking.shopRevenue || (finalPrice - therapistCommission); // What's left after paying therapist
     
     totalOriginalPrice += originalPrice;
     totalFinalPrice += finalPrice;

@@ -65,16 +65,15 @@ export default function HomePage() {
         const totalRevenue = completedBookings.reduce((sum, booking) => {
           const service = services.find(s => s.id === booking.serviceId);
           const finalPrice = booking.finalPrice || (service?.priceByDuration?.[booking.duration] || 0);
-          const originalPrice = service?.priceByDuration?.[booking.duration] || 0;
           
           // If booking already has shopRevenue stored, use it
           if (booking.shopRevenue !== undefined) {
             return sum + booking.shopRevenue;
           }
           
-          // ✅ แก้ไข: คำนวณค่าคอมจากราคาเต็ม ไม่ใช่ราคาหลังลด
+          // Otherwise calculate: finalPrice - therapist commission
           const commissionRate = config?.commissionRate || 0.4;
-          const therapistCommission = Math.floor(originalPrice * commissionRate);
+          const therapistCommission = Math.floor(finalPrice * commissionRate);
           const shopRevenue = finalPrice - therapistCommission;
           
           return sum + shopRevenue;
@@ -182,16 +181,15 @@ export default function HomePage() {
       const totalRevenue = completedBookings.reduce((sum, booking) => {
         const service = services.find(s => s.id === booking.serviceId);
         const finalPrice = booking.finalPrice || (service?.priceByDuration?.[booking.duration] || 0);
-        const originalPrice = service?.priceByDuration?.[booking.duration] || 0;
         
         // If booking already has shopRevenue stored, use it
         if (booking.shopRevenue !== undefined) {
           return sum + booking.shopRevenue;
         }
         
-        // ✅ แก้ไข: คำนวณค่าคอมจากราคาเต็ม ไม่ใช่ราคาหลังลด
+        // Otherwise calculate: finalPrice - therapist commission
         const commissionRate = config?.commissionRate || 0.4;
-        const therapistCommission = Math.floor(originalPrice * commissionRate);
+        const therapistCommission = Math.floor(finalPrice * commissionRate);
         const shopRevenue = finalPrice - therapistCommission;
         
         return sum + shopRevenue;
@@ -436,7 +434,7 @@ export default function HomePage() {
     <div className="min-h-screen thai-pattern">
       {/* Header */}
       <div className="bg-gradient-to-br from-pink-50/90 via-purple-50/80 to-blue-50/70 backdrop-blur-xl border-b border-white/20 shadow-lg sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="w-full px-6 lg:px-12 py-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
               <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500 flex items-center justify-center text-white shadow-2xl transform rotate-3">
@@ -499,7 +497,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="w-full px-6 lg:px-12 py-12">
         {/* Refresh Button */}
         <div className="flex justify-end mb-8">
           <button
@@ -562,9 +560,9 @@ export default function HomePage() {
           </button>
         </div>
         
-        {/* Queue Management Section - Collapsible */}
-        <div className="bg-gradient-to-br from-white/90 to-blue-50/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/30 mb-8 transition-all duration-300">
-          <div className="p-8">
+        {/* Queue Management Section - Moved to top */}
+        {showQueueSection && (
+          <div className="bg-gradient-to-br from-white/90 to-blue-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/30 mb-8 min-h-[calc(100vh-12rem)]">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-4">
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-xl">
@@ -589,168 +587,156 @@ export default function HomePage() {
                 </button>
                 <button
                   onClick={() => setShowQueueSection(!showQueueSection)}
-                  className="px-6 py-3 bg-white/80 hover:bg-white/90 text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 flex items-center space-x-2"
+                  className="px-6 py-3 bg-white/80 hover:bg-white/90 text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
                 >
-                  <div className={`transform transition-transform duration-200 ${showQueueSection ? 'rotate-180' : 'rotate-0'}`}>
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                  <span>{showQueueSection ? 'ย่อคิว' : 'ขยายคิว'}</span>
+                  {showQueueSection ? '🙈 ซ่อนคิว' : '👁️ แสดงคิว'}
                 </button>
               </div>
             </div>
 
-            {/* Collapsible Content */}
-            <div className={`overflow-hidden transition-all duration-500 ease-in-out ${
-              showQueueSection ? 'max-h-none opacity-100' : 'max-h-0 opacity-0'
-            }`}>
-              {sortedBookings.length === 0 ? (
-                <div className="text-center py-16">
-                  <div className="text-8xl mb-6">🌸</div>
-                  <h3 className="text-2xl font-bold text-gray-700 mb-4">ยังไม่มีคิววันนี้</h3>
-                  <p className="text-gray-600 mb-6">เมื่อมีการจองคิว รายการจะปรากฏที่นี่</p>
-                  <button
-                    onClick={handleNewBooking}
-                    className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                  >
-                    <SparklesIcon className="h-6 w-6 inline mr-2" />
-                    จองคิวใหม่
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  {/* รอคิว */}
-                  <div className="bg-gradient-to-br from-yellow-50/90 to-orange-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-yellow-200/50">
-                    <div className="flex items-center mb-8">
-                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg">
-                        ⏳
-                      </div>
-                      <div>
-                        <h2 className="text-2xl font-bold text-yellow-800">รอคิว</h2>
-                        <p className="text-yellow-600 font-medium">{pendingBookings.length} คิว</p>
-                      </div>
+            {sortedBookings.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="text-8xl mb-6">🌸</div>
+                <h3 className="text-2xl font-bold text-gray-700 mb-4">ยังไม่มีคิววันนี้</h3>
+                <p className="text-gray-600 mb-6">เมื่อมีการจองคิว รายการจะปรากฏที่นี่</p>
+                <button
+                  onClick={handleNewBooking}
+                  className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                >
+                  <SparklesIcon className="h-6 w-6 inline mr-2" />
+                  จองคิวใหม่
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+                {/* รอคิว */}
+                <div className="bg-gradient-to-br from-yellow-50/90 to-orange-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-yellow-200/50 flex flex-col h-full">
+                  <div className="flex items-center mb-6">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg">
+                      ⏳
                     </div>
-                    
-                    <div className="space-y-6">
-                      {pendingBookings.map((booking) => {
-                        const therapist = therapists.find(t => t.id === booking.therapistId);
-                        const service = services.find(s => s.id === booking.serviceId);
-                        const startTime = new Date(booking.startTime);
-                        
-                        return (
-                          <BookingCard 
-                            key={booking.id}
-                            booking={booking}
-                            therapist={therapist}
-                            service={service}
-                            startTime={startTime}
-                            onStatusUpdate={handleStatusUpdate}
-                            onEdit={handleEditBooking}
-                          />
-                        );
-                      })}
-                      
-                      {pendingBookings.length === 0 && (
-                        <div className="text-center py-12 text-yellow-600">
-                          <ClockIcon className="h-16 w-16 mx-auto mb-4 text-yellow-400" />
-                          <p className="text-lg font-medium">ไม่มีคิวที่รอ</p>
-                          <p className="text-sm text-yellow-500 mt-2">คิวใหม่จะปรากฏที่นี่</p>
-                        </div>
-                      )}
+                    <div>
+                      <h2 className="text-xl font-bold text-yellow-800">รอคิว</h2>
+                      <p className="text-yellow-600 font-medium">{pendingBookings.length} คิว</p>
                     </div>
                   </div>
-
-                  {/* กำลังนวด */}
-                  <div className="bg-gradient-to-br from-blue-50/90 to-indigo-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-blue-200/50">
-                    <div className="flex items-center mb-8">
-                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg">
-                        💆‍♀️
-                      </div>
-                      <div>
-                        <h2 className="text-2xl font-bold text-blue-800">กำลังนวด</h2>
-                        <p className="text-blue-600 font-medium">{inProgressBookings.length} คิว</p>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-6">
-                      {inProgressBookings.map((booking) => {
-                        const therapist = therapists.find(t => t.id === booking.therapistId);
-                        const service = services.find(s => s.id === booking.serviceId);
-                        const startTime = new Date(booking.startTime);
-                        
-                        return (
-                          <BookingCard 
-                            key={booking.id}
-                            booking={booking}
-                            therapist={therapist}
-                            service={service}
-                            startTime={startTime}
-                            onStatusUpdate={handleStatusUpdate}
-                            onEdit={handleEditBooking}
-                            onComplete={handleCompleteBooking}
-                          />
-                        );
-                      })}
+                  
+                  <div className="space-y-4 flex-1 overflow-y-auto">
+                    {pendingBookings.map((booking) => {
+                      const therapist = therapists.find(t => t.id === booking.therapistId);
+                      const service = services.find(s => s.id === booking.serviceId);
+                      const startTime = new Date(booking.startTime);
                       
-                      {inProgressBookings.length === 0 && (
-                        <div className="text-center py-12 text-blue-600">
-                          <PlayCircleIcon className="h-16 w-16 mx-auto mb-4 text-blue-400" />
-                          <p className="text-lg font-medium">ไม่มีคิวที่กำลังนวด</p>
-                          <p className="text-sm text-blue-500 mt-2">คิวที่เริ่มแล้วจะปรากฏที่นี่</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* เสร็จแล้ว */}
-                  <div className="bg-gradient-to-br from-green-50/90 to-emerald-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-green-200/50">
-                    <div className="flex items-center mb-8">
-                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg">
-                        ✅
-                      </div>
-                      <div>
-                        <h2 className="text-2xl font-bold text-green-800">เสร็จแล้ว</h2>
-                        <p className="text-green-600 font-medium">{doneBookings.length} คิว</p>
-                      </div>
-                    </div>
+                      return (
+                        <BookingCard 
+                          key={booking.id}
+                          booking={booking}
+                          therapist={therapist}
+                          service={service}
+                          startTime={startTime}
+                          onStatusUpdate={handleStatusUpdate}
+                          onEdit={handleEditBooking}
+                        />
+                      );
+                    })}
                     
-                    <div className="space-y-6">
-                      {doneBookings.map((booking) => {
-                        const therapist = therapists.find(t => t.id === booking.therapistId);
-                        const service = services.find(s => s.id === booking.serviceId);
-                        const startTime = new Date(booking.startTime);
-                        
-                        return (
-                          <BookingCard 
-                            key={booking.id}
-                            booking={booking}
-                            therapist={therapist}
-                            service={service}
-                            startTime={startTime}
-                            onStatusUpdate={handleStatusUpdate}
-                            onEdit={handleEditBooking}
-                          />
-                        );
-                      })}
-                      
-                      {doneBookings.length === 0 && (
-                        <div className="text-center py-12 text-green-600">
-                          <CheckCircleIcon className="h-16 w-16 mx-auto mb-4 text-green-400" />
-                          <p className="text-lg font-medium">ยังไม่มีคิวที่เสร็จ</p>
-                          <p className="text-sm text-green-500 mt-2">คิวที่เสร็จแล้วจะปรากฏที่นี่</p>
-                        </div>
-                      )}
-                    </div>
+                    {pendingBookings.length === 0 && (
+                      <div className="text-center py-8 text-yellow-600 flex-1 flex flex-col justify-center">
+                        <ClockIcon className="h-12 w-12 mx-auto mb-3 text-yellow-400" />
+                        <p className="text-base font-medium">ไม่มีคิวที่รอ</p>
+                        <p className="text-sm text-yellow-500 mt-1">คิวใหม่จะปรากฏที่นี่</p>
+                      </div>
+                    )}
                   </div>
                 </div>
-              )}
-            </div>
+
+                {/* กำลังนวด */}
+                <div className="bg-gradient-to-br from-blue-50/90 to-indigo-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-blue-200/50 flex flex-col h-full">
+                  <div className="flex items-center mb-6">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg">
+                      💆‍♀️
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-blue-800">กำลังนวด</h2>
+                      <p className="text-blue-600 font-medium">{inProgressBookings.length} คิว</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4 flex-1 overflow-y-auto">
+                    {inProgressBookings.map((booking) => {
+                      const therapist = therapists.find(t => t.id === booking.therapistId);
+                      const service = services.find(s => s.id === booking.serviceId);
+                      const startTime = new Date(booking.startTime);
+                      
+                      return (
+                        <BookingCard 
+                          key={booking.id}
+                          booking={booking}
+                          therapist={therapist}
+                          service={service}
+                          startTime={startTime}
+                          onStatusUpdate={handleStatusUpdate}
+                          onEdit={handleEditBooking}
+                          onComplete={handleCompleteBooking}
+                        />
+                      );
+                    })}
+                    
+                    {inProgressBookings.length === 0 && (
+                      <div className="text-center py-8 text-gray-500 flex-1 flex flex-col justify-center">
+                        <PlayCircleIcon className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+                        <p className="text-base font-medium">ไม่มีคิวที่กำลังนวด</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* เสร็จแล้ว */}
+                <div className="bg-gradient-to-br from-green-50/90 to-emerald-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-green-200/50 flex flex-col h-full">
+                  <div className="flex items-center mb-6">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg">
+                      ✅
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-green-800">เสร็จแล้ว</h2>
+                      <p className="text-green-600 font-medium">{doneBookings.length} คิว</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4 flex-1 overflow-y-auto">
+                    {doneBookings.map((booking) => {
+                      const therapist = therapists.find(t => t.id === booking.therapistId);
+                      const service = services.find(s => s.id === booking.serviceId);
+                      const startTime = new Date(booking.startTime);
+                      
+                      return (
+                        <BookingCard 
+                          key={booking.id}
+                          booking={booking}
+                          therapist={therapist}
+                          service={service}
+                          startTime={startTime}
+                          onStatusUpdate={handleStatusUpdate}
+                          onEdit={handleEditBooking}
+                        />
+                      );
+                    })}
+                    
+                    {doneBookings.length === 0 && (
+                      <div className="text-center py-8 text-gray-500 flex-1 flex flex-col justify-center">
+                        <CheckCircleIcon className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+                        <p className="text-base font-medium">ยังไม่มีคิวที่เสร็จ</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
+        )}
         
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6 mb-8">
       
 
           <div 
@@ -1032,7 +1018,7 @@ export default function HomePage() {
         )}
 
         {/* Menu Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8">
           {menuItems.map((item, index) => (
             <Link
               key={index}

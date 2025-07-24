@@ -63,11 +63,9 @@ export default function DiscountModal({ isOpen, onClose, booking, onComplete }) 
         discountType: discountType === 'none' ? null : discountType,
         discountValue: discountType === 'none' ? 0 : parseFloat(discountValue) || 0,
         finalPrice: finalPrice,
-        // Calculate commission from ORIGINAL price (before discount)
-        // แก้ไข: หมอนวดได้ค่าคอมจากราคาเต็ม ไม่ใช่ราคาหลังลด
-        therapistCommission: Math.floor(originalPrice * (config?.commissionRate || 0.4)),
-        // ร้านได้ = ราคาที่ลูกค้าจ่าย - ค่าคอมหมอนวด
-        shopRevenue: finalPrice - Math.floor(originalPrice * (config?.commissionRate || 0.4))
+        // Calculate commission and shop revenue
+        therapistCommission: Math.floor(finalPrice * (config?.commissionRate || 0.4)),
+        shopRevenue: Math.floor(finalPrice * (1 - (config?.commissionRate || 0.4)))
       };
       
       await onComplete(booking.id, discountData);
@@ -295,38 +293,6 @@ export default function DiscountModal({ isOpen, onClose, booking, onComplete }) 
                   </div>
                 </div>
               </div>
-
-              {/* Commission Breakdown */}
-              {config && (
-                <div className="p-3 bg-purple-50/70 rounded-lg border border-purple-200/50">
-                  <h4 className="text-sm font-bold text-purple-800 mb-2 flex items-center">
-                    💼 การแบ่งรายได้ (จากราคาเต็ม ฿{originalPrice.toLocaleString()})
-                  </h4>
-                  <div className="space-y-2 text-xs">
-                    <div className="flex justify-between items-center p-2 bg-blue-50/50 rounded">
-                      <span className="text-blue-700 font-medium">
-                        👨‍⚕️ หมอนวดได้ ({Math.round((config?.commissionRate || 0.4) * 100)}%):
-                      </span>
-                      <span className="font-bold text-blue-800">
-                        ฿{Math.floor(originalPrice * (config?.commissionRate || 0.4)).toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center p-2 bg-orange-50/50 rounded">
-                      <span className="text-orange-700 font-medium">
-                        🏪 ร้านได้ (จากยอดที่ลูกค้าจ่าย):
-                      </span>
-                      <span className="font-bold text-orange-800">
-                        ฿{(finalPrice - Math.floor(originalPrice * (config?.commissionRate || 0.4))).toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="mt-2 p-2 bg-yellow-50/70 rounded border-l-4 border-yellow-400">
-                    <p className="text-xs text-yellow-700 font-medium">
-                      💡 หมอนวดได้ค่าคอมจากราคาเต็ม ไม่ได้รับผลกระทบจากส่วนลด
-                    </p>
-                  </div>
-                </div>
-              )}
 
               {/* Payment Method Note */}
               <div className="p-3 bg-blue-50/70 rounded-lg border border-blue-200/50">

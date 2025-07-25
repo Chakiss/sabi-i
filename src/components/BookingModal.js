@@ -476,7 +476,7 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
       onClick={handleBackdropClick}
     >
       <div 
-        className="bg-gradient-to-br from-white/95 to-blue-50/90 backdrop-blur-xl rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border border-white/30 transform transition-all duration-300"
+        className="bg-gradient-to-br from-white/95 to-blue-50/90 backdrop-blur-xl rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-visible border border-white/30 transform transition-all duration-300 relative"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -499,10 +499,11 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6 bg-gradient-to-br from-white/70 to-blue-50/50 backdrop-blur-sm rounded-b-2xl">
+        <div className="max-h-[calc(90vh-80px)] overflow-y-auto overflow-x-visible">
+          <form onSubmit={handleSubmit} className="p-6 space-y-6 bg-gradient-to-br from-white/70 to-blue-50/50 backdrop-blur-sm rounded-b-2xl overflow-visible">
           
           {/* Customer Information Section */}
-          <div className="bg-gradient-to-r from-blue-50/80 to-indigo-50/60 backdrop-blur-sm border border-blue-200/30 rounded-xl p-4">
+          <div className="bg-gradient-to-r from-blue-50/80 to-indigo-50/60 backdrop-blur-sm border border-blue-200/30 rounded-xl p-4 relative z-10 overflow-visible">
             <h3 className="text-lg font-semibold text-blue-800 mb-4 flex items-center">
               <UserIcon className="h-5 w-5 mr-2" />
               ข้อมูลลูกค้า
@@ -524,106 +525,110 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
                 />
               </div>
               
-              <div className="space-y-2 relative customer-suggestions">
-                <label className="block text-sm font-semibold text-gray-700">
-                  <PhoneIcon className="h-4 w-4 inline mr-1 text-green-500" />
-                  เบอร์โทรศัพท์ *
-                </label>
-                <input
-                  type="tel"
-                  name="customerPhone"
-                  value={formData.customerPhone}
-                  onChange={handleInputChange}
-                  onFocus={() => {
-                    if (formData.customerPhone.trim().length > 0) {
-                      const filtered = customers.filter(customer => 
-                        customer.phone.includes(formData.customerPhone) || 
-                        customer.name.toLowerCase().includes(formData.customerPhone.toLowerCase())
+              <div className="space-y-2 relative">
+                <div className="customer-suggestions relative">
+                  <label className="block text-sm font-semibold text-gray-700">
+                    <PhoneIcon className="h-4 w-4 inline mr-1 text-green-500" />
+                    เบอร์โทรศัพท์ *
+                  </label>
+                  <input
+                    type="tel"
+                    name="customerPhone"
+                    value={formData.customerPhone}
+                    onChange={handleInputChange}
+                    onFocus={() => {
+                      const filtered = customers.filter(customer =>
+                        customer.phone && customer.phone.includes(formData.customerPhone)
                       );
                       setFilteredCustomers(filtered);
                       setShowSuggestions(filtered.length > 0);
-                    }
-                  }}
-                  className="w-full p-4 border border-blue-200/50 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md"
-                  placeholder="08x-xxx-xxxx หรือชื่อลูกค้า"
-                  required
-                  autoComplete="off"
-                />
-                
-                {/* Helper text */}
-                <div className="text-xs text-gray-500 mt-1 flex items-center">
-                  <InformationCircleIcon className="h-3 w-3 mr-1 text-blue-400" />
-                  💡 ระบบจะอัพเดทข้อมูลลูกค้าเก่า หรือสร้างใหม่ตามเบอร์โทร
-                </div>
+                    }}
+                    className="w-full p-4 border border-green-200/50 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md"
+                    placeholder="08X-XXX-XXXX"
+                    required
+                    autoComplete="off"
+                  />
+                  
+                  {/* Helper text */}
+                  <div className="text-xs text-gray-500 mt-1 flex items-center">
+                    <InformationCircleIcon className="h-3 w-3 mr-1 text-blue-400" />
+                    💡 ระบบจะอัพเดทข้อมูลลูกค้าเก่า หรือสร้างใหม่ตามเบอร์โทร
+                  </div>
                 
                 {/* Customer Suggestions Dropdown */}
                 {showSuggestions && filteredCustomers.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white/95 backdrop-blur-xl border border-green-200/50 rounded-xl shadow-2xl max-h-48 overflow-y-auto">
-                    <div className="p-2 border-b border-gray-100/50">
+                  <div className="absolute top-full left-0 right-0 z-[100] mt-1 bg-white/98 backdrop-blur-xl border border-green-200/50 rounded-xl shadow-2xl max-h-80 overflow-y-auto">
+                    <div className="p-3 border-b border-gray-100/50 bg-green-50/50 sticky top-0">
                       <div className="text-xs font-semibold text-green-600 flex items-center">
                         <SparklesIcon className="h-3 w-3 mr-1" />
                         ลูกค้าในระบบ ({filteredCustomers.length} คน)
                       </div>
                     </div>
                     
-                    {filteredCustomers.map((customer, index) => (
-                      <div
-                        key={customer.phone}
-                        onClick={() => handleCustomerSelect(customer)}
-                        className="p-3 hover:bg-green-50/80 cursor-pointer border-b border-gray-50 last:border-b-0 transition-colors duration-150"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1 mr-3">
-                            <div className="font-semibold text-gray-800 text-sm flex items-center">
-                              {customer.name}
-                              {customer.totalVisits > 1 && (
-                                <span className="ml-2 bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded-full font-medium">
-                                  ลูกค้าประจำ
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-xs text-gray-600 flex items-center mt-1">
-                              <PhoneIcon className="h-3 w-3 mr-1 text-green-500" />
-                              {customer.phone}
-                            </div>
-                            <div className="flex items-center gap-3 mt-1">
-                              {customer.preferredChannel && (
-                                <div className="text-xs text-blue-600 flex items-center">
-                                  <InformationCircleIcon className="h-3 w-3 mr-1 text-blue-400" />
-                                  {getChannelDisplayName(customer.preferredChannel)}
-                                </div>
-                              )}
-                              {customer.totalVisits && (
-                                <div className="text-xs text-green-600 flex items-center">
-                                  <span className="font-medium">{customer.totalVisits} ครั้ง</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="text-xs text-gray-500 flex flex-col items-end">
-                            {(customer.lastVisit !== null && customer.lastVisit !== undefined) && (
-                              <div className="text-xs text-gray-400 flex items-center">
-                                <ClockIcon className="h-3 w-3 mr-1" />
-                                {(() => {
-                                  const date = parseFirebaseDate(customer.lastVisit);
-                                  if (!date) {
-                                    console.log('Could not parse lastVisit for customer:', customer.name, 'value:', customer.lastVisit);
-                                    return 'ไม่ระบุ';
-                                  }
-                                  
-                                  return date.toLocaleDateString('th-TH', {
-                                    day: 'numeric',
-                                    month: 'short'
-                                  });
-                                })()}
+                    <div className="divide-y divide-gray-50">
+                      {filteredCustomers.map((customer, index) => (
+                        <div
+                          key={customer.phone}
+                          onClick={() => handleCustomerSelect(customer)}
+                          className="px-4 py-3 hover:bg-green-50/80 cursor-pointer transition-colors duration-150 first:rounded-t-xl last:rounded-b-xl"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start gap-2 mb-2 flex-wrap">
+                                <span className="font-semibold text-gray-800 text-sm break-words leading-tight">{customer.name}</span>
+                                {customer.totalVisits > 1 && (
+                                  <span className="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap">
+                                    ลูกค้าประจำ
+                                  </span>
+                                )}
                               </div>
-                            )}
+                              
+                              <div className="flex items-center text-xs text-gray-600 mb-2">
+                                <PhoneIcon className="h-3 w-3 mr-1 text-green-500 flex-shrink-0" />
+                                <span className="break-all">{customer.phone}</span>
+                              </div>
+                              
+                              <div className="flex items-start gap-4 text-xs flex-wrap">
+                                {customer.preferredChannel && (
+                                  <div className="flex items-center text-blue-600">
+                                    <InformationCircleIcon className="h-3 w-3 mr-1 text-blue-400 flex-shrink-0" />
+                                    <span className="break-words">{getChannelDisplayName(customer.preferredChannel)}</span>
+                                  </div>
+                                )}
+                                {customer.totalVisits && (
+                                  <div className="flex items-center text-green-600">
+                                    <span className="font-medium whitespace-nowrap">{customer.totalVisits} ครั้ง</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="flex-shrink-0 text-right">
+                              {(customer.lastVisit !== null && customer.lastVisit !== undefined) && (
+                                <div className="text-xs text-gray-400 flex items-center whitespace-nowrap">
+                                  <ClockIcon className="h-3 w-3 mr-1" />
+                                  {(() => {
+                                    const date = parseFirebaseDate(customer.lastVisit);
+                                    if (!date) {
+                                      console.log('Could not parse lastVisit for customer:', customer.name, 'value:', customer.lastVisit);
+                                      return 'ไม่ระบุ';
+                                    }
+                                    
+                                    return date.toLocaleDateString('th-TH', {
+                                      day: 'numeric',
+                                      month: 'short'
+                                    });
+                                  })()}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 )}
+                </div>
               </div>
             </div>
             
@@ -654,7 +659,7 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
           </div>
 
           {/* Service Information Section */}
-          <div className="bg-gradient-to-r from-purple-50/80 to-pink-50/60 backdrop-blur-sm border border-purple-200/30 rounded-xl p-4">
+          <div className="bg-gradient-to-r from-purple-50/80 to-pink-50/60 backdrop-blur-sm border border-purple-200/30 rounded-xl p-4 relative z-0">
             <h3 className="text-lg font-semibold text-purple-800 mb-4 flex items-center">
               <SparklesIcon className="h-5 w-5 mr-2" />
               เลือกบริการ
@@ -960,6 +965,7 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getTodayBookings, getTherapists, getServices } from '@/lib/firestore';
+import { getTodayBookings, getTherapists, getServices, getBookingsByDate } from '@/lib/firestore';
 import { dateTimeUtils } from '@/lib/dateTimeUtils';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';

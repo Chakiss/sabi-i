@@ -518,3 +518,36 @@ body {
     opacity: 0;
   }
 }
+
+/* Disable animations for queue cards */
+.no-animation,
+.no-animation * {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+}
+
+.no-animation:hover,
+.no-animation *:hover {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+  scale: 1 !important;
+}
+
+/* Drag and Drop styles */
+.dragging {
+  opacity: 0.5;
+  transform: rotate(5deg);
+  cursor: grabbing !important;
+}
+
+.drop-zone-active {
+  background: rgba(59, 130, 246, 0.1);
+  border: 2px dashed #3b82f6;
+  transform: scale(1.02);
+}
+
+.drag-over {
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+}

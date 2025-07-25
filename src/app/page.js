@@ -38,6 +38,7 @@ export default function HomePage() {
   const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [showQueueSection, setShowQueueSection] = useState(true);
+  const [dragOverZone, setDragOverZone] = useState(null);
 
   // Update current time every minute
   useEffect(() => {
@@ -312,6 +313,99 @@ export default function HomePage() {
 
   const handleBookingAdded = () => {
     fetchDashboardData(); // Refresh data after new booking
+  };
+
+  // Drag and Drop handlers
+  const handleDragStart = (e, booking) => {
+    const dragData = {
+      bookingId: booking.id,
+      currentStatus: booking.status,
+      booking: booking
+    };
+    e.dataTransfer.setData('application/json', JSON.stringify(dragData));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnd = (e) => {
+    setDragOverZone(null);
+  };
+
+  const handleDragOver = (e, targetStatus) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverZone(targetStatus);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setDragOverZone(null);
+  };
+
+  const handleDrop = async (e, targetStatus) => {
+    e.preventDefault();
+    setDragOverZone(null);
+    
+    try {
+      const dragData = JSON.parse(e.dataTransfer.getData('application/json'));
+      const { bookingId, currentStatus, booking } = dragData;
+      
+      // Don't do anything if dropping on the same status
+      if (currentStatus === targetStatus) {
+        return;
+      }
+      
+      // Validate status transitions
+      const validTransitions = {
+        'pending': ['in_progress', 'done'],
+        'in_progress': ['pending', 'done'],
+        'done': ['pending', 'in_progress']
+      };
+      
+      if (!validTransitions[currentStatus]?.includes(targetStatus)) {
+        toast.error('ไม่สามารถเปลี่ยนสถานะแบบนี้ได้');
+        return;
+      }
+      
+      // Special handling for completing booking (moving to done)
+      if (targetStatus === 'done') {
+        const service = services.find(s => s.id === booking.serviceId);
+        const servicePrice = service?.priceByDuration?.[booking.duration] || 0;
+        const bookingWithPrice = {
+          ...booking,
+          serviceName: service?.name,
+          servicePrice: servicePrice
+        };
+        handleCompleteBooking(bookingWithPrice);
+      } else {
+        // Regular status update
+        await handleStatusUpdate(bookingId, targetStatus);
+        toast.success(`ย้ายคิวไปยัง "${getStatusDisplayName(targetStatus)}" แล้ว`, {
+          icon: getStatusEmoji(targetStatus)
+        });
+      }
+      
+    } catch (error) {
+      console.error('Error in drag and drop:', error);
+      toast.error('เกิดข้อผิดพลาดในการย้ายคิว');
+    }
+  };
+
+  const getStatusDisplayName = (status) => {
+    switch (status) {
+      case 'pending': return 'รอคิว';
+      case 'in_progress': return 'กำลังนวด';
+      case 'done': return 'เสร็จแล้ว';
+      default: return status;
+    }
+  };
+
+  const getStatusEmoji = (status) => {
+    switch (status) {
+      case 'pending': return '⏳';
+      case 'in_progress': return '💆‍♀️';
+      case 'done': return '✅';
+      default: return '📋';
+    }
   };
 
   const menuItems = [
@@ -648,7 +742,14 @@ export default function HomePage() {
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
                   {/* รอคิว - Enhanced */}
-                  <div className="bg-gradient-to-br from-yellow-50/95 to-orange-50/85 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-yellow-200/60 flex flex-col h-full relative overflow-hidden">
+                  <div 
+                    className={`bg-gradient-to-br from-yellow-50/95 to-orange-50/85 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-yellow-200/60 flex flex-col h-full relative overflow-hidden transition-all duration-300 ${
+                      dragOverZone === 'pending' ? 'ring-4 ring-yellow-400 ring-opacity-50 shadow-2xl scale-105' : ''
+                    }`}
+                    onDragOver={(e) => handleDragOver(e, 'pending')}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, 'pending')}
+                  >
                     <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-yellow-300/30 to-orange-300/30 rounded-full blur-xl"></div>
                     
                     <div className="flex items-center mb-6 relative z-10">
@@ -660,6 +761,9 @@ export default function HomePage() {
                         <p className="text-yellow-600 font-medium flex items-center">
                           <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2 animate-pulse inline-block"></span>
                           {pendingBookings.length} คิว
+                          {dragOverZone === 'pending' && (
+                            <span className="block text-yellow-700 text-sm font-medium ml-2">🎯 วางที่นี่</span>
+                          )}
                         </p>
                       </div>
                     </div>
@@ -673,14 +777,10 @@ export default function HomePage() {
                         return (
                           <div
                             key={booking.id}
-                            className="transform hover:scale-[1.02] transition-all duration-200"
-                            style={{
-                              animationName: 'slideInUp',
-                              animationDuration: '0.5s',
-                              animationTimingFunction: 'ease-out',
-                              animationFillMode: 'forwards',
-                              animationDelay: `${index * 100}ms`
-                            }}
+                            className="no-animation"
+                            draggable="true"
+                            onDragStart={(e) => handleDragStart(e, booking)}
+                            onDragEnd={handleDragEnd}
                           >
                             <BookingCard 
                               booking={booking}
@@ -707,7 +807,14 @@ export default function HomePage() {
                   </div>
 
                   {/* กำลังนวด - Enhanced */}
-                  <div className="bg-gradient-to-br from-blue-50/95 to-indigo-50/85 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-blue-200/60 flex flex-col h-full relative overflow-hidden">
+                  <div 
+                    className={`bg-gradient-to-br from-blue-50/95 to-indigo-50/85 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-blue-200/60 flex flex-col h-full relative overflow-hidden transition-all duration-300 ${
+                      dragOverZone === 'in_progress' ? 'ring-4 ring-blue-400 ring-opacity-50 shadow-2xl scale-105' : ''
+                    }`}
+                    onDragOver={(e) => handleDragOver(e, 'in_progress')}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, 'in_progress')}
+                  >
                     <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-blue-300/30 to-indigo-300/30 rounded-full blur-xl animate-pulse"></div>
                     
                     <div className="flex items-center mb-6 relative z-10">
@@ -719,6 +826,9 @@ export default function HomePage() {
                         <p className="text-blue-600 font-medium flex items-center">
                           <span className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse inline-block"></span>
                           {inProgressBookings.length} คิว
+                          {dragOverZone === 'in_progress' && (
+                            <span className="block text-blue-700 text-sm font-medium ml-2">🎯 วางที่นี่</span>
+                          )}
                         </p>
                       </div>
                     </div>
@@ -732,14 +842,10 @@ export default function HomePage() {
                         return (
                           <div
                             key={booking.id}
-                            className="transform hover:scale-[1.02] transition-all duration-200"
-                            style={{
-                              animationName: 'slideInUp',
-                              animationDuration: '0.5s',
-                              animationTimingFunction: 'ease-out',
-                              animationFillMode: 'forwards',
-                              animationDelay: `${index * 100}ms`
-                            }}
+                            className="no-animation"
+                            draggable="true"
+                            onDragStart={(e) => handleDragStart(e, booking)}
+                            onDragEnd={handleDragEnd}
                           >
                             <BookingCard 
                               booking={booking}
@@ -767,7 +873,14 @@ export default function HomePage() {
                   </div>
 
                   {/* เสร็จแล้ว - Enhanced */}
-                  <div className="bg-gradient-to-br from-green-50/95 to-emerald-50/85 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-green-200/60 flex flex-col h-full relative overflow-hidden">
+                  <div 
+                    className={`bg-gradient-to-br from-green-50/95 to-emerald-50/85 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-green-200/60 flex flex-col h-full relative overflow-hidden transition-all duration-300 ${
+                      dragOverZone === 'done' ? 'ring-4 ring-green-400 ring-opacity-50 shadow-2xl scale-105' : ''
+                    }`}
+                    onDragOver={(e) => handleDragOver(e, 'done')}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, 'done')}
+                  >
                     <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-green-300/30 to-emerald-300/30 rounded-full blur-xl"></div>
                     
                     <div className="flex items-center mb-6 relative z-10">
@@ -779,6 +892,9 @@ export default function HomePage() {
                         <p className="text-green-600 font-medium flex items-center">
                           <span className="w-2 h-2 bg-green-500 rounded-full mr-2 inline-block"></span>
                           {doneBookings.length} คิว
+                          {dragOverZone === 'done' && (
+                            <span className="block text-green-700 text-sm font-medium ml-2">🎯 วางที่นี่</span>
+                          )}
                         </p>
                       </div>
                     </div>
@@ -792,14 +908,10 @@ export default function HomePage() {
                         return (
                           <div
                             key={booking.id}
-                            className="transform hover:scale-[1.02] transition-all duration-200"
-                            style={{
-                              animationName: 'slideInUp',
-                              animationDuration: '0.5s',
-                              animationTimingFunction: 'ease-out',
-                              animationFillMode: 'forwards',
-                              animationDelay: `${index * 100}ms`
-                            }}
+                            className="no-animation"
+                            draggable="true"
+                            onDragStart={(e) => handleDragStart(e, booking)}
+                            onDragEnd={handleDragEnd}
                           >
                             <BookingCard 
                               booking={booking}

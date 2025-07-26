@@ -50,6 +50,39 @@ body {
   box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
 }
 
+/* iOS 15 Compatibility Fixes */
+@supports not (backdrop-filter: blur(10px)) {
+  .glass {
+    background: rgba(255, 255, 255, 0.85);
+  }
+}
+
+/* Enhanced compatibility for text gradients */
+.text-gradient {
+  background: linear-gradient(90deg, #4E3B31 0%, #B89B85 50%, #A1826F 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: #4E3B31; /* Fallback for unsupported browsers */
+}
+
+/* Ring utility fallback for older browsers */
+.ring-fallback {
+  border: 4px solid rgba(255, 193, 7, 0.5);
+}
+
+/* Backdrop blur fallbacks */
+.backdrop-blur-fallback {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+@supports not (backdrop-filter: blur(20px)) {
+  .backdrop-blur-fallback {
+    background: rgba(255, 255, 255, 0.9) !important;
+  }
+}
+
 .glass-card {
   background: rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(15px);

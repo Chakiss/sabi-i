@@ -346,40 +346,63 @@ export default function HomePage() {
 
  if (loading) {
  return (
- <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F8F5F2] via-[#ECE8E4] to-[#F0EBE7]">
- <div className="bg-gradient-to-br from-white/95 to-[#F8F5F2]/90 backdrop-blur-xl rounded-3xl shadow-2xl p-12 text-center border border-[#B89B85]/20 max-w-md mx-4">
+ <div className="min-h-screen flex items-center justify-center" style={{ 
+ background: 'linear-gradient(135deg, #F8F5F2 0%, #ECE8E4 50%, #F0EBE7 100%)' 
+ }}>
+ <div className="rounded-3xl shadow-2xl p-12 text-center border max-w-md mx-4" style={{
+ background: 'rgba(255, 255, 255, 0.95)',
+ borderColor: 'rgba(184, 155, 133, 0.2)',
+ backdropFilter: 'blur(20px)',
+ WebkitBackdropFilter: 'blur(20px)'
+ }}>
  {/* Animated Logo */}
  <div className="relative mb-8">
- <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-[#B89B85] via-[#A1826F] to-[#B89B85]/80 flex items-center justify-center shadow-2xl animate-pulse">
+ <div className="w-20 h-20 mx-auto rounded-3xl flex items-center justify-center shadow-2xl animate-pulse" style={{
+ background: 'linear-gradient(135deg, #B89B85 0%, #A1826F 50%, rgba(184, 155, 133, 0.8) 100%)'
+ }}>
  <SparklesIcon className="h-10 w-10 text-white" />
  </div>
  {/* Floating particles */}
  <div className="absolute inset-0 flex items-center justify-center">
- <div className="w-4 h-4 bg-[#B89B85]/60 rounded-full animate-bounce delay-0 absolute -top-2 -left-2"></div>
- <div className="w-3 h-3 bg-[#A1826F]/60 rounded-full animate-bounce delay-75 absolute -bottom-1 -right-1"></div>
- <div className="w-2 h-2 bg-[#B89B85]/40 rounded-full animate-bounce delay-150 absolute top-1 right-4"></div>
+ <div className="w-4 h-4 rounded-full animate-bounce delay-0 absolute -top-2 -left-2" style={{ backgroundColor: 'rgba(184, 155, 133, 0.6)' }}></div>
+ <div className="w-3 h-3 rounded-full animate-bounce delay-75 absolute -bottom-1 -right-1" style={{ backgroundColor: 'rgba(161, 130, 111, 0.6)' }}></div>
+ <div className="w-2 h-2 rounded-full animate-bounce delay-150 absolute top-1 right-4" style={{ backgroundColor: 'rgba(184, 155, 133, 0.4)' }}></div>
  </div>
  </div>
  
  {/* Loading Spinner */}
  <div className="relative mb-6">
- <div className="animate-spin rounded-full h-16 w-16 border-4 border-transparent border-t-[#B89B85] border-r-[#A1826F] mx-auto"></div>
- <div className="absolute inset-0 animate-spin rounded-full h-16 w-16 border-4 border-transparent border-b-[#B89B85]/60 border-l-[#A1826F]/60 mx-auto" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+ <div className="animate-spin rounded-full h-16 w-16 border-4 border-transparent mx-auto" style={{
+ borderTopColor: '#B89B85',
+ borderRightColor: '#A1826F'
+ }}></div>
+ <div className="absolute inset-0 animate-spin rounded-full h-16 w-16 border-4 border-transparent mx-auto" style={{ 
+ borderBottomColor: 'rgba(184, 155, 133, 0.6)',
+ borderLeftColor: 'rgba(161, 130, 111, 0.6)',
+ animationDirection: 'reverse', 
+ animationDuration: '1.5s' 
+ }}></div>
  </div>
  
- <h2 className="text-2xl font-bold bg-gradient-to-r from-[#4E3B31] via-[#B89B85] to-[#A1826F] bg-clip-text text-transparent mb-3">
+ <h2 className="text-2xl font-bold mb-3" style={{
+ background: 'linear-gradient(90deg, #4E3B31 0%, #B89B85 50%, #A1826F 100%)',
+ WebkitBackgroundClip: 'text',
+ WebkitTextFillColor: 'transparent',
+ backgroundClip: 'text',
+ color: '#4E3B31' /* Fallback for unsupported browsers */
+ }}>
  กำลังโหลดข้อมูล
  </h2>
- <p className="text-[#7E7B77] font-medium">
+ <p className="font-medium" style={{ color: '#7E7B77' }}>
  <SparklesIcon className="h-4 w-4 inline mr-1" />
  กรุณารอสักครู่...
  </p>
  
  {/* Progress dots */}
  <div className="flex justify-center space-x-2 mt-6">
- <div className="w-2 h-2 bg-[#B89B85] rounded-full animate-pulse"></div>
- <div className="w-2 h-2 bg-[#A1826F] rounded-full animate-pulse delay-75"></div>
- <div className="w-2 h-2 bg-[#B89B85]/60 rounded-full animate-pulse delay-150"></div>
+ <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: '#B89B85' }}></div>
+ <div className="w-2 h-2 rounded-full animate-pulse delay-75" style={{ backgroundColor: '#A1826F' }}></div>
+ <div className="w-2 h-2 rounded-full animate-pulse delay-150" style={{ backgroundColor: 'rgba(184, 155, 133, 0.6)' }}></div>
  </div>
  </div>
  </div>
@@ -395,19 +418,36 @@ export default function HomePage() {
  const doneBookings = sortedBookings.filter(b => b.status === 'done');
 
  return (
- <div className="min-h-screen bg-gradient-to-br from-[#F8F5F2] via-[#ECE8E4] to-[#F0EBE7]">
+ <div className="min-h-screen" style={{ 
+ background: 'linear-gradient(135deg, #F8F5F2 0%, #ECE8E4 50%, #F0EBE7 100%)' 
+ }}>
  {/* Main Content */}
  <div className="w-full px-6 lg:px-12 py-12">
  {/* Enhanced Queue Management Section */}
- <div className="bg-gradient-to-br from-white/95 to-[#F8F5F2]/85 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-[#B89B85]/30 mb-8 min-h-[calc(100vh-6rem)] relative overflow-hidden">
+ <div className="rounded-3xl shadow-2xl p-8 border mb-8 min-h-[calc(100vh-6rem)] relative overflow-hidden" style={{
+ background: 'rgba(255, 255, 255, 0.95)',
+ borderColor: 'rgba(184, 155, 133, 0.3)',
+ backdropFilter: 'blur(20px)',
+ WebkitBackdropFilter: 'blur(20px)'
+ }}>
  {/* Animated Background Elements */}
- <div className="absolute top-10 right-10 w-24 h-24 bg-gradient-to-br from-[#B89B85]/20 to-[#A1826F]/20 rounded-full blur-2xl animate-pulse"></div>
- <div className="absolute bottom-10 left-10 w-32 h-32 bg-gradient-to-br from-[#B89B85]/15 to-[#ECE8E4]/30 rounded-full blur-2xl animate-pulse delay-1000"></div>
+ <div className="absolute top-10 right-10 w-24 h-24 rounded-full blur-2xl animate-pulse" style={{
+ background: 'linear-gradient(135deg, rgba(184, 155, 133, 0.2) 0%, rgba(161, 130, 111, 0.2) 100%)'
+ }}></div>
+ <div className="absolute bottom-10 left-10 w-32 h-32 rounded-full blur-2xl animate-pulse delay-1000" style={{
+ background: 'linear-gradient(135deg, rgba(184, 155, 133, 0.15) 0%, rgba(236, 232, 228, 0.3) 100%)'
+ }}></div>
  
  {/* Touch drag feedback overlay */}
  {isDragging && (
- <div className="fixed inset-0 bg-black/10 backdrop-blur-sm z-40 flex items-center justify-center pointer-events-none">
- <div className="bg-[#B89B85] text-white px-6 py-3 rounded-2xl shadow-2xl font-semibold flex items-center">
+ <div className="fixed inset-0 backdrop-blur-sm z-40 flex items-center justify-center pointer-events-none" style={{
+ backgroundColor: 'rgba(0, 0, 0, 0.1)',
+ backdropFilter: 'blur(4px)',
+ WebkitBackdropFilter: 'blur(4px)'
+ }}>
+ <div className="text-white px-6 py-3 rounded-2xl shadow-2xl font-semibold flex items-center" style={{
+ backgroundColor: '#B89B85'
+ }}>
  <span className="animate-pulse mr-2">🎯</span>
  ลากไปยังตำแหน่งที่ต้องการ
  </div>
@@ -417,15 +457,23 @@ export default function HomePage() {
  <div className="relative z-10">
  <div className="flex items-center justify-between mb-8">
  <div className="flex items-center space-x-4">
- <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#B89B85] via-[#A1826F] to-[#B89B85]/80 flex items-center justify-center text-white shadow-xl hover:rotate-6 no-transition ">
+ <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-xl hover:rotate-6 no-transition" style={{
+ background: 'linear-gradient(135deg, #B89B85 0%, #A1826F 50%, rgba(184, 155, 133, 0.8) 100%)'
+ }}>
  <ClipboardDocumentListIcon className="h-8 w-8" />
  </div>
  <div>
- <h2 className="text-3xl font-bold bg-gradient-to-r from-[#4E3B31] via-[#B89B85] to-[#A1826F] bg-clip-text text-transparent">
+ <h2 className="text-3xl font-bold" style={{
+ background: 'linear-gradient(90deg, #4E3B31 0%, #B89B85 50%, #A1826F 100%)',
+ WebkitBackgroundClip: 'text',
+ WebkitTextFillColor: 'transparent',
+ backgroundClip: 'text',
+ color: '#4E3B31' /* Fallback for unsupported browsers */
+ }}>
  จัดการคิววันนี้
  </h2>
- <p className="text-[#7E7B77] font-medium flex items-center">
- <span className="w-3 h-3 bg-[#B89B85] rounded-full mr-2 animate-pulse inline-block"></span>
+ <p className="font-medium flex items-center" style={{ color: '#7E7B77' }}>
+ <span className="w-3 h-3 rounded-full mr-2 animate-pulse inline-block" style={{ backgroundColor: '#B89B85' }}></span>
  ({sortedBookings.length} คิว) ลากและวางเพื่อเปลี่ยนสถานะ
  </p>
  </div>
@@ -433,9 +481,13 @@ export default function HomePage() {
  <div className="flex space-x-3">
  <button
  onClick={handleNewBooking}
- className="group relative px-6 py-3 bg-gradient-to-r from-[#B89B85] to-[#A1826F] text-white font-semibold rounded-xl shadow-lg no-transition hover:scale-105 flex items-center space-x-2 overflow-hidden"
+ className="group relative px-6 py-3 text-white font-semibold rounded-xl shadow-lg no-transition hover:scale-105 flex items-center space-x-2 overflow-hidden" style={{
+ background: 'linear-gradient(90deg, #B89B85 0%, #A1826F 100%)'
+ }}
  >
- <div className="absolute inset-0 bg-gradient-to-r from-[#A1826F] to-[#B89B85] opacity-0 group-hover:opacity-100 no-transition "></div>
+ <div className="absolute inset-0 opacity-0 group-hover:opacity-100 no-transition" style={{
+ background: 'linear-gradient(90deg, #A1826F 0%, #B89B85 100%)'
+ }}></div>
  <div className="relative z-10 flex items-center space-x-2">
  <SparklesIcon className="h-5 w-5 group-hover:rotate-180 no-transition " />
  <span>จองคิวใหม่</span>
@@ -456,9 +508,13 @@ export default function HomePage() {
  <p className="text-[#7E7B77] mb-8 text-lg">เมื่อมีการจองคิว รายการจะปรากฏที่นี่</p>
  <button
  onClick={handleNewBooking}
- className="group relative px-10 py-4 bg-gradient-to-r from-[#B89B85] to-[#A1826F] text-white font-bold rounded-2xl shadow-xl hover:shadow-2xl no-transition hover:scale-105 text-lg overflow-hidden"
+ className="group relative px-10 py-4 text-white font-bold rounded-2xl shadow-xl hover:shadow-2xl no-transition hover:scale-105 text-lg overflow-hidden" style={{
+ background: 'linear-gradient(90deg, #B89B85 0%, #A1826F 100%)'
+ }}
  >
- <div className="absolute inset-0 bg-gradient-to-r from-[#A1826F] to-[#B89B85] opacity-0 group-hover:opacity-100 no-transition "></div>
+ <div className="absolute inset-0 opacity-0 group-hover:opacity-100 no-transition" style={{
+ background: 'linear-gradient(90deg, #A1826F 0%, #B89B85 100%)'
+ }}></div>
  <div className="relative z-10 flex items-center space-x-3">
  <SparklesIcon className="h-6 w-6 group-hover:rotate-180 no-transition " />
  <span>จองคิวใหม่</span>
@@ -472,27 +528,38 @@ export default function HomePage() {
  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
  {/* รอคิว - Enhanced */}
  <div 
- className={`bg-gradient-to-br from-yellow-50/95 to-orange-50/85 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-yellow-200/60 flex flex-col h-full relative overflow-hidden no-transition ${
- dragOverZone === 'pending' ? 'ring-4 ring-yellow-400 ring-opacity-50 shadow-2xl scale-105' : ''
+ className={`rounded-3xl shadow-2xl p-6 border flex flex-col h-full relative overflow-hidden no-transition ${
+ dragOverZone === 'pending' ? 'ring-4 ring-opacity-50 shadow-2xl scale-105' : ''
  }`}
+ style={{
+ background: 'linear-gradient(135deg, rgba(255, 243, 224, 0.95) 0%, rgba(255, 237, 213, 0.85) 100%)',
+ borderColor: dragOverZone === 'pending' ? 'rgba(255, 193, 7, 0.6)' : 'rgba(255, 193, 7, 0.6)',
+ backdropFilter: 'blur(20px)',
+ WebkitBackdropFilter: 'blur(20px)',
+ boxShadow: dragOverZone === 'pending' ? '0 0 0 4px rgba(255, 193, 7, 0.5)' : undefined
+ }}
  data-drop-zone="pending"
  onDragOver={(e) => handleDragOver(e, 'pending')}
  onDragLeave={handleDragLeave}
  onDrop={(e) => handleDrop(e, 'pending')}
  >
- <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-yellow-300/30 to-orange-300/30 rounded-full blur-xl"></div>
+ <div className="absolute top-4 right-4 w-16 h-16 rounded-full blur-xl" style={{
+ background: 'linear-gradient(135deg, rgba(255, 193, 7, 0.3) 0%, rgba(255, 152, 0, 0.3) 100%)'
+ }}></div>
  
  <div className="flex items-center mb-6 relative z-10">
- <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg hover:scale-110 no-transition ">
+ <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg hover:scale-110 no-transition" style={{
+ background: 'linear-gradient(135deg, #FFC107 0%, #FF9800 100%)'
+ }}>
  ⏳
  </div>
  <div>
- <h2 className="text-xl font-bold text-yellow-800">รอคิว</h2>
- <p className="text-yellow-600 font-medium flex items-center">
- <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2 animate-pulse inline-block"></span>
+ <h2 className="text-xl font-bold" style={{ color: '#E65100' }}>รอคิว</h2>
+ <p className="font-medium flex items-center" style={{ color: '#F57C00' }}>
+ <span className="w-2 h-2 rounded-full mr-2 animate-pulse inline-block" style={{ backgroundColor: '#FFC107' }}></span>
  {pendingBookings.length} คิว
  {dragOverZone === 'pending' && (
- <span className="block text-yellow-700 text-sm font-medium ml-2">🎯 วางที่นี่</span>
+ <span className="block text-sm font-medium ml-2" style={{ color: '#E65100' }}>🎯 วางที่นี่</span>
  )}
  </p>
  </div>
@@ -512,23 +579,34 @@ export default function HomePage() {
  onTouchStart={(e) => handleTouchStart(e, booking)}
  onTouchMove={handleTouchMove}
  onTouchEnd={handleTouchEnd}
- className={`bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-yellow-200/50 no-transition cursor-move touch-none ${
+ className={`rounded-2xl p-4 shadow-lg border no-transition cursor-move touch-none ${
  isDragging && draggedBooking?.id === booking.id ? 'opacity-50 scale-95' : ''
  }`}
- style={{ userSelect: 'none' }}
+ style={{ 
+ userSelect: 'none',
+ background: 'rgba(255, 255, 255, 0.9)',
+ borderColor: 'rgba(255, 193, 7, 0.5)',
+ backdropFilter: 'blur(4px)',
+ WebkitBackdropFilter: 'blur(4px)'
+ }}
  >
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center">
- <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white text-sm font-bold mr-3">
+ <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-sm font-bold mr-3" style={{
+ background: 'linear-gradient(135deg, #FFC107 0%, #FF9800 100%)'
+ }}>
  {index + 1}
  </div>
  <div>
- <h3 className="font-bold text-[#4E3B31] text-lg">{booking.customerName}</h3>
- <p className="text-sm text-[#7E7B77]">{booking.customerPhone}</p>
+ <h3 className="font-bold text-lg" style={{ color: '#4E3B31' }}>{booking.customerName}</h3>
+ <p className="text-sm" style={{ color: '#7E7B77' }}>{booking.customerPhone}</p>
  </div>
  </div>
  <div className="text-right">
- <div className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full font-bold mb-1">
+ <div className="text-xs px-2 py-1 rounded-full font-bold mb-1" style={{ 
+ backgroundColor: 'rgba(255, 235, 59, 0.2)',
+ color: '#E65100'
+ }}>
  {new Date(booking.startTime).toLocaleTimeString('th-TH', {
  hour: '2-digit',
  minute: '2-digit'
@@ -601,13 +679,29 @@ export default function HomePage() {
  <div className="flex space-x-2">
  <button
  onClick={() => handleStatusUpdate(booking.id, 'in_progress')}
- className="flex-1 px-3 py-2 bg-gradient-to-r from-[#B89B85] to-[#A1826F] text-white text-sm font-semibold rounded-xl hover:shadow-lg no-transition hover:scale-105"
+ className="flex-1 px-3 py-2 text-white text-sm font-semibold rounded-xl hover:shadow-lg no-transition hover:scale-105" style={{
+ background: 'linear-gradient(90deg, #B89B85 0%, #A1826F 100%)'
+ }}
  >
  🏃‍♀️ เริ่มนวด
  </button>
  <button
  onClick={() => handleEditBooking(booking)}
- className="px-3 py-2 bg-white/90 hover:bg-white text-[#7E7B77] hover:text-[#4E3B31] text-sm font-semibold rounded-xl border border-[#B89B85]/20 hover:border-[#B89B85] hover:shadow-lg no-transition "
+ className="px-3 py-2 text-sm font-semibold rounded-xl border hover:shadow-lg no-transition" style={{
+ backgroundColor: 'rgba(255, 255, 255, 0.9)',
+ color: '#7E7B77',
+ borderColor: 'rgba(184, 155, 133, 0.2)'
+ }}
+ onMouseEnter={(e) => {
+ e.target.style.backgroundColor = 'white';
+ e.target.style.color = '#4E3B31';
+ e.target.style.borderColor = '#B89B85';
+ }}
+ onMouseLeave={(e) => {
+ e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+ e.target.style.color = '#7E7B77';
+ e.target.style.borderColor = 'rgba(184, 155, 133, 0.2)';
+ }}
  >
  ✏️
  </button>
@@ -617,12 +711,12 @@ export default function HomePage() {
  })}
  
  {pendingBookings.length === 0 && (
- <div className="text-center py-12 text-yellow-600 flex-1 flex flex-col justify-center">
- <div className="w-20 h-20 mx-auto bg-yellow-100 rounded-full flex items-center justify-center mb-4 shadow-lg">
- <ClockIcon className="h-10 w-10 text-yellow-400" />
+ <div className="text-center py-12 flex-1 flex flex-col justify-center" style={{ color: '#F57C00' }}>
+ <div className="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4 shadow-lg" style={{ backgroundColor: 'rgba(255, 235, 59, 0.2)' }}>
+ <ClockIcon className="h-10 w-10" style={{ color: '#FFC107' }} />
  </div>
  <p className="text-base font-medium">ไม่มีคิวที่รอ</p>
- <p className="text-sm text-yellow-500 mt-1">คิวใหม่จะปรากฏที่นี่</p>
+ <p className="text-sm mt-1" style={{ color: 'rgba(245, 124, 0, 0.7)' }}>คิวใหม่จะปรากฏที่นี่</p>
  </div>
  )}
  </div>
@@ -630,27 +724,38 @@ export default function HomePage() {
 
  {/* กำลังนวด */}
  <div 
- className={`bg-gradient-to-br from-blue-50/95 to-indigo-50/85 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-blue-200/60 flex flex-col h-full relative overflow-hidden no-transition ${
- dragOverZone === 'in_progress' ? 'ring-4 ring-blue-400 ring-opacity-50 shadow-2xl scale-105' : ''
+ className={`rounded-3xl shadow-2xl p-6 border flex flex-col h-full relative overflow-hidden no-transition ${
+ dragOverZone === 'in_progress' ? 'ring-4 ring-opacity-50 shadow-2xl scale-105' : ''
  }`}
+ style={{
+ background: 'linear-gradient(135deg, rgba(227, 242, 253, 0.95) 0%, rgba(199, 221, 255, 0.85) 100%)',
+ borderColor: dragOverZone === 'in_progress' ? 'rgba(33, 150, 243, 0.6)' : 'rgba(33, 150, 243, 0.6)',
+ backdropFilter: 'blur(20px)',
+ WebkitBackdropFilter: 'blur(20px)',
+ boxShadow: dragOverZone === 'in_progress' ? '0 0 0 4px rgba(33, 150, 243, 0.5)' : undefined
+ }}
  data-drop-zone="in_progress"
  onDragOver={(e) => handleDragOver(e, 'in_progress')}
  onDragLeave={handleDragLeave}
  onDrop={(e) => handleDrop(e, 'in_progress')}
  >
- <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-blue-300/30 to-indigo-300/30 rounded-full blur-xl animate-pulse"></div>
+ <div className="absolute top-4 right-4 w-16 h-16 rounded-full blur-xl animate-pulse" style={{
+ background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.3) 0%, rgba(63, 81, 181, 0.3) 100%)'
+ }}></div>
  
  <div className="flex items-center mb-6 relative z-10">
- <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg hover:scale-110 no-transition ">
+ <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg hover:scale-110 no-transition" style={{
+ background: 'linear-gradient(135deg, #2196F3 0%, #3F51B5 100%)'
+ }}>
  💆‍♀️
  </div>
  <div>
- <h2 className="text-xl font-bold text-blue-800">กำลังนวด</h2>
- <p className="text-blue-600 font-medium flex items-center">
- <span className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse inline-block"></span>
+ <h2 className="text-xl font-bold" style={{ color: '#0D47A1' }}>กำลังนวด</h2>
+ <p className="font-medium flex items-center" style={{ color: '#1565C0' }}>
+ <span className="w-2 h-2 rounded-full mr-2 animate-pulse inline-block" style={{ backgroundColor: '#2196F3' }}></span>
  {inProgressBookings.length} คิว
  {dragOverZone === 'in_progress' && (
- <span className="block text-blue-700 text-sm font-medium ml-2">🎯 วางที่นี่</span>
+ <span className="block text-sm font-medium ml-2" style={{ color: '#0D47A1' }}>🎯 วางที่นี่</span>
  )}
  </p>
  </div>
@@ -671,23 +776,34 @@ export default function HomePage() {
  onTouchStart={(e) => handleTouchStart(e, booking)}
  onTouchMove={handleTouchMove}
  onTouchEnd={handleTouchEnd}
- className={`bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-blue-200/50 no-transition cursor-move touch-none ${
+ className={`rounded-2xl p-4 shadow-lg border no-transition cursor-move touch-none ${
  isDragging && draggedBooking?.id === booking.id ? 'opacity-50 scale-95' : ''
  }`}
- style={{ userSelect: 'none' }}
+ style={{ 
+ userSelect: 'none',
+ background: 'rgba(255, 255, 255, 0.9)',
+ borderColor: 'rgba(33, 150, 243, 0.5)',
+ backdropFilter: 'blur(4px)',
+ WebkitBackdropFilter: 'blur(4px)'
+ }}
  >
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center">
- <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-sm font-bold mr-3">
+ <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-sm font-bold mr-3" style={{
+ background: 'linear-gradient(135deg, #2196F3 0%, #3F51B5 100%)'
+ }}>
  💆‍♀️
  </div>
  <div>
- <h3 className="font-bold text-gray-800 text-lg">{booking.customerName}</h3>
- <p className="text-sm text-gray-600">{booking.customerPhone}</p>
+ <h3 className="font-bold text-lg" style={{ color: '#424242' }}>{booking.customerName}</h3>
+ <p className="text-sm" style={{ color: '#757575' }}>{booking.customerPhone}</p>
  </div>
  </div>
  <div className="text-right">
- <div className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-bold mb-1">
+ <div className="text-xs px-2 py-1 rounded-full font-bold mb-1" style={{ 
+ backgroundColor: 'rgba(33, 150, 243, 0.2)',
+ color: '#0D47A1'
+ }}>
  เสร็จ {endTime.toLocaleTimeString('th-TH', {
  hour: '2-digit',
  minute: '2-digit'
@@ -756,13 +872,29 @@ export default function HomePage() {
  <div className="flex space-x-2">
  <button
  onClick={() => handleCompleteBooking(booking)}
- className="flex-1 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg no-transition hover:scale-105"
+ className="flex-1 px-3 py-2 text-white text-sm font-semibold rounded-xl hover:shadow-lg no-transition hover:scale-105" style={{
+ background: 'linear-gradient(90deg, #4CAF50 0%, #00C853 100%)'
+ }}
  >
  ✅ เสร็จแล้ว
  </button>
  <button
  onClick={() => handleEditBooking(booking)}
- className="px-3 py-2 bg-white/90 hover:bg-white text-[#7E7B77] hover:text-[#4E3B31] text-sm font-semibold rounded-xl border border-[#B89B85]/20 hover:border-[#B89B85] hover:shadow-lg no-transition "
+ className="px-3 py-2 text-sm font-semibold rounded-xl border hover:shadow-lg no-transition" style={{
+ backgroundColor: 'rgba(255, 255, 255, 0.9)',
+ color: '#7E7B77',
+ borderColor: 'rgba(184, 155, 133, 0.2)'
+ }}
+ onMouseEnter={(e) => {
+ e.target.style.backgroundColor = 'white';
+ e.target.style.color = '#4E3B31';
+ e.target.style.borderColor = '#B89B85';
+ }}
+ onMouseLeave={(e) => {
+ e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+ e.target.style.color = '#7E7B77';
+ e.target.style.borderColor = 'rgba(184, 155, 133, 0.2)';
+ }}
  >
  ✏️
  </button>
@@ -772,12 +904,12 @@ export default function HomePage() {
  })}
  
  {inProgressBookings.length === 0 && (
- <div className="text-center py-12 text-[#7E7B77] flex-1 flex flex-col justify-center">
- <div className="w-20 h-20 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-4 shadow-lg">
- <PlayCircleIcon className="h-10 w-10 text-blue-400" />
+ <div className="text-center py-12 flex-1 flex flex-col justify-center" style={{ color: '#7E7B77' }}>
+ <div className="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4 shadow-lg" style={{ backgroundColor: 'rgba(33, 150, 243, 0.2)' }}>
+ <PlayCircleIcon className="h-10 w-10" style={{ color: '#2196F3' }} />
  </div>
  <p className="text-base font-medium">ไม่มีคิวที่กำลังนวด</p>
- <p className="text-sm text-[#7E7B77]/70 mt-1">คิวที่เริ่มแล้วจะปรากฏที่นี่</p>
+ <p className="text-sm mt-1" style={{ color: 'rgba(126, 123, 119, 0.7)' }}>คิวที่เริ่มแล้วจะปรากฏที่นี่</p>
  </div>
  )}
  </div>
@@ -785,27 +917,38 @@ export default function HomePage() {
 
  {/* เสร็จแล้ว */}
  <div 
- className={`bg-gradient-to-br from-green-50/95 to-emerald-50/85 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-green-200/60 flex flex-col h-full relative overflow-hidden no-transition ${
- dragOverZone === 'done' ? 'ring-4 ring-green-400 ring-opacity-50 shadow-2xl scale-105' : ''
+ className={`rounded-3xl shadow-2xl p-6 border flex flex-col h-full relative overflow-hidden no-transition ${
+ dragOverZone === 'done' ? 'ring-4 ring-opacity-50 shadow-2xl scale-105' : ''
  }`}
+ style={{
+ background: 'linear-gradient(135deg, rgba(232, 245, 233, 0.95) 0%, rgba(200, 230, 201, 0.85) 100%)',
+ borderColor: dragOverZone === 'done' ? 'rgba(76, 175, 80, 0.6)' : 'rgba(76, 175, 80, 0.6)',
+ backdropFilter: 'blur(20px)',
+ WebkitBackdropFilter: 'blur(20px)',
+ boxShadow: dragOverZone === 'done' ? '0 0 0 4px rgba(76, 175, 80, 0.5)' : undefined
+ }}
  data-drop-zone="done"
  onDragOver={(e) => handleDragOver(e, 'done')}
  onDragLeave={handleDragLeave}
  onDrop={(e) => handleDrop(e, 'done')}
  >
- <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-green-300/30 to-emerald-300/30 rounded-full blur-xl"></div>
+ <div className="absolute top-4 right-4 w-16 h-16 rounded-full blur-xl" style={{
+ background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.3) 0%, rgba(46, 125, 50, 0.3) 100%)'
+ }}></div>
  
  <div className="flex items-center mb-6 relative z-10">
- <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg hover:scale-110 no-transition ">
+ <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg hover:scale-110 no-transition" style={{
+ background: 'linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%)'
+ }}>
  ✅
  </div>
  <div>
- <h2 className="text-xl font-bold text-green-800">เสร็จแล้ว</h2>
- <p className="text-green-600 font-medium flex items-center">
- <span className="w-2 h-2 bg-green-500 rounded-full mr-2 inline-block"></span>
+ <h2 className="text-xl font-bold" style={{ color: '#1B5E20' }}>เสร็จแล้ว</h2>
+ <p className="font-medium flex items-center" style={{ color: '#2E7D32' }}>
+ <span className="w-2 h-2 rounded-full mr-2 inline-block" style={{ backgroundColor: '#4CAF50' }}></span>
  {doneBookings.length} คิว
  {dragOverZone === 'done' && (
- <span className="block text-green-700 text-sm font-medium ml-2">🎯 วางที่นี่</span>
+ <span className="block text-sm font-medium ml-2" style={{ color: '#1B5E20' }}>🎯 วางที่นี่</span>
  )}
  </p>
  </div>
@@ -819,20 +962,30 @@ export default function HomePage() {
  return (
  <div
  key={booking.id}
- className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-green-200/50 no-transition"
+ className="rounded-2xl p-4 shadow-lg border no-transition" style={{
+ background: 'rgba(255, 255, 255, 0.9)',
+ borderColor: 'rgba(76, 175, 80, 0.5)',
+ backdropFilter: 'blur(4px)',
+ WebkitBackdropFilter: 'blur(4px)'
+ }}
  >
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center">
- <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white text-sm font-bold mr-3">
+ <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-sm font-bold mr-3" style={{
+ background: 'linear-gradient(135deg, #4CAF50 0%, #00C853 100%)'
+ }}>
  ✅
  </div>
  <div>
- <h3 className="font-bold text-gray-800 text-lg">{booking.customerName}</h3>
- <p className="text-sm text-gray-600">{booking.customerPhone}</p>
+ <h3 className="font-bold text-lg" style={{ color: '#424242' }}>{booking.customerName}</h3>
+ <p className="text-sm" style={{ color: '#757575' }}>{booking.customerPhone}</p>
  </div>
  </div>
  <div className="text-right">
- <div className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold mb-1">
+ <div className="text-xs px-2 py-1 rounded-full font-bold mb-1" style={{ 
+ backgroundColor: 'rgba(76, 175, 80, 0.2)',
+ color: '#1B5E20'
+ }}>
  เสร็จแล้ว
  </div>
  </div>
@@ -905,12 +1058,12 @@ export default function HomePage() {
  })}
  
  {doneBookings.length === 0 && (
- <div className="text-center py-12 text-[#7E7B77] flex-1 flex flex-col justify-center">
- <div className="w-20 h-20 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-4 shadow-lg">
- <CheckCircleIcon className="h-10 w-10 text-green-400" />
+ <div className="text-center py-12 flex-1 flex flex-col justify-center" style={{ color: '#7E7B77' }}>
+ <div className="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4 shadow-lg" style={{ backgroundColor: 'rgba(76, 175, 80, 0.2)' }}>
+ <CheckCircleIcon className="h-10 w-10" style={{ color: '#4CAF50' }} />
  </div>
  <p className="text-base font-medium">ยังไม่มีคิวที่เสร็จ</p>
- <p className="text-sm text-[#7E7B77]/70 mt-1">คิวที่เสร็จแล้วจะปรากฏที่นี่</p>
+ <p className="text-sm mt-1" style={{ color: 'rgba(126, 123, 119, 0.7)' }}>คิวที่เสร็จแล้วจะปรากฏที่นี่</p>
  </div>
  )}
  </div>

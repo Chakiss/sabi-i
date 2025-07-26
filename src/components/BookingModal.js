@@ -1043,17 +1043,50 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
                   <label className="block text-sm font-semibold text-gray-700">
                     {formData.discountType === 'percentage' ? 'เปอร์เซ็นต์ส่วนลด (%)' : 'จำนวนเงินส่วนลด (บาท)'}
                   </label>
-                  <input
-                    type="number"
-                    name="discountValue"
-                    value={formData.discountValue}
-                    onChange={handleInputChange}
-                    min="0"
-                    max={formData.discountType === 'percentage' ? "100" : undefined}
-                    step={formData.discountType === 'percentage' ? "1" : "10"}
-                    className="w-full p-4 border border-red-200/50 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md"
-                    placeholder={formData.discountType === 'percentage' ? "เช่น 10 (%)" : "เช่น 50 (บาท)"}
-                  />
+                  {formData.discountType === 'percentage' ? (
+                    <select
+                      name="discountValue"
+                      value={formData.discountValue}
+                      onChange={handleInputChange}
+                      className={`w-full p-4 border rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-sm transition-all duration-200 ${
+                        isOnIpad 
+                          ? 'bg-white border-gray-300 text-base' 
+                          : 'border-red-200/50 bg-white/90 backdrop-blur-sm hover:shadow-md'
+                      }`}
+                      style={{
+                        WebkitTapHighlightColor: 'transparent',
+                        fontSize: isOnIpad ? '16px' : undefined,
+                        touchAction: 'manipulation'
+                      }}
+                    >
+                      <option value="">📊 เลือกเปอร์เซ็นต์ส่วนลด</option>
+                      {[10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(percent => (
+                        <option key={percent} value={percent}>
+                          🔥 {percent}% ส่วนลด
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="number"
+                      name="discountValue"
+                      value={formData.discountValue}
+                      onChange={handleInputChange}
+                      min="0"
+                      step="10"
+                      className={`w-full p-4 border rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-sm transition-all duration-200 ${
+                        isOnIpad 
+                          ? 'bg-white border-gray-300 text-base' 
+                          : 'border-red-200/50 bg-white/90 backdrop-blur-sm hover:shadow-md'
+                      }`}
+                      style={{
+                        WebkitTapHighlightColor: 'transparent',
+                        fontSize: isOnIpad ? '16px' : undefined,
+                        touchAction: 'manipulation'
+                      }}
+                      placeholder="เช่น 50 (บาท)"
+                    />
+                  )}
                 </div>
               )}
             </div>

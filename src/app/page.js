@@ -322,7 +322,13 @@ export default function HomePage() {
 
  // Touch handlers for mobile/tablet support - Optimized for iPad iOS 15
  const handleTouchStart = (e, booking) => {
+ // Safely handle stopPropagation for touch events
+ try {
  e.stopPropagation();
+ } catch (error) {
+ console.debug('Touch start event handling in passive mode');
+ }
+ 
  const touch = e.touches[0];
  const element = e.currentTarget;
  const rect = element.getBoundingClientRect();
@@ -345,8 +351,16 @@ export default function HomePage() {
  const handleTouchMove = (e) => {
  if (!draggedBooking) return;
  
+ // Only call preventDefault if event supports it and is not passive
+ try {
+ if (!e.defaultPrevented && e.cancelable) {
  e.preventDefault(); // Prevent scrolling
+ }
  e.stopPropagation();
+ } catch (error) {
+ // Silently handle passive event listener error
+ console.debug('Touch event handling in passive mode');
+ }
  
  const touch = e.touches[0];
  const deltaX = Math.abs(touch.clientX - touchStartPos.x);
@@ -389,7 +403,16 @@ export default function HomePage() {
  return;
  }
 
+ // Safely handle preventDefault for non-passive events
+ try {
+ if (!e.defaultPrevented && e.cancelable) {
  e.preventDefault();
+ }
+ e.stopPropagation();
+ } catch (error) {
+ // Silently handle passive event listener error
+ console.debug('Touch end event handling in passive mode');
+ }
  e.stopPropagation();
  
  const touch = e.changedTouches[0];

@@ -424,34 +424,58 @@ export default function DiscountModal({ isOpen, onClose, booking, onComplete, se
                   {discountType === 'percentage' ? '📊 ระบุเปอร์เซ็นต์ส่วนลด' : '💸 ระบุจำนวนเงินส่วนลด'}
                 </label>
                 <div className="relative">
-                  <input
-                    type="number"
-                    value={discountValue}
-                    onChange={(e) => setDiscountValue(e.target.value)}
-                    min="0"
-                    max={discountType === 'percentage' ? '100' : originalPrice}
-                    step={discountType === 'percentage' ? '1' : '10'}
-                    className={`w-full p-4 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 pr-12 shadow-sm transition-all duration-200 font-semibold ${
-                      isOnIpad 
-                        ? 'bg-white border-gray-300 text-base' 
-                        : 'border-yellow-200/50 bg-white/90 backdrop-blur-sm hover:shadow-md'
-                    }`}
-                    style={{
-                      WebkitTapHighlightColor: 'transparent',
-                      fontSize: isOnIpad ? '16px' : undefined,
-                      touchAction: 'manipulation'
-                    }}
-                    placeholder={discountType === 'percentage' ? 'เช่น 10' : 'เช่น 100'}
-                  />
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <span className="text-orange-600 font-bold">
-                      {discountType === 'percentage' ? '%' : '฿'}
-                    </span>
-                  </div>
+                  {discountType === 'percentage' ? (
+                    <select
+                      value={discountValue}
+                      onChange={(e) => setDiscountValue(e.target.value)}
+                      className={`w-full p-4 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm transition-all duration-200 font-semibold ${
+                        isOnIpad 
+                          ? 'bg-white border-gray-300 text-base' 
+                          : 'border-yellow-200/50 bg-white/90 backdrop-blur-sm hover:shadow-md'
+                      }`}
+                      style={{
+                        WebkitTapHighlightColor: 'transparent',
+                        fontSize: isOnIpad ? '16px' : undefined,
+                        touchAction: 'manipulation'
+                      }}
+                    >
+                      <option value="">📊 เลือกเปอร์เซ็นต์ส่วนลด</option>
+                      {[10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(percent => (
+                        <option key={percent} value={percent}>
+                          🔥 {percent}% ส่วนลด
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="number"
+                      value={discountValue}
+                      onChange={(e) => setDiscountValue(e.target.value)}
+                      min="0"
+                      max={originalPrice}
+                      step="10"
+                      className={`w-full p-4 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 pr-12 shadow-sm transition-all duration-200 font-semibold ${
+                        isOnIpad 
+                          ? 'bg-white border-gray-300 text-base' 
+                          : 'border-yellow-200/50 bg-white/90 backdrop-blur-sm hover:shadow-md'
+                      }`}
+                      style={{
+                        WebkitTapHighlightColor: 'transparent',
+                        fontSize: isOnIpad ? '16px' : undefined,
+                        touchAction: 'manipulation'
+                      }}
+                      placeholder="เช่น 100"
+                    />
+                  )}
+                  {discountType === 'amount' && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <span className="text-orange-600 font-bold">฿</span>
+                    </div>
+                  )}
                 </div>
                 {discountType === 'percentage' && (
                   <p className="text-xs text-orange-600 mt-1 flex items-center">
-                    💡 ระบุเปอร์เซ็นต์ 0-100
+                    💡 เลือกเปอร์เซ็นต์ส่วนลดจาก dropdown
                   </p>
                 )}
               </div>

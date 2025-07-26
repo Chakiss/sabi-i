@@ -771,27 +771,53 @@ export default function EditBookingModal({ booking, isOpen, onClose, onUpdate })
                   <label className="block text-sm font-semibold text-gray-700">
                     {formData.discountType === 'percentage' ? '📊 ส่วนลด (%)' : '💰 ส่วนลด (บาท)'}
                   </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max={formData.discountType === 'percentage' ? "100" : undefined}
-                    value={formData.discountValue}
-                    onChange={(e) => {
-                      const discountValue = parseFloat(e.target.value) || 0;
-                      setFormData({...formData, discountValue});
-                    }}
-                    className={`w-full px-5 py-4 border rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 shadow-sm transition-all duration-200 font-medium ${
-                      isOnIpad 
-                        ? 'bg-white border-gray-300 text-base' 
-                        : 'border-yellow-200/50 bg-white/90 backdrop-blur-sm hover:shadow-md'
-                    }`}
-                    style={{
-                      WebkitTapHighlightColor: 'transparent',
-                      fontSize: isOnIpad ? '16px' : undefined,
-                      touchAction: 'manipulation'
-                    }}
-                    placeholder={formData.discountType === 'percentage' ? "0-100" : "0"}
-                  />
+                  {formData.discountType === 'percentage' ? (
+                    <select
+                      value={formData.discountValue}
+                      onChange={(e) => {
+                        const discountValue = parseFloat(e.target.value) || 0;
+                        setFormData({...formData, discountValue});
+                      }}
+                      className={`w-full px-5 py-4 border rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 shadow-sm transition-all duration-200 font-medium ${
+                        isOnIpad 
+                          ? 'bg-white border-gray-300 text-base' 
+                          : 'border-yellow-200/50 bg-white/90 backdrop-blur-sm hover:shadow-md'
+                      }`}
+                      style={{
+                        WebkitTapHighlightColor: 'transparent',
+                        fontSize: isOnIpad ? '16px' : undefined,
+                        touchAction: 'manipulation'
+                      }}
+                    >
+                      <option value="0">📊 เลือกเปอร์เซ็นต์ส่วนลด</option>
+                      {[10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(percent => (
+                        <option key={percent} value={percent}>
+                          🔥 {percent}% ส่วนลด
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.discountValue}
+                      onChange={(e) => {
+                        const discountValue = parseFloat(e.target.value) || 0;
+                        setFormData({...formData, discountValue});
+                      }}
+                      className={`w-full px-5 py-4 border rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 shadow-sm transition-all duration-200 font-medium ${
+                        isOnIpad 
+                          ? 'bg-white border-gray-300 text-base' 
+                          : 'border-yellow-200/50 bg-white/90 backdrop-blur-sm hover:shadow-md'
+                      }`}
+                      style={{
+                        WebkitTapHighlightColor: 'transparent',
+                        fontSize: isOnIpad ? '16px' : undefined,
+                        touchAction: 'manipulation'
+                      }}
+                      placeholder="0"
+                    />
+                  )}
                 </div>
               </div>
               

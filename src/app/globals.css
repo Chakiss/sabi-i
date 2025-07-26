@@ -83,6 +83,57 @@ body {
   }
 }
 
+/* iPad iOS 15 Specific Optimizations */
+@media only screen and (max-device-width: 1366px) and (-webkit-min-device-pixel-ratio: 1.5) {
+  /* Force hardware acceleration for smooth scrolling */
+  * {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+  
+  /* Optimize touch interactions */
+  .touch-none {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Improve drag performance */
+  .cursor-move {
+    cursor: -webkit-grab;
+    cursor: grab;
+  }
+  
+  .cursor-move:active {
+    cursor: -webkit-grabbing;
+    cursor: grabbing;
+  }
+  
+  /* Reduce motion for better performance */
+  .no-transition {
+    transition: none !important;
+    animation: none !important;
+  }
+  
+  /* Optimize overflow scrolling */
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+    overflow-scrolling: touch;
+  }
+  
+  /* Fix viewport issues */
+  body {
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+  }
+}
+
 .glass-card {
   background: rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(15px);

@@ -18,6 +18,19 @@ const kanit = Kanit({
 export const metadata = {
   title: "Saba-i Massage Management",
   description: "ระบบจัดการร้านนวดไทย - Saba-i Massage",
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+    viewportFit: 'cover'
+  },
+  themeColor: '#B89B85',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Saba-i Massage'
+  }
 };
 
 export default function RootLayout({ children }) {

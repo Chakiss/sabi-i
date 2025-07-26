@@ -50,6 +50,48 @@ export default function HomePage() {
  const [draggedBooking, setDraggedBooking] = useState(null);
  const [touchStartPos, setTouchStartPos] = useState({ x: 0, y: 0 });
 
+ // Performance optimization for iPad
+ const [isOnIpad, setIsOnIpad] = useState(false);
+
+ // Detect iPad for optimization
+ useEffect(() => {
+ const isIpadDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+ (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+ setIsOnIpad(isIpadDevice);
+ 
+ // Reduce animations on older devices
+ if (isIpadDevice && CSS.supports && !CSS.supports('backdrop-filter', 'blur(10px)')) {
+ document.documentElement.style.setProperty('--animation-duration', '0s');
+ }
+
+ // Optimize scroll performance on iPad
+ if (isIpadDevice) {
+ const handleScroll = () => {
+ // Throttle scroll events for better performance
+ };
+ 
+ let ticking = false;
+ const optimizedScroll = () => {
+ if (!ticking) {
+ requestAnimationFrame(() => {
+ handleScroll();
+ ticking = false;
+ });
+ ticking = true;
+ }
+ };
+ 
+ // Add passive scroll listeners for better performance
+ document.addEventListener('scroll', optimizedScroll, { passive: true });
+ document.addEventListener('touchmove', optimizedScroll, { passive: true });
+ 
+ return () => {
+ document.removeEventListener('scroll', optimizedScroll);
+ document.removeEventListener('touchmove', optimizedScroll);
+ };
+ }
+ }, []);
+
  // Update current time every minute
  useEffect(() => {
  const timer = setInterval(() => {
@@ -276,26 +318,34 @@ export default function HomePage() {
  }
  };
 
- // Touch handlers for mobile/tablet support
+ // Touch handlers for mobile/tablet support - Optimized for iPad iOS 15
  const handleTouchStart = (e, booking) => {
+ e.stopPropagation();
  const touch = e.touches[0];
  setTouchStartPos({ x: touch.clientX, y: touch.clientY });
  setDraggedBooking(booking);
+ 
+ // Add haptic feedback for better UX on iOS
+ if (navigator.vibrate) {
+ navigator.vibrate(50);
+ }
  };
 
  const handleTouchMove = (e) => {
  if (!draggedBooking) return;
  
  e.preventDefault(); // Prevent scrolling
+ e.stopPropagation();
+ 
  const touch = e.touches[0];
  const deltaX = Math.abs(touch.clientX - touchStartPos.x);
  const deltaY = Math.abs(touch.clientY - touchStartPos.y);
  
- // Start dragging if moved more than 10px
- if (deltaX > 10 || deltaY > 10) {
+ // Increase threshold for better touch handling on iPad
+ if (deltaX > 15 || deltaY > 15) {
  setIsDragging(true);
  
- // Find which zone we're over
+ // Optimized element detection for iPad
  const element = document.elementFromPoint(touch.clientX, touch.clientY);
  const dropZone = element?.closest('[data-drop-zone]');
  if (dropZone) {
@@ -316,6 +366,9 @@ export default function HomePage() {
  return;
  }
 
+ e.preventDefault();
+ e.stopPropagation();
+ 
  const touch = e.changedTouches[0];
  const element = document.elementFromPoint(touch.clientX, touch.clientY);
  const dropZone = element?.closest('[data-drop-zone]');
@@ -331,17 +384,29 @@ export default function HomePage() {
  await handleStatusUpdate(draggedBooking.id, targetStatus);
  }
  toast.success('ย้ายคิวสำเร็จ');
+ 
+ // Add success haptic feedback
+ if (navigator.vibrate) {
+ navigator.vibrate([100, 30, 100]);
+ }
  } catch (error) {
  console.error('Error in touch drag and drop:', error);
  toast.error('เกิดข้อผิดพลาดในการย้ายคิว');
+ 
+ // Add error haptic feedback
+ if (navigator.vibrate) {
+ navigator.vibrate([200, 100, 200]);
+ }
  }
  }
  }
 
- // Reset state
+ // Reset state with delay to prevent ghost clicks
+ setTimeout(() => {
  setDraggedBooking(null);
  setIsDragging(false);
  setDragOverZone(null);
+ }, 100);
  };
 
  if (loading) {
@@ -427,31 +492,20 @@ export default function HomePage() {
  <div className="rounded-3xl shadow-2xl p-8 border mb-8 min-h-[calc(100vh-6rem)] relative overflow-hidden" style={{
  background: 'rgba(255, 255, 255, 0.95)',
  borderColor: 'rgba(184, 155, 133, 0.3)',
- backdropFilter: 'blur(20px)',
- WebkitBackdropFilter: 'blur(20px)'
+ backdropFilter: isOnIpad ? 'none' : 'blur(20px)',
+ WebkitBackdropFilter: isOnIpad ? 'none' : 'blur(20px)',
+ willChange: isOnIpad ? 'auto' : 'transform'
  }}>
- {/* Animated Background Elements */}
+ {/* Animated Background Elements - Disabled on older iPads for performance */}
+ {!isOnIpad && (
+ <>
  <div className="absolute top-10 right-10 w-24 h-24 rounded-full blur-2xl animate-pulse" style={{
  background: 'linear-gradient(135deg, rgba(184, 155, 133, 0.2) 0%, rgba(161, 130, 111, 0.2) 100%)'
  }}></div>
  <div className="absolute bottom-10 left-10 w-32 h-32 rounded-full blur-2xl animate-pulse delay-1000" style={{
  background: 'linear-gradient(135deg, rgba(184, 155, 133, 0.15) 0%, rgba(236, 232, 228, 0.3) 100%)'
  }}></div>
- 
- {/* Touch drag feedback overlay */}
- {isDragging && (
- <div className="fixed inset-0 backdrop-blur-sm z-40 flex items-center justify-center pointer-events-none" style={{
- backgroundColor: 'rgba(0, 0, 0, 0.1)',
- backdropFilter: 'blur(4px)',
- WebkitBackdropFilter: 'blur(4px)'
- }}>
- <div className="text-white px-6 py-3 rounded-2xl shadow-2xl font-semibold flex items-center" style={{
- backgroundColor: '#B89B85'
- }}>
- <span className="animate-pulse mr-2">🎯</span>
- ลากไปยังตำแหน่งที่ต้องการ
- </div>
- </div>
+ </>
  )}
  
  <div className="relative z-10">
@@ -528,23 +582,27 @@ export default function HomePage() {
  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
  {/* รอคิว - Enhanced */}
  <div 
- className={`rounded-3xl shadow-2xl p-6 border flex flex-col h-full relative overflow-hidden no-transition ${
+ className={`rounded-3xl shadow-2xl p-6 border flex flex-col h-full relative overflow-hidden ${
+ isOnIpad ? '' : 'no-transition'
+ } ${
  dragOverZone === 'pending' ? 'ring-4 ring-opacity-50 shadow-2xl scale-105' : ''
  }`}
  style={{
  background: 'linear-gradient(135deg, rgba(255, 243, 224, 0.95) 0%, rgba(255, 237, 213, 0.85) 100%)',
  borderColor: dragOverZone === 'pending' ? 'rgba(255, 193, 7, 0.6)' : 'rgba(255, 193, 7, 0.6)',
- backdropFilter: 'blur(20px)',
- WebkitBackdropFilter: 'blur(20px)',
- boxShadow: dragOverZone === 'pending' ? '0 0 0 4px rgba(255, 193, 7, 0.5)' : undefined
+ backdropFilter: isOnIpad ? 'none' : 'blur(20px)',
+ WebkitBackdropFilter: isOnIpad ? 'none' : 'blur(20px)',
+ boxShadow: dragOverZone === 'pending' ? '0 0 0 4px rgba(255, 193, 7, 0.5)' : undefined,
+ transform: isOnIpad ? 'translateZ(0)' : undefined
  }}
  data-drop-zone="pending"
  onDragOver={(e) => handleDragOver(e, 'pending')}
  onDragLeave={handleDragLeave}
  onDrop={(e) => handleDrop(e, 'pending')}
  >
- <div className="absolute top-4 right-4 w-16 h-16 rounded-full blur-xl" style={{
- background: 'linear-gradient(135deg, rgba(255, 193, 7, 0.3) 0%, rgba(255, 152, 0, 0.3) 100%)'
+ <div className="absolute top-4 right-4 w-16 h-16 rounded-full" style={{
+ background: 'linear-gradient(135deg, rgba(255, 193, 7, 0.3) 0%, rgba(255, 152, 0, 0.3) 100%)',
+ filter: isOnIpad ? 'none' : 'blur(1rem)'
  }}></div>
  
  <div className="flex items-center mb-6 relative z-10">
@@ -579,15 +637,19 @@ export default function HomePage() {
  onTouchStart={(e) => handleTouchStart(e, booking)}
  onTouchMove={handleTouchMove}
  onTouchEnd={handleTouchEnd}
- className={`rounded-2xl p-4 shadow-lg border no-transition cursor-move touch-none ${
+ className={`rounded-2xl p-4 shadow-lg border cursor-move touch-none ${
+ isOnIpad ? '' : 'no-transition'
+ } ${
  isDragging && draggedBooking?.id === booking.id ? 'opacity-50 scale-95' : ''
  }`}
  style={{ 
  userSelect: 'none',
  background: 'rgba(255, 255, 255, 0.9)',
  borderColor: 'rgba(255, 193, 7, 0.5)',
- backdropFilter: 'blur(4px)',
- WebkitBackdropFilter: 'blur(4px)'
+ backdropFilter: isOnIpad ? 'none' : 'blur(4px)',
+ WebkitBackdropFilter: isOnIpad ? 'none' : 'blur(4px)',
+ transform: isOnIpad ? 'translateZ(0)' : undefined,
+ WebkitTapHighlightColor: 'transparent'
  }}
  >
  <div className="flex items-center justify-between mb-3">
@@ -724,23 +786,28 @@ export default function HomePage() {
 
  {/* กำลังนวด */}
  <div 
- className={`rounded-3xl shadow-2xl p-6 border flex flex-col h-full relative overflow-hidden no-transition ${
+ className={`rounded-3xl shadow-2xl p-6 border flex flex-col h-full relative overflow-hidden ${
+ isOnIpad ? '' : 'no-transition'
+ } ${
  dragOverZone === 'in_progress' ? 'ring-4 ring-opacity-50 shadow-2xl scale-105' : ''
  }`}
  style={{
  background: 'linear-gradient(135deg, rgba(227, 242, 253, 0.95) 0%, rgba(199, 221, 255, 0.85) 100%)',
  borderColor: dragOverZone === 'in_progress' ? 'rgba(33, 150, 243, 0.6)' : 'rgba(33, 150, 243, 0.6)',
- backdropFilter: 'blur(20px)',
- WebkitBackdropFilter: 'blur(20px)',
- boxShadow: dragOverZone === 'in_progress' ? '0 0 0 4px rgba(33, 150, 243, 0.5)' : undefined
+ backdropFilter: isOnIpad ? 'none' : 'blur(20px)',
+ WebkitBackdropFilter: isOnIpad ? 'none' : 'blur(20px)',
+ boxShadow: dragOverZone === 'in_progress' ? '0 0 0 4px rgba(33, 150, 243, 0.5)' : undefined,
+ transform: isOnIpad ? 'translateZ(0)' : undefined
  }}
  data-drop-zone="in_progress"
  onDragOver={(e) => handleDragOver(e, 'in_progress')}
  onDragLeave={handleDragLeave}
  onDrop={(e) => handleDrop(e, 'in_progress')}
  >
- <div className="absolute top-4 right-4 w-16 h-16 rounded-full blur-xl animate-pulse" style={{
- background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.3) 0%, rgba(63, 81, 181, 0.3) 100%)'
+ <div className="absolute top-4 right-4 w-16 h-16 rounded-full animate-pulse" style={{
+ background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.3) 0%, rgba(63, 81, 181, 0.3) 100%)',
+ filter: isOnIpad ? 'none' : 'blur(1rem)',
+ animationDuration: isOnIpad ? '3s' : '2s'
  }}></div>
  
  <div className="flex items-center mb-6 relative z-10">
@@ -776,15 +843,19 @@ export default function HomePage() {
  onTouchStart={(e) => handleTouchStart(e, booking)}
  onTouchMove={handleTouchMove}
  onTouchEnd={handleTouchEnd}
- className={`rounded-2xl p-4 shadow-lg border no-transition cursor-move touch-none ${
+ className={`rounded-2xl p-4 shadow-lg border cursor-move touch-none ${
+ isOnIpad ? '' : 'no-transition'
+ } ${
  isDragging && draggedBooking?.id === booking.id ? 'opacity-50 scale-95' : ''
  }`}
  style={{ 
  userSelect: 'none',
  background: 'rgba(255, 255, 255, 0.9)',
  borderColor: 'rgba(33, 150, 243, 0.5)',
- backdropFilter: 'blur(4px)',
- WebkitBackdropFilter: 'blur(4px)'
+ backdropFilter: isOnIpad ? 'none' : 'blur(4px)',
+ WebkitBackdropFilter: isOnIpad ? 'none' : 'blur(4px)',
+ transform: isOnIpad ? 'translateZ(0)' : undefined,
+ WebkitTapHighlightColor: 'transparent'
  }}
  >
  <div className="flex items-center justify-between mb-3">
@@ -917,23 +988,27 @@ export default function HomePage() {
 
  {/* เสร็จแล้ว */}
  <div 
- className={`rounded-3xl shadow-2xl p-6 border flex flex-col h-full relative overflow-hidden no-transition ${
+ className={`rounded-3xl shadow-2xl p-6 border flex flex-col h-full relative overflow-hidden ${
+ isOnIpad ? '' : 'no-transition'
+ } ${
  dragOverZone === 'done' ? 'ring-4 ring-opacity-50 shadow-2xl scale-105' : ''
  }`}
  style={{
  background: 'linear-gradient(135deg, rgba(232, 245, 233, 0.95) 0%, rgba(200, 230, 201, 0.85) 100%)',
  borderColor: dragOverZone === 'done' ? 'rgba(76, 175, 80, 0.6)' : 'rgba(76, 175, 80, 0.6)',
- backdropFilter: 'blur(20px)',
- WebkitBackdropFilter: 'blur(20px)',
- boxShadow: dragOverZone === 'done' ? '0 0 0 4px rgba(76, 175, 80, 0.5)' : undefined
+ backdropFilter: isOnIpad ? 'none' : 'blur(20px)',
+ WebkitBackdropFilter: isOnIpad ? 'none' : 'blur(20px)',
+ boxShadow: dragOverZone === 'done' ? '0 0 0 4px rgba(76, 175, 80, 0.5)' : undefined,
+ transform: isOnIpad ? 'translateZ(0)' : undefined
  }}
  data-drop-zone="done"
  onDragOver={(e) => handleDragOver(e, 'done')}
  onDragLeave={handleDragLeave}
  onDrop={(e) => handleDrop(e, 'done')}
  >
- <div className="absolute top-4 right-4 w-16 h-16 rounded-full blur-xl" style={{
- background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.3) 0%, rgba(46, 125, 50, 0.3) 100%)'
+ <div className="absolute top-4 right-4 w-16 h-16 rounded-full" style={{
+ background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.3) 0%, rgba(46, 125, 50, 0.3) 100%)',
+ filter: isOnIpad ? 'none' : 'blur(1rem)'
  }}></div>
  
  <div className="flex items-center mb-6 relative z-10">
@@ -962,11 +1037,12 @@ export default function HomePage() {
  return (
  <div
  key={booking.id}
- className="rounded-2xl p-4 shadow-lg border no-transition" style={{
+ className={`rounded-2xl p-4 shadow-lg border ${isOnIpad ? '' : 'no-transition'}`} style={{
  background: 'rgba(255, 255, 255, 0.9)',
  borderColor: 'rgba(76, 175, 80, 0.5)',
- backdropFilter: 'blur(4px)',
- WebkitBackdropFilter: 'blur(4px)'
+ backdropFilter: isOnIpad ? 'none' : 'blur(4px)',
+ WebkitBackdropFilter: isOnIpad ? 'none' : 'blur(4px)',
+ transform: isOnIpad ? 'translateZ(0)' : undefined
  }}
  >
  <div className="flex items-center justify-between mb-3">

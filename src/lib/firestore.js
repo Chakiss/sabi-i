@@ -638,3 +638,105 @@ const getDailyBreakdown = (bookings, services, year, month) => {
   
   return dailyData;
 };
+
+// ==============================
+// USER MANAGEMENT FUNCTIONS
+// ==============================
+
+// Get all users with their metadata
+export const getAllUsers = async () => {
+  if (shouldUseMock()) {
+    // Return mock users data
+    return [
+      {
+        uid: 'admin-001',
+        email: 'admin@sabai.com',
+        displayName: 'Administrator',
+        role: 'admin',
+        createdAt: new Date('2024-01-15T08:00:00'),
+        lastSignIn: new Date('2025-01-26T10:30:00'),
+        photoURL: null
+      },
+      {
+        uid: 'user-001',
+        email: 'user1@example.com',
+        displayName: 'John Doe',
+        role: 'viewer',
+        createdAt: new Date('2024-03-20T14:15:00'),
+        lastSignIn: new Date('2025-01-25T16:45:00'),
+        photoURL: null
+      },
+      {
+        uid: 'user-002',
+        email: 'user2@example.com',
+        displayName: 'Jane Smith',
+        role: 'viewer',
+        createdAt: new Date('2024-05-10T09:30:00'),
+        lastSignIn: new Date('2025-01-24T11:20:00'),
+        photoURL: null
+      }
+    ];
+  }
+
+  try {
+    const usersRef = collection(db, 'users');
+    const querySnapshot = await getDocs(
+      query(usersRef, orderBy('createdAt', 'desc'))
+    );
+    
+    return querySnapshot.docs.map(doc => ({
+      uid: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate(),
+      lastSignIn: doc.data().lastSignIn?.toDate()
+    }));
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    // Fallback to mock data
+    return getAllUsers();
+  }
+};
+
+// Update user role
+export const updateUserRole = async (uid, role) => {
+  if (shouldUseMock()) {
+    console.log(`Mock: Updated user ${uid} role to ${role}`);
+    return true;
+  }
+
+  try {
+    const userRef = doc(db, 'users', uid);
+    await updateDoc(userRef, {
+      role,
+      updatedAt: Timestamp.now()
+    });
+    return true;
+  } catch (error) {
+    console.error('Error updating user role:', error);
+    throw error;
+  }
+};
+
+// Create or update user metadata
+export const upsertUserMetadata = async (userData) => {
+  if (shouldUseMock()) {
+    console.log('Mock: Upsert user metadata:', userData);
+    return true;
+  }
+
+  try {
+    const { uid, ...data } = userData;
+    const userRef = doc(db, 'users', uid);
+    
+    await setDoc(userRef, {
+      ...data,
+      updatedAt: Timestamp.now(),
+      lastSignIn: Timestamp.now()
+    }, { merge: true });
+    
+    return true;
+  } catch (error) {
+    console.error('Error upserting user metadata:', error);
+    throw error;
+  }
+};

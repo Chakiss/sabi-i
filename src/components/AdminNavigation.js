@@ -8,13 +8,15 @@ import { usePathname } from 'next/navigation';
 import {
   HomeIcon, CalendarDaysIcon, UserGroupIcon, WrenchScrewdriverIcon,
   ChartBarIcon, Cog6ToothIcon, QueueListIcon, ClockIcon,
-  CogIcon, ChevronDownIcon, LockClosedIcon, ArrowRightOnRectangleIcon
+  CogIcon, ChevronDownIcon, LockClosedIcon, ArrowRightOnRectangleIcon,
+  UsersIcon
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeIconSolid, CalendarDaysIcon as CalendarDaysIconSolid, 
   UserGroupIcon as UserGroupIconSolid, WrenchScrewdriverIcon as WrenchScrewdriverIconSolid,
   ChartBarIcon as ChartBarIconSolid, Cog6ToothIcon as Cog6ToothIconSolid, 
-  QueueListIcon as QueueListIconSolid, ClockIcon as ClockIconSolid
+  QueueListIcon as QueueListIconSolid, ClockIcon as ClockIconSolid,
+  UsersIcon as UsersIconSolid
 } from '@heroicons/react/24/solid';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -29,7 +31,8 @@ const DROPDOWNS = [
     icon: CogIcon,
     items: [
       { id: 'therapists', name: 'นักบำบัด', href: '/therapists', icon: UserGroupIcon, activeIcon: UserGroupIconSolid },
-      { id: 'services', name: 'บริการ', href: '/services', icon: WrenchScrewdriverIcon, activeIcon: WrenchScrewdriverIconSolid }
+      { id: 'services', name: 'บริการ', href: '/services', icon: WrenchScrewdriverIcon, activeIcon: WrenchScrewdriverIconSolid },
+      { id: 'users', name: 'จัดการผู้ใช้', href: '/admin/users', icon: UsersIcon, activeIcon: UsersIconSolid }
     ],
     lock: true
   },

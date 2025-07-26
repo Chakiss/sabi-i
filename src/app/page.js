@@ -45,6 +45,11 @@ export default function HomePage() {
  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
  const [dragOverZone, setDragOverZone] = useState(null);
 
+ // Touch drag and drop state for mobile/tablet support
+ const [isDragging, setIsDragging] = useState(false);
+ const [draggedBooking, setDraggedBooking] = useState(null);
+ const [touchStartPos, setTouchStartPos] = useState({ x: 0, y: 0 });
+
  // Update current time every minute
  useEffect(() => {
  const timer = setInterval(() => {
@@ -271,6 +276,74 @@ export default function HomePage() {
  }
  };
 
+ // Touch handlers for mobile/tablet support
+ const handleTouchStart = (e, booking) => {
+ const touch = e.touches[0];
+ setTouchStartPos({ x: touch.clientX, y: touch.clientY });
+ setDraggedBooking(booking);
+ };
+
+ const handleTouchMove = (e) => {
+ if (!draggedBooking) return;
+ 
+ e.preventDefault(); // Prevent scrolling
+ const touch = e.touches[0];
+ const deltaX = Math.abs(touch.clientX - touchStartPos.x);
+ const deltaY = Math.abs(touch.clientY - touchStartPos.y);
+ 
+ // Start dragging if moved more than 10px
+ if (deltaX > 10 || deltaY > 10) {
+ setIsDragging(true);
+ 
+ // Find which zone we're over
+ const element = document.elementFromPoint(touch.clientX, touch.clientY);
+ const dropZone = element?.closest('[data-drop-zone]');
+ if (dropZone) {
+ const targetStatus = dropZone.getAttribute('data-drop-zone');
+ setDragOverZone(targetStatus);
+ } else {
+ setDragOverZone(null);
+ }
+ }
+ };
+
+ const handleTouchEnd = async (e) => {
+ if (!draggedBooking || !isDragging) {
+ // Reset state
+ setDraggedBooking(null);
+ setIsDragging(false);
+ setDragOverZone(null);
+ return;
+ }
+
+ const touch = e.changedTouches[0];
+ const element = document.elementFromPoint(touch.clientX, touch.clientY);
+ const dropZone = element?.closest('[data-drop-zone]');
+ 
+ if (dropZone) {
+ const targetStatus = dropZone.getAttribute('data-drop-zone');
+ 
+ if (draggedBooking.status !== targetStatus) {
+ try {
+ if (targetStatus === 'done') {
+ handleCompleteBooking(draggedBooking);
+ } else {
+ await handleStatusUpdate(draggedBooking.id, targetStatus);
+ }
+ toast.success('ย้ายคิวสำเร็จ');
+ } catch (error) {
+ console.error('Error in touch drag and drop:', error);
+ toast.error('เกิดข้อผิดพลาดในการย้ายคิว');
+ }
+ }
+ }
+
+ // Reset state
+ setDraggedBooking(null);
+ setIsDragging(false);
+ setDragOverZone(null);
+ };
+
  if (loading) {
  return (
  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F8F5F2] via-[#ECE8E4] to-[#F0EBE7]">
@@ -331,6 +404,16 @@ export default function HomePage() {
  <div className="absolute top-10 right-10 w-24 h-24 bg-gradient-to-br from-[#B89B85]/20 to-[#A1826F]/20 rounded-full blur-2xl animate-pulse"></div>
  <div className="absolute bottom-10 left-10 w-32 h-32 bg-gradient-to-br from-[#B89B85]/15 to-[#ECE8E4]/30 rounded-full blur-2xl animate-pulse delay-1000"></div>
  
+ {/* Touch drag feedback overlay */}
+ {isDragging && (
+ <div className="fixed inset-0 bg-black/10 backdrop-blur-sm z-40 flex items-center justify-center pointer-events-none">
+ <div className="bg-[#B89B85] text-white px-6 py-3 rounded-2xl shadow-2xl font-semibold flex items-center">
+ <span className="animate-pulse mr-2">🎯</span>
+ ลากไปยังตำแหน่งที่ต้องการ
+ </div>
+ </div>
+ )}
+ 
  <div className="relative z-10">
  <div className="flex items-center justify-between mb-8">
  <div className="flex items-center space-x-4">
@@ -343,7 +426,7 @@ export default function HomePage() {
  </h2>
  <p className="text-[#7E7B77] font-medium flex items-center">
  <span className="w-3 h-3 bg-[#B89B85] rounded-full mr-2 animate-pulse inline-block"></span>
- ({sortedBookings.length} คิว) อัพเดทสถานะและติดตามคิว
+ ({sortedBookings.length} คิว) ลากและวางเพื่อเปลี่ยนสถานะ
  </p>
  </div>
  </div>
@@ -392,6 +475,7 @@ export default function HomePage() {
  className={`bg-gradient-to-br from-yellow-50/95 to-orange-50/85 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-yellow-200/60 flex flex-col h-full relative overflow-hidden no-transition ${
  dragOverZone === 'pending' ? 'ring-4 ring-yellow-400 ring-opacity-50 shadow-2xl scale-105' : ''
  }`}
+ data-drop-zone="pending"
  onDragOver={(e) => handleDragOver(e, 'pending')}
  onDragLeave={handleDragLeave}
  onDrop={(e) => handleDrop(e, 'pending')}
@@ -425,7 +509,13 @@ export default function HomePage() {
  draggable
  onDragStart={(e) => handleDragStart(e, booking)}
  onDragEnd={handleDragEnd}
- className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-yellow-200/50 no-transition "
+ onTouchStart={(e) => handleTouchStart(e, booking)}
+ onTouchMove={handleTouchMove}
+ onTouchEnd={handleTouchEnd}
+ className={`bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-yellow-200/50 no-transition cursor-move touch-none ${
+ isDragging && draggedBooking?.id === booking.id ? 'opacity-50 scale-95' : ''
+ }`}
+ style={{ userSelect: 'none' }}
  >
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center">
@@ -543,6 +633,7 @@ export default function HomePage() {
  className={`bg-gradient-to-br from-blue-50/95 to-indigo-50/85 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-blue-200/60 flex flex-col h-full relative overflow-hidden no-transition ${
  dragOverZone === 'in_progress' ? 'ring-4 ring-blue-400 ring-opacity-50 shadow-2xl scale-105' : ''
  }`}
+ data-drop-zone="in_progress"
  onDragOver={(e) => handleDragOver(e, 'in_progress')}
  onDragLeave={handleDragLeave}
  onDrop={(e) => handleDrop(e, 'in_progress')}
@@ -577,7 +668,13 @@ export default function HomePage() {
  draggable
  onDragStart={(e) => handleDragStart(e, booking)}
  onDragEnd={handleDragEnd}
- className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-blue-200/50 no-transition "
+ onTouchStart={(e) => handleTouchStart(e, booking)}
+ onTouchMove={handleTouchMove}
+ onTouchEnd={handleTouchEnd}
+ className={`bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-blue-200/50 no-transition cursor-move touch-none ${
+ isDragging && draggedBooking?.id === booking.id ? 'opacity-50 scale-95' : ''
+ }`}
+ style={{ userSelect: 'none' }}
  >
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center">
@@ -691,6 +788,7 @@ export default function HomePage() {
  className={`bg-gradient-to-br from-green-50/95 to-emerald-50/85 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-green-200/60 flex flex-col h-full relative overflow-hidden no-transition ${
  dragOverZone === 'done' ? 'ring-4 ring-green-400 ring-opacity-50 shadow-2xl scale-105' : ''
  }`}
+ data-drop-zone="done"
  onDragOver={(e) => handleDragOver(e, 'done')}
  onDragLeave={handleDragLeave}
  onDrop={(e) => handleDrop(e, 'done')}
@@ -721,7 +819,7 @@ export default function HomePage() {
  return (
  <div
  key={booking.id}
- className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-green-200/50 no-transition "
+ className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-green-200/50 no-transition"
  >
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center">

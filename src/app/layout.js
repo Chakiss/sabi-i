@@ -1,15 +1,18 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { Nunito, Kanit } from "next/font/google";
 import "./globals.css";
 import { Toaster } from 'react-hot-toast';
+import { AuthProvider } from '../contexts/AuthContext';
+import AppWrapper from '../components/AppWrapper';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const nunito = Nunito({
+  variable: "--font-body",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const kanit = Kanit({
+  variable: "--font-heading",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata = {
@@ -21,9 +24,13 @@ export default function RootLayout({ children }) {
   return (
     <html lang="th">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}
+        className={`${kanit.variable} ${nunito.variable} font-body antialiased bg-background`}
       >
-        {children}
+        <AuthProvider>
+          <AppWrapper>
+            {children}
+          </AppWrapper>
+        </AuthProvider>
         <Toaster
           position="top-right"
           toastOptions={{

@@ -21,7 +21,10 @@ export default function EditBookingModal({ booking, isOpen, onClose, onUpdate })
     serviceId: '',
     therapistId: '',
     startTime: '',
-    duration: 60
+    duration: 60,
+    discountType: 'amount', // 'amount' or 'percentage'
+    discountValue: 0,
+    finalPrice: 0
   });
   
   const [therapists, setTherapists] = useState([]);
@@ -29,8 +32,35 @@ export default function EditBookingModal({ booking, isOpen, onClose, onUpdate })
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
 
+  // Auto-calculate final price when discount or service changes
+  useEffect(() => {
+    if (formData.serviceId && formData.duration) {
+      const selectedService = services.find(s => s.id === formData.serviceId);
+      const originalPrice = selectedService?.priceByDuration?.[formData.duration] || 0;
+      
+      if (originalPrice > 0) {
+        let discountAmount = 0;
+        if (formData.discountType === 'percentage') {
+          discountAmount = originalPrice * (formData.discountValue / 100);
+        } else {
+          discountAmount = formData.discountValue;
+        }
+        
+        const calculatedFinal = Math.max(0, originalPrice - discountAmount);
+        
+        // Always update finalPrice to calculated value
+        setFormData(prev => ({ ...prev, finalPrice: calculatedFinal }));
+      }
+    }
+  }, [formData.serviceId, formData.duration, formData.discountType, formData.discountValue, services]);
+
   useEffect(() => {
     if (isOpen && booking) {
+      console.log('📊 EditBookingModal: Opening with booking data:', booking);
+      
+      // Reset loading state when modal opens
+      setDataLoading(true);
+      
       // Load booking data into form
       const startDateTime = new Date(booking.startTime);
       
@@ -42,34 +72,56 @@ export default function EditBookingModal({ booking, isOpen, onClose, onUpdate })
       const minutes = String(startDateTime.getMinutes()).padStart(2, '0');
       const formattedDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
       
-      setFormData({
+      const newFormData = {
         customerName: booking.customerName || '',
         customerPhone: booking.customerPhone || '',
         serviceId: booking.serviceId || '',
         therapistId: booking.therapistId || '',
         startTime: formattedDateTime,
-        duration: booking.duration || 60
-      });
+        duration: booking.duration || 60,
+        discountType: booking.discountType || 'amount',
+        discountValue: booking.discountValue || 0,
+        finalPrice: booking.finalPrice || 0
+      };
+      
+      console.log('📊 EditBookingModal: Setting form data:', newFormData);
+      setFormData(newFormData);
       
       // Load therapists and services
       loadData();
+    } else if (!isOpen) {
+      // Reset states when modal closes
+      console.log('📊 EditBookingModal: Closing modal, resetting states');
+      setDataLoading(true);
+      setTherapists([]);
+      setServices([]);
     }
   }, [isOpen, booking]);
 
   const loadData = async () => {
     try {
+      console.log('📊 EditBookingModal: Loading therapists and services...');
+      
       const [therapistsData, servicesData] = await Promise.all([
         getTherapists(),
         getServices()
       ]);
       
+      console.log('📊 EditBookingModal: Loaded data:', {
+        therapists: therapistsData.length,
+        services: servicesData.length
+      });
+      
       setTherapists(therapistsData); // Show all therapists for editing (including day_off)
       setServices(servicesData);
+      
+      console.log('📊 EditBookingModal: Data loaded successfully');
     } catch (error) {
-      console.error('Error loading data:', error);
-      toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+      console.error('❌ EditBookingModal: Error loading data:', error);
+      toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + error.message);
     } finally {
       setDataLoading(false);
+      console.log('📊 EditBookingModal: Loading completed');
     }
   };
 
@@ -111,13 +163,20 @@ export default function EditBookingModal({ booking, isOpen, onClose, onUpdate })
       }
 
       // Prepare update data
+      const selectedService = services.find(s => s.id === formData.serviceId);
+      const originalPrice = selectedService?.priceByDuration?.[formData.duration] || 0;
+      
       const updateData = {
         customerName: formData.customerName.trim(),
         customerPhone: formData.customerPhone.trim(),
         serviceId: formData.serviceId,
         therapistId: formData.therapistId,
         startTime: new Date(formData.startTime),
-        duration: formData.duration
+        duration: formData.duration,
+        originalPrice: originalPrice, // เก็บราคาเต็มก่อนลด
+        discountType: formData.discountType || 'amount',
+        discountValue: formData.discountValue || 0,
+        finalPrice: formData.finalPrice || 0
       };
 
       await updateBooking(booking.id, updateData);
@@ -132,6 +191,32 @@ export default function EditBookingModal({ booking, isOpen, onClose, onUpdate })
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper function to calculate and display discount information
+  const getDiscountInfo = () => {
+    if (!formData.serviceId || !formData.duration) return null;
+    
+    const selectedService = services.find(s => s.id === formData.serviceId);
+    const originalPrice = selectedService?.priceByDuration?.[formData.duration] || 0;
+    
+    if (originalPrice === 0) return null;
+    
+    let discountAmount = 0;
+    if (formData.discountType === 'percentage') {
+      discountAmount = originalPrice * (formData.discountValue / 100);
+    } else {
+      discountAmount = formData.discountValue;
+    }
+    
+    const calculatedFinal = Math.max(0, originalPrice - discountAmount);
+    
+    return {
+      originalPrice,
+      discountAmount,
+      calculatedFinal,
+      hasDiscount: formData.discountValue > 0
+    };
   };
 
   if (!isOpen) return null;
@@ -178,7 +263,10 @@ export default function EditBookingModal({ booking, isOpen, onClose, onUpdate })
             </div>
             <p className="text-gray-600 font-medium text-lg">
               <SparklesIcon className="h-5 w-5 inline mr-2" />
-              กำลังโหลดข้อมูล...
+              กำลังโหลดข้อมูลจาก Firebase...
+            </p>
+            <p className="text-gray-500 text-sm mt-2">
+              โหลดข้อมูลหมอนวดและบริการ
             </p>
           </div>
         ) : (
@@ -247,12 +335,21 @@ export default function EditBookingModal({ booking, isOpen, onClose, onUpdate })
                     className="w-full px-5 py-4 border border-purple-200/50 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md font-medium"
                   >
                     <option value="">🎯 เลือกบริการที่ต้องการ</option>
-                    {services.map(service => (
-                      <option key={service.id} value={service.id}>
-                        ✨ {service.name} ({service.category})
-                      </option>
-                    ))}
+                    {services.length === 0 ? (
+                      <option disabled>ไม่มีข้อมูลบริการ</option>
+                    ) : (
+                      services.map(service => (
+                        <option key={service.id} value={service.id}>
+                          ✨ {service.name} ({service.category})
+                        </option>
+                      ))
+                    )}
                   </select>
+                  {services.length === 0 && (
+                    <p className="text-sm text-red-600 mt-1">
+                      ⚠️ ไม่สามารถโหลดข้อมูลบริการได้
+                    </p>
+                  )}
                 </div>
 
                 {/* Duration Selection */}
@@ -296,12 +393,21 @@ export default function EditBookingModal({ booking, isOpen, onClose, onUpdate })
                     className="w-full px-5 py-4 border border-purple-200/50 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md font-medium"
                   >
                     <option value="">👩‍⚕️ เลือกหมอนวด</option>
-                    {therapists.map(therapist => (
-                      <option key={therapist.id} value={therapist.id}>
-                        🌟 {therapist.name}
-                      </option>
-                    ))}
+                    {therapists.length === 0 ? (
+                      <option disabled>ไม่มีข้อมูลหมอนวด</option>
+                    ) : (
+                      therapists.map(therapist => (
+                        <option key={therapist.id} value={therapist.id}>
+                          🌟 {therapist.name}
+                        </option>
+                      ))
+                    )}
                   </select>
+                  {therapists.length === 0 && (
+                    <p className="text-sm text-red-600 mt-1">
+                      ⚠️ ไม่สามารถโหลดข้อมูลหมอนวดได้
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -326,6 +432,88 @@ export default function EditBookingModal({ booking, isOpen, onClose, onUpdate })
                   min={new Date().toISOString().slice(0, 16)}
                 />
               </div>
+            </div>
+
+            {/* Discount Section */}
+            <div className="bg-gradient-to-r from-yellow-50/80 to-orange-50/60 backdrop-blur-sm border border-yellow-200/30 rounded-2xl p-6">
+              <h3 className="text-xl font-semibold text-yellow-800 mb-6 flex items-center">
+                <SparklesIcon className="h-6 w-6 mr-3" />
+                ส่วนลดและราคา
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700">
+                    📊 ประเภทส่วนลด
+                  </label>
+                  <select
+                    value={formData.discountType}
+                    onChange={(e) => {
+                      const discountType = e.target.value;
+                      setFormData({...formData, discountType, discountValue: 0});
+                    }}
+                    className="w-full px-5 py-4 border border-yellow-200/50 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md font-medium"
+                  >
+                    <option value="amount">💰 ลดเป็นจำนวนเงิน (บาท)</option>
+                    <option value="percentage">📊 ลดเป็นเปอร์เซ็นต์ (%)</option>
+                  </select>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700">
+                    {formData.discountType === 'percentage' ? '📊 ส่วนลด (%)' : '💰 ส่วนลด (บาท)'}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max={formData.discountType === 'percentage' ? "100" : undefined}
+                    value={formData.discountValue}
+                    onChange={(e) => {
+                      const discountValue = parseFloat(e.target.value) || 0;
+                      setFormData({...formData, discountValue});
+                    }}
+                    className="w-full px-5 py-4 border border-yellow-200/50 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md font-medium"
+                    placeholder={formData.discountType === 'percentage' ? "0-100" : "0"}
+                  />
+                </div>
+              </div>
+              
+              {/* Real-time Discount Calculation Display */}
+              {(() => {
+                const discountInfo = getDiscountInfo();
+                
+                if (discountInfo) {
+                  return (
+                    <div className="mt-4 p-4 bg-white/60 rounded-xl border border-yellow-200/40">
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <div className="flex justify-between">
+                          <span>💵 ราคาเต็ม:</span>
+                          <span className="font-semibold">{dateTimeUtils.formatCurrency(discountInfo.originalPrice)}</span>
+                        </div>
+                        {discountInfo.hasDiscount && (
+                          <div className="flex justify-between text-red-600">
+                            <span>🎯 ส่วนลด ({formData.discountType === 'percentage' ? `${formData.discountValue}%` : 'จำนวนเงิน'}):</span>
+                            <span className="font-semibold">-{dateTimeUtils.formatCurrency(discountInfo.discountAmount)}</span>
+                          </div>
+                        )}
+                        <hr className="border-yellow-200" />
+                        <div className="flex justify-between text-xl font-bold text-green-700">
+                          <span>💳 ราคาสุดท้าย:</span>
+                          <span>{dateTimeUtils.formatCurrency(discountInfo.calculatedFinal)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div className="mt-4 p-4 bg-gray-50/60 rounded-xl border border-gray-200/40">
+                      <div className="text-sm text-gray-500 text-center">
+                        📋 กรุณาเลือกบริการและระยะเวลาเพื่อดูการคำนวณราคา
+                      </div>
+                    </div>
+                  );
+                }
+              })()}
             </div>
 
             <div className="flex justify-end space-x-4 pt-6 border-t border-white/20">

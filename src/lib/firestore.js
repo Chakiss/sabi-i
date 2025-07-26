@@ -10,9 +10,15 @@ import {
   query,
   where,
   orderBy,
-  Timestamp 
+  limit,
+  Timestamp,
+  serverTimestamp,
+  arrayUnion,
+  arrayRemove
 } from 'firebase/firestore';
 import { db } from './firebase';
+import { MOCK_DATA } from './mockData';
+import { debugLog } from './debugConfig';
 import {
   addTherapistMock,
   getTherapistsMock,
@@ -294,10 +300,10 @@ export const addBooking = async (bookingData) => {
 };
 
 export const getTodayBookings = async () => {
-  console.log('📅 getTodayBookings called');
+  debugLog('firestore', '📅 getTodayBookings called');
   
   if (shouldUseMock()) {
-    console.log('🎭 Using mock data for today bookings');
+    debugLog('firestore', '🎭 Using mock data for today bookings');
     return getTodayBookingsMock();
   }
   
@@ -307,7 +313,7 @@ export const getTodayBookings = async () => {
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
     
-    console.log('🗓️ Querying bookings for date range:', { startOfDay, endOfDay });
+    debugLog('firestore', '🗓️ Querying bookings for date range:', { startOfDay, endOfDay });
     
     const q = query(
       bookingsRef,
@@ -323,7 +329,7 @@ export const getTodayBookings = async () => {
       startTime: doc.data().startTime?.toDate()
     }));
     
-    console.log('🔥 Firebase bookings fetched:', bookings.map(b => ({ id: b.id, status: b.status, customer: b.customerName })));
+    debugLog('firestore', '🔥 Firebase bookings fetched:', bookings.map(b => ({ id: b.id, status: b.status, customer: b.customerName })));
     
     return bookings;
   } catch (error) {
@@ -333,10 +339,10 @@ export const getTodayBookings = async () => {
 };
 
 export const updateBookingStatus = async (bookingId, status, discountData = null) => {
-  console.log('📝 updateBookingStatus called:', { bookingId, status, discountData });
+  debugLog('firestore', '📝 updateBookingStatus called:', { bookingId, status, discountData });
   
   if (shouldUseMock()) {
-    console.log('🎭 Using mock data for booking status update');
+    debugLog('firestore', '🎭 Using mock data for booking status update');
     return updateBookingStatusMock(bookingId, status, discountData);
   }
   

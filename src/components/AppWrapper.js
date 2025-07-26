@@ -2,8 +2,10 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import LoginPage from '@/components/LoginPage';
-import RoleBasedNavigation from '@/components/RoleBasedNavigation';
+import AdminNavigation from '@/components/AdminNavigation';
+import ViewerNavigation from '@/components/ViewerNavigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import PublicRoute from '@/components/PublicRoute';
 import { LoadingSpinner } from '@/components/LoadingComponents';
 
 /**
@@ -13,7 +15,7 @@ import { LoadingSpinner } from '@/components/LoadingComponents';
  * - แสดง Main App พร้อม Navigation เมื่อ login แล้ว
  */
 export default function AppWrapper({ children }) {
-  const { user, loading } = useAuth();
+  const { user, role, loading } = useAuth();
 
   // กำลังโหลดสถานะ Authentication
   if (loading) {
@@ -27,25 +29,35 @@ export default function AppWrapper({ children }) {
     );
   }
 
-  // ยังไม่ได้ login - แสดงหน้า Login
+  // ยังไม่ได้ login - แสดงหน้าแรกแบบ viewer (ไม่ต้อง login ทันที)
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <LoginPage />
+      <div className="min-h-screen bg-background">
+        {/* แสดง ViewerNavigation เสมอเมื่อยังไม่ได้ login */}
+        <ViewerNavigation />
+        
+        {/* Main Content Area - ใช้ PublicRoute แทน ProtectedRoute */}
+        <main className="flex-1 overflow-auto">
+          <PublicRoute>
+            <div className="w-full">
+              {children}
+            </div>
+          </PublicRoute>
+        </main>
       </div>
     );
   }
 
   // Login แล้ว - แสดง Main Application
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Navigation Sidebar */}
-      <RoleBasedNavigation />
+    <div className="min-h-screen bg-background">
+      {/* Navigation - แสดงตาม role ที่ login */}
+      {role === 'admin' ? <AdminNavigation /> : <ViewerNavigation />}
       
       {/* Main Content Area */}
       <main className="flex-1 overflow-auto">
         <ProtectedRoute>
-          <div className="p-6 max-w-7xl mx-auto">
+          <div className="w-full">
             {children}
           </div>
         </ProtectedRoute>

@@ -90,5 +90,27 @@ export const dateTimeUtils = {
     const hours = now.getHours().toString().padStart(2, '0');
     const minutes = now.getMinutes().toString().padStart(2, '0');
     return `${hours}:${minutes}`;
+  },
+
+  // Calculate end time from start time and duration in minutes
+  calculateEndTime: (startTime, durationMinutes) => {
+    const endTime = new Date(startTime);
+    endTime.setTime(endTime.getTime() + durationMinutes * 60000);
+    return endTime;
+  },
+
+  // Format time range (start - end)
+  formatTimeRange: (startTime, durationMinutes) => {
+    const start = new Date(startTime).toLocaleTimeString('th-TH', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    const endTime = new Date(startTime);
+    endTime.setTime(endTime.getTime() + durationMinutes * 60000);
+    const end = endTime.toLocaleTimeString('th-TH', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    return `${start} - ${end}`;
   }
 };

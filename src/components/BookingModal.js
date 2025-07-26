@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { XMarkIcon, CalendarIcon, ClockIcon, UserIcon, PhoneIcon, SparklesIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 import { addBooking, getConfig, getBookingsByDate, getCustomers, getCustomerByPhone, upsertCustomer } from '@/lib/firestore';
 import { toast } from 'react-hot-toast';
+import { debugLog } from '@/lib/debugConfig';
 
 // Helper function to handle different date formats from Firebase
 const parseFirebaseDate = (dateValue) => {
@@ -79,9 +80,9 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
         setCustomers(customersData);
         
         // Debug log to check customer data structure
-        console.log('Loaded customers:', customersData);
+        debugLog('booking', 'Loaded customers:', customersData);
         if (customersData.length > 0) {
-          console.log('First customer lastVisit:', customersData[0].lastVisit, 'type:', typeof customersData[0].lastVisit);
+          debugLog('booking', 'First customer lastVisit:', customersData[0].lastVisit, 'type:', typeof customersData[0].lastVisit);
         }
       } catch (error) {
         console.error('Error loading initial data:', error);
@@ -346,7 +347,7 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
     setLoading(true);
     
     try {
-      // Get selected service price
+      // Get selected service price (reuse from validation above)
       const selectedService = services.find(s => s.id === formData.serviceId);
       const originalPrice = selectedService?.priceByDuration?.[formData.duration] || 0;
       let finalPrice = originalPrice;
@@ -421,7 +422,8 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
         console.log('✅ Created new customer:', formData.customerPhone);
       }
 
-      // Create booking data
+      // Create booking data (reuse selectedService and originalPrice from above)
+      
       const bookingData = {
         customerName: formData.customerName.trim(),
         customerPhone: formData.customerPhone.trim(),
@@ -432,6 +434,7 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
         status: 'pending',
         channel: formData.channel,
         notes: formData.notes.trim() || '',
+        originalPrice: originalPrice, // เก็บราคาเต็มก่อนลด
         // Add discount information if applied
         ...(formData.discountType !== 'none' && formData.discountValue && {
           discountType: formData.discountType,
@@ -448,8 +451,6 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
       // Success message with customer management and discount info
       let successMessage = 'จองคิวสำเร็จแล้ว! 🎉' + customerMessage;
       if (formData.discountType !== 'none' && formData.discountValue) {
-        const selectedService = services.find(s => s.id === formData.serviceId);
-        const originalPrice = selectedService?.priceByDuration?.[formData.duration] || 0;
         successMessage += ` (ราคาเต็ม ฿${originalPrice.toLocaleString()} → ราคาสุทธิ ฿${finalPrice.toLocaleString()})`;
       }
       

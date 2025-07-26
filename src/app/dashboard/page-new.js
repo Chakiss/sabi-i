@@ -460,23 +460,7 @@ export default function DashboardPage() {
             การดำเนินการด่วน
           </h3>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Link
-              href="/queue"
-              className="p-6 bg-gradient-to-br from-blue-100/80 to-blue-200/60 rounded-2xl border border-blue-200/50 hover:shadow-lg transition-all duration-200 transform hover:scale-105 text-center"
-            >
-              <CalendarDaysIcon className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-              <div className="font-semibold text-blue-800">จัดการคิว</div>
-            </Link>
-            
-            <Link
-              href="/booking"
-              className="p-6 bg-gradient-to-br from-green-100/80 to-green-200/60 rounded-2xl border border-green-200/50 hover:shadow-lg transition-all duration-200 transform hover:scale-105 text-center"
-            >
-              <UserIcon className="h-8 w-8 text-green-600 mx-auto mb-2" />
-              <div className="font-semibold text-green-800">จองคิวใหม่</div>
-            </Link>
-            
+          <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
             <Link
               href="/reports"
               className="p-6 bg-gradient-to-br from-purple-100/80 to-purple-200/60 rounded-2xl border border-purple-200/50 hover:shadow-lg transition-all duration-200 transform hover:scale-105 text-center"

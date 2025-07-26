@@ -126,33 +126,6 @@ export default function SchedulePage() {
 
   return (
     <div className="min-h-screen thai-pattern">
-      {/* Header */}
-      <div className="glass-header sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/"
-                className="p-2 rounded-lg glass-button hover:bg-white/20 transition-all duration-200"
-              >
-                <ArrowLeftIcon className="h-6 w-6 text-gray-600" />
-              </Link>
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-xl font-bold shadow-lg">
-                📅
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">
-                  ตารางคิวล่วงหน้า
-                </h1>
-                <p className="text-gray-600 mt-1">
-                  ดูคิวทั้งหมดในแต่ละวัน
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           

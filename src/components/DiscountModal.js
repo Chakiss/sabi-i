@@ -4,15 +4,22 @@ import { useState, useEffect } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { getConfig } from '@/lib/firestore';
 
-export default function DiscountModal({ isOpen, onClose, booking, onComplete }) {
+export default function DiscountModal({ isOpen, onClose, booking, onComplete, services = [] }) {
   const [discountType, setDiscountType] = useState('none');
   const [discountValue, setDiscountValue] = useState('');
   const [finalPrice, setFinalPrice] = useState(0);
   const [config, setConfig] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Get service price
-  const originalPrice = booking?.servicePrice || 0;
+  // Get service price from services data
+  const originalPrice = (() => {
+    if (!booking || !services.length) return 0;
+    
+    const service = services.find(s => s.id === booking.serviceId);
+    if (!service?.priceByDuration) return booking.servicePrice || 0;
+    
+    return service.priceByDuration[booking.duration] || booking.servicePrice || 0;
+  })();
 
   // Load config
   useEffect(() => {
@@ -60,6 +67,7 @@ export default function DiscountModal({ isOpen, onClose, booking, onComplete }) 
     
     try {
       const discountData = {
+        originalPrice: originalPrice, // เก็บราคาเต็มก่อนลด
         discountType: discountType === 'none' ? null : discountType,
         discountValue: discountType === 'none' ? 0 : parseFloat(discountValue) || 0,
         finalPrice: finalPrice,
@@ -163,10 +171,19 @@ export default function DiscountModal({ isOpen, onClose, booking, onComplete }) 
               </div>
               <div className="flex justify-between items-center p-2.5 bg-white/60 rounded-lg">
                 <span className="text-gray-700 font-medium text-sm">✨ บริการ:</span>
-                <span className="font-bold text-gray-800 text-sm">{booking.serviceName}</span>
+                <span className="font-bold text-gray-800 text-sm">
+                  {(() => {
+                    const service = services.find(s => s.id === booking.serviceId);
+                    return service?.name || booking.serviceName || 'ไม่ระบุ';
+                  })()}
+                </span>
               </div>
               <div className="flex justify-between items-center p-2.5 bg-white/60 rounded-lg">
-                <span className="text-gray-700 font-medium text-sm">⏱️ เวลา:</span>
+                <span className="text-gray-700 font-medium text-sm">⏱️ ระยะเวลา:</span>
+                <span className="font-bold text-gray-800 text-sm">{booking.duration} นาที</span>
+              </div>
+              <div className="flex justify-between items-center p-2.5 bg-white/60 rounded-lg">
+                <span className="text-gray-700 font-medium text-sm">🕐 เวลา:</span>
                 <span className="font-bold text-gray-800 text-sm">
                   {new Date(booking.startTime || Date.now()).toLocaleString('th-TH', {
                     day: 'numeric',
@@ -303,6 +320,27 @@ export default function DiscountModal({ isOpen, onClose, booking, onComplete }) 
                   <span className="font-semibold text-sm">💳 วิธีการชำระเงิน: เงินสด / โอนเงิน</span>
                 </div>
               </div>
+
+              {/* Commission Information */}
+              {config?.commissionRate && (
+                <div className="p-3 bg-purple-50/70 rounded-lg border border-purple-200/50">
+                  <h4 className="font-semibold text-purple-800 text-sm mb-2">📊 การแบ่งรายได้:</h4>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-purple-700">👩‍⚕️ ค่าคอมมิชชั่นหมอนวด ({(config.commissionRate * 100).toFixed(0)}%):</span>
+                      <span className="font-bold text-purple-800">
+                        ฿{Math.floor(originalPrice * config.commissionRate).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-purple-700">🏪 รายได้ร้าน:</span>
+                      <span className="font-bold text-purple-800">
+                        ฿{(finalPrice - Math.floor(originalPrice * config.commissionRate)).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

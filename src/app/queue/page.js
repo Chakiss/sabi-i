@@ -20,7 +20,6 @@ export default function QueuePage() {
   const [completingBooking, setCompletingBooking] = useState(null);
   const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-  const [dragOverZone, setDragOverZone] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -47,85 +46,6 @@ export default function QueuePage() {
       toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Drag and Drop handlers
-  const handleDragOver = (e, targetStatus) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    setDragOverZone(targetStatus);
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    setDragOverZone(null);
-  };
-
-  const handleDrop = async (e, targetStatus) => {
-    e.preventDefault();
-    setDragOverZone(null);
-    
-    try {
-      const dragData = JSON.parse(e.dataTransfer.getData('application/json'));
-      const { bookingId, currentStatus, booking } = dragData;
-      
-      // Don't do anything if dropping on the same status
-      if (currentStatus === targetStatus) {
-        return;
-      }
-      
-      // Validate status transitions
-      const validTransitions = {
-        'pending': ['in_progress', 'done'],
-        'in_progress': ['pending', 'done'],
-        'done': ['pending', 'in_progress']
-      };
-      
-      if (!validTransitions[currentStatus]?.includes(targetStatus)) {
-        toast.error('ไม่สามารถเปลี่ยนสถานะแบบนี้ได้');
-        return;
-      }
-      
-      // Special handling for completing booking (moving to done)
-      if (targetStatus === 'done') {
-        const service = services.find(s => s.id === booking.serviceId);
-        const servicePrice = service?.priceByDuration?.[booking.duration] || 0;
-        const bookingWithPrice = {
-          ...booking,
-          serviceName: service?.name,
-          servicePrice: servicePrice
-        };
-        handleCompleteBooking(bookingWithPrice);
-      } else {
-        // Regular status update
-        await handleStatusUpdate(bookingId, targetStatus);
-        toast.success(`ย้ายคิวไปยัง "${getStatusDisplayName(targetStatus)}" แล้ว`, {
-          icon: getStatusEmoji(targetStatus)
-        });
-      }
-      
-    } catch (error) {
-      console.error('Error in drag and drop:', error);
-      toast.error('เกิดข้อผิดพลาดในการย้ายคิว');
-    }
-  };
-
-  const getStatusDisplayName = (status) => {
-    switch (status) {
-      case 'pending': return 'รอคิว';
-      case 'in_progress': return 'กำลังนวด';
-      case 'done': return 'เสร็จแล้ว';
-      default: return status;
-    }
-  };
-
-  const getStatusEmoji = (status) => {
-    switch (status) {
-      case 'pending': return '⏳';
-      case 'in_progress': return '💆‍♀️';
-      case 'done': return '✅';
-      default: return '📋';
     }
   };
 
@@ -179,6 +99,15 @@ export default function QueuePage() {
       case 'in_progress': return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'done': return 'bg-green-100 text-green-800 border-green-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'pending': return ClockIcon;
+      case 'in_progress': return PlayCircleIcon;
+      case 'done': return CheckCircleIcon;
+      default: return ClockIcon;
     }
   };
 
@@ -275,7 +204,7 @@ export default function QueuePage() {
                 <p className="text-gray-600 mt-1 font-medium">
                   อัพเดทสถานะและติดตามคิว ({sortedBookings.length} คิว)
                   <span className="block text-sm text-gray-500 mt-1 font-normal">
-                    ✨ คิวที่เสร็จแล้วไม่สามารถแก้ไขได้ | 🖱️ ลากการ์ดเพื่อเปลี่ยนสถานะ
+                    ✨ คิวที่เสร็จแล้วไม่สามารถแก้ไขได้
                   </span>
                 </p>
               </div>
@@ -332,14 +261,7 @@ export default function QueuePage() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* รอคิว */}
-            <div 
-              className={`bg-gradient-to-br from-yellow-50/90 to-orange-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-yellow-200/50 transition-all duration-300 ${
-                dragOverZone === 'pending' ? 'ring-4 ring-yellow-400 ring-opacity-50 shadow-2xl scale-105' : ''
-              }`}
-              onDragOver={(e) => handleDragOver(e, 'pending')}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, 'pending')}
-            >
+            <div className="bg-gradient-to-br from-yellow-50/90 to-orange-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-yellow-200/50">
               <div className="flex items-center mb-8">
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg">
                   ⏳
@@ -347,9 +269,6 @@ export default function QueuePage() {
                 <div>
                   <h2 className="text-2xl font-bold text-yellow-800">รอคิว</h2>
                   <p className="text-yellow-600 font-medium">{pendingBookings.length} คิว</p>
-                  {dragOverZone === 'pending' && (
-                    <p className="text-yellow-700 text-sm font-medium mt-1">🎯 วางที่นี่เพื่อให้รอคิว</p>
-                  )}
                 </div>
               </div>
               
@@ -360,16 +279,15 @@ export default function QueuePage() {
                   const startTime = new Date(booking.startTime);
                   
                   return (
-                    <div key={booking.id} className="no-animation">
-                      <BookingCard 
-                        booking={booking}
-                        therapist={therapist}
-                        service={service}
-                        startTime={startTime}
-                        onStatusUpdate={handleStatusUpdate}
-                        onEdit={handleEditBooking}
-                      />
-                    </div>
+                    <BookingCard 
+                      key={booking.id}
+                      booking={booking}
+                      therapist={therapist}
+                      service={service}
+                      startTime={startTime}
+                      onStatusUpdate={handleStatusUpdate}
+                      onEdit={handleEditBooking}
+                    />
                   );
                 })}
                 
@@ -384,14 +302,7 @@ export default function QueuePage() {
             </div>
 
             {/* กำลังนวด */}
-            <div 
-              className={`bg-gradient-to-br from-blue-50/90 to-indigo-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-blue-200/50 transition-all duration-300 ${
-                dragOverZone === 'in_progress' ? 'ring-4 ring-blue-400 ring-opacity-50 shadow-2xl scale-105' : ''
-              }`}
-              onDragOver={(e) => handleDragOver(e, 'in_progress')}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, 'in_progress')}
-            >
+            <div className="bg-gradient-to-br from-blue-50/90 to-indigo-50/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-blue-200/50">
               <div className="flex items-center mb-8">
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-lg font-bold mr-4 shadow-lg">
                   💆‍♀️
@@ -399,9 +310,6 @@ export default function QueuePage() {
                 <div>
                   <h2 className="text-2xl font-bold text-blue-800">กำลังนวด</h2>
                   <p className="text-blue-600 font-medium">{inProgressBookings.length} คิว</p>
-                  {dragOverZone === 'in_progress' && (
-                    <p className="text-blue-700 text-sm font-medium mt-1">🎯 วางที่นี่เพื่อเริ่มนวด</p>
-                  )}
                 </div>
               </div>
               
@@ -412,17 +320,16 @@ export default function QueuePage() {
                   const startTime = new Date(booking.startTime);
                   
                   return (
-                    <div key={booking.id} className="no-animation">
-                      <BookingCard 
-                        booking={booking}
-                        therapist={therapist}
-                        service={service}
-                        startTime={startTime}
-                        onStatusUpdate={handleStatusUpdate}
-                        onEdit={handleEditBooking}
-                        onComplete={handleCompleteBooking}
-                      />
-                    </div>
+                    <BookingCard 
+                      key={booking.id}
+                      booking={booking}
+                      therapist={therapist}
+                      service={service}
+                      startTime={startTime}
+                      onStatusUpdate={handleStatusUpdate}
+                      onEdit={handleEditBooking}
+                      onComplete={handleCompleteBooking}
+                    />
                   );
                 })}
                 
@@ -436,14 +343,7 @@ export default function QueuePage() {
             </div>
 
             {/* เสร็จแล้ว */}
-            <div 
-              className={`glass-card p-6 transition-all duration-300 ${
-                dragOverZone === 'done' ? 'ring-4 ring-green-400 ring-opacity-50 shadow-2xl scale-105' : ''
-              }`}
-              onDragOver={(e) => handleDragOver(e, 'done')}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, 'done')}
-            >
+            <div className="glass-card p-6">
               <div className="flex items-center mb-6">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-sm font-bold mr-3">
                   ✅
@@ -451,9 +351,6 @@ export default function QueuePage() {
                 <div>
                   <h2 className="text-xl font-bold text-gray-800">เสร็จแล้ว</h2>
                   <p className="text-sm text-gray-600">{doneBookings.length} คิว</p>
-                  {dragOverZone === 'done' && (
-                    <p className="text-green-700 text-sm font-medium mt-1">🎯 วางที่นี่เพื่อเสร็จสิ้น</p>
-                  )}
                 </div>
               </div>
               
@@ -464,16 +361,15 @@ export default function QueuePage() {
                   const startTime = new Date(booking.startTime);
                   
                   return (
-                    <div key={booking.id} className="no-animation">
-                      <BookingCard 
-                        booking={booking}
-                        therapist={therapist}
-                        service={service}
-                        startTime={startTime}
-                        onStatusUpdate={handleStatusUpdate}
-                        onEdit={handleEditBooking}
-                      />
-                    </div>
+                    <BookingCard 
+                      key={booking.id}
+                      booking={booking}
+                      therapist={therapist}
+                      service={service}
+                      startTime={startTime}
+                      onStatusUpdate={handleStatusUpdate}
+                      onEdit={handleEditBooking}
+                    />
                   );
                 })}
                 
@@ -560,24 +456,6 @@ function BookingCard({ booking, therapist, service, startTime, onStatusUpdate, o
   const nextStatus = getNextStatus(booking.status);
   const nextStatusText = getNextStatusText(booking.status);
 
-  // Handle drag start
-  const handleDragStart = (e) => {
-    e.dataTransfer.setData('application/json', JSON.stringify({
-      bookingId: booking.id,
-      currentStatus: booking.status,
-      booking: booking
-    }));
-    e.dataTransfer.effectAllowed = 'move';
-    
-    // Add visual feedback
-    e.target.style.opacity = '0.5';
-  };
-
-  // Handle drag end
-  const handleDragEnd = (e) => {
-    e.target.style.opacity = '1';
-  };
-
   // Handle status update - if completing, use onComplete function
   const handleStatusClick = () => {
     if (booking.status === 'in_progress' && nextStatus === 'done') {
@@ -595,12 +473,7 @@ function BookingCard({ booking, therapist, service, startTime, onStatusUpdate, o
   };
 
   return (
-    <div 
-      className={`${getCardGradient(booking.status)} backdrop-blur-xl rounded-2xl shadow-xl p-6 border-l-4 ${getBorderColor(booking.status)} border-white/30 cursor-move transition-all duration-200 hover:shadow-2xl`}
-      draggable={true}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
+    <div className={`${getCardGradient(booking.status)} backdrop-blur-xl rounded-2xl shadow-xl p-6 border-l-4 ${getBorderColor(booking.status)} border-white/30 transition-all duration-300 hover:shadow-2xl hover:scale-[1.02]`}>
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
           <div className="flex items-center space-x-3 mb-2">

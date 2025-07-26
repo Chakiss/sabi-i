@@ -198,55 +198,30 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50/90 via-purple-50/80 to-pink-50/70">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-blue-50/90 via-purple-50/80 to-pink-50/70 backdrop-blur-xl border-b border-white/20 shadow-lg sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/"
-                className="p-3 rounded-2xl bg-white/80 hover:bg-white/90 text-gray-600 hover:text-gray-800 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {/* Period Selector */}
+        <div className="flex justify-center mb-8">
+          <div className="flex bg-white/80 rounded-2xl p-2 shadow-lg border border-white/30">
+            {[
+              { key: 'today', label: 'วันนี้' },
+              { key: 'thisWeek', label: 'สัปดาห์นี้' },
+              { key: 'thisMonth', label: 'เดือนนี้' }
+            ].map(period => (
+              <button
+                key={period.key}
+                onClick={() => setSelectedPeriod(period.key)}
+                className={`px-4 py-2 rounded-xl font-semibold transition-all duration-200 ${
+                  selectedPeriod === period.key
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-md'
+                    : 'text-gray-600 hover:bg-white/60'
+                }`}
               >
-                <ArrowLeftIcon className="h-6 w-6" />
-              </Link>
-              <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-xl">
-                <ChartBarIcon className="h-8 w-8" />
-              </div>
-              <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  Dashboard
-                </h1>
-                <p className="text-gray-600 mt-2 text-lg font-medium">
-                  ✨ ภาพรวมและรายงานประจำวัน
-                </p>
-              </div>
-            </div>
-            
-            {/* Period Selector */}
-            <div className="flex bg-white/80 rounded-2xl p-2 shadow-lg border border-white/30">
-              {[
-                { key: 'today', label: 'วันนี้' },
-                { key: 'thisWeek', label: 'สัปดาห์นี้' },
-                { key: 'thisMonth', label: 'เดือนนี้' }
-              ].map(period => (
-                <button
-                  key={period.key}
-                  onClick={() => setSelectedPeriod(period.key)}
-                  className={`px-4 py-2 rounded-xl font-semibold transition-all duration-200 ${
-                    selectedPeriod === period.key
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-md'
-                      : 'text-gray-600 hover:bg-white/60'
-                  }`}
-                >
-                  {period.label}
-                </button>
-              ))}
-            </div>
+                {period.label}
+              </button>
+            ))}
           </div>
         </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         {/* Key Metrics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

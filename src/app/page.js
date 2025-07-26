@@ -49,6 +49,8 @@ export default function HomePage() {
  const [isDragging, setIsDragging] = useState(false);
  const [draggedBooking, setDraggedBooking] = useState(null);
  const [touchStartPos, setTouchStartPos] = useState({ x: 0, y: 0 });
+ const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
+ const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
  // Performance optimization for iPad
  const [isOnIpad, setIsOnIpad] = useState(false);
@@ -322,7 +324,16 @@ export default function HomePage() {
  const handleTouchStart = (e, booking) => {
  e.stopPropagation();
  const touch = e.touches[0];
+ const element = e.currentTarget;
+ const rect = element.getBoundingClientRect();
+ 
+ // คำนวณ offset จากจุดที่กดไปจนถึงมุมบนซ้ายของ element
+ const offsetX = touch.clientX - rect.left;
+ const offsetY = touch.clientY - rect.top;
+ 
  setTouchStartPos({ x: touch.clientX, y: touch.clientY });
+ setDragOffset({ x: offsetX, y: offsetY });
+ setDragPosition({ x: touch.clientX - offsetX, y: touch.clientY - offsetY });
  setDraggedBooking(booking);
  
  // Add haptic feedback for better UX on iOS
@@ -344,16 +355,28 @@ export default function HomePage() {
  // Increase threshold for better touch handling on iPad
  if (deltaX > 15 || deltaY > 15) {
  setIsDragging(true);
+ }
+ 
+ // อัพเดทตำแหน่งของ card ที่ลากไปมา
+ setDragPosition({ 
+ x: touch.clientX - dragOffset.x, 
+ y: touch.clientY - dragOffset.y 
+ });
  
  // Optimized element detection for iPad
  const element = document.elementFromPoint(touch.clientX, touch.clientY);
  const dropZone = element?.closest('[data-drop-zone]');
  if (dropZone) {
  const targetStatus = dropZone.getAttribute('data-drop-zone');
+ 
+ // Haptic feedback เมื่อเข้า drop zone
+ if (dragOverZone !== targetStatus && navigator.vibrate) {
+ navigator.vibrate(30);
+ }
+ 
  setDragOverZone(targetStatus);
  } else {
  setDragOverZone(null);
- }
  }
  };
 
@@ -406,6 +429,8 @@ export default function HomePage() {
  setDraggedBooking(null);
  setIsDragging(false);
  setDragOverZone(null);
+ setDragPosition({ x: 0, y: 0 });
+ setDragOffset({ x: 0, y: 0 });
  }, 100);
  };
 
@@ -585,7 +610,7 @@ export default function HomePage() {
  className={`rounded-3xl shadow-2xl p-6 border flex flex-col h-full relative overflow-hidden ${
  isOnIpad ? '' : 'no-transition'
  } ${
- dragOverZone === 'pending' ? 'ring-4 ring-opacity-50 shadow-2xl scale-105' : ''
+ dragOverZone === 'pending' ? 'ring-4 ring-opacity-50 shadow-2xl scale-105 drop-zone-highlight' : ''
  }`}
  style={{
  background: 'linear-gradient(135deg, rgba(255, 243, 224, 0.95) 0%, rgba(255, 237, 213, 0.85) 100%)',
@@ -640,7 +665,7 @@ export default function HomePage() {
  className={`rounded-2xl p-4 shadow-lg border cursor-move touch-none ${
  isOnIpad ? '' : 'no-transition'
  } ${
- isDragging && draggedBooking?.id === booking.id ? 'opacity-50 scale-95' : ''
+ isDragging && draggedBooking?.id === booking.id ? 'opacity-30 scale-95 ring-2 ring-orange-400 ring-opacity-50' : ''
  }`}
  style={{ 
  userSelect: 'none',
@@ -789,7 +814,7 @@ export default function HomePage() {
  className={`rounded-3xl shadow-2xl p-6 border flex flex-col h-full relative overflow-hidden ${
  isOnIpad ? '' : 'no-transition'
  } ${
- dragOverZone === 'in_progress' ? 'ring-4 ring-opacity-50 shadow-2xl scale-105' : ''
+ dragOverZone === 'in_progress' ? 'ring-4 ring-opacity-50 shadow-2xl scale-105 drop-zone-highlight' : ''
  }`}
  style={{
  background: 'linear-gradient(135deg, rgba(227, 242, 253, 0.95) 0%, rgba(199, 221, 255, 0.85) 100%)',
@@ -846,7 +871,7 @@ export default function HomePage() {
  className={`rounded-2xl p-4 shadow-lg border cursor-move touch-none ${
  isOnIpad ? '' : 'no-transition'
  } ${
- isDragging && draggedBooking?.id === booking.id ? 'opacity-50 scale-95' : ''
+ isDragging && draggedBooking?.id === booking.id ? 'opacity-30 scale-95 ring-2 ring-blue-400 ring-opacity-50' : ''
  }`}
  style={{ 
  userSelect: 'none',
@@ -991,7 +1016,7 @@ export default function HomePage() {
  className={`rounded-3xl shadow-2xl p-6 border flex flex-col h-full relative overflow-hidden ${
  isOnIpad ? '' : 'no-transition'
  } ${
- dragOverZone === 'done' ? 'ring-4 ring-opacity-50 shadow-2xl scale-105' : ''
+ dragOverZone === 'done' ? 'ring-4 ring-opacity-50 shadow-2xl scale-105 drop-zone-highlight' : ''
  }`}
  style={{
  background: 'linear-gradient(135deg, rgba(232, 245, 233, 0.95) 0%, rgba(200, 230, 201, 0.85) 100%)',
@@ -1150,6 +1175,90 @@ export default function HomePage() {
  </div>
  </div>
 
+ {/* Floating Drag Card สำหรับ iPad */}
+ {isDragging && draggedBooking && (
+ <div
+ className="floating-drag-card drag-shadow rounded-2xl p-4 border-2 touch-none"
+ style={{
+ left: dragPosition.x,
+ top: dragPosition.y,
+ background: 'rgba(255, 255, 255, 0.95)',
+ borderColor: draggedBooking.status === 'pending' ? 'rgba(255, 193, 7, 0.8)' : 
+ draggedBooking.status === 'in_progress' ? 'rgba(33, 150, 243, 0.8)' : 
+ 'rgba(76, 175, 80, 0.8)',
+ backdropFilter: 'blur(10px)',
+ WebkitBackdropFilter: 'blur(10px)',
+ userSelect: 'none',
+ minWidth: '300px',
+ maxWidth: '350px'
+ }}
+ >
+ {(() => {
+ const service = services.find(s => s.id === draggedBooking.serviceId);
+ const therapist = therapists.find(t => t.id === draggedBooking.therapistId);
+ 
+ return (
+ <>
+ <div className="flex items-center justify-between mb-3">
+ <div className="flex items-center">
+ <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-sm font-bold mr-3" style={{
+ background: draggedBooking.status === 'pending' ? 'linear-gradient(135deg, #FFC107 0%, #FF9800 100%)' :
+ draggedBooking.status === 'in_progress' ? 'linear-gradient(135deg, #2196F3 0%, #3F51B5 100%)' :
+ 'linear-gradient(135deg, #4CAF50 0%, #388E3C 100%)'
+ }}>
+ {draggedBooking.status === 'pending' ? '⏳' : 
+ draggedBooking.status === 'in_progress' ? '💆‍♀️' : '✅'}
+ </div>
+ <div>
+ <h3 className="font-bold text-lg" style={{ color: '#4E3B31' }}>{draggedBooking.customerName}</h3>
+ <p className="text-sm" style={{ color: '#7E7B77' }}>{draggedBooking.customerPhone}</p>
+ </div>
+ </div>
+ <div className="text-right">
+ <div className="text-xs px-2 py-1 rounded-full font-bold" style={{ 
+ backgroundColor: draggedBooking.status === 'pending' ? 'rgba(255, 235, 59, 0.3)' : 
+ draggedBooking.status === 'in_progress' ? 'rgba(33, 150, 243, 0.3)' : 
+ 'rgba(76, 175, 80, 0.3)',
+ color: draggedBooking.status === 'pending' ? '#E65100' : 
+ draggedBooking.status === 'in_progress' ? '#0D47A1' : 
+ '#1B5E20'
+ }}>
+ {new Date(draggedBooking.startTime).toLocaleTimeString('th-TH', {
+ hour: '2-digit',
+ minute: '2-digit'
+ })}
+ </div>
+ </div>
+ </div>
+
+ <div className="mb-3">
+ <div className="flex items-center text-sm text-gray-700 mb-2">
+ <span className="font-medium text-purple-600">💆‍♀️ {service?.name || 'ไม่ระบุคอร์ส'}</span>
+ <span className="mx-2">•</span>
+ <span className="font-medium text-blue-600">{draggedBooking.duration} นาที</span>
+ </div>
+ <div className="flex items-center text-sm text-gray-700">
+ <span className="font-medium text-green-600">👩‍⚕️ {therapist?.name || 'ไม่ระบุหมอนวด'}</span>
+ </div>
+ </div>
+
+ {/* การแสดง status ปัจจุบัน */}
+ <div className="text-center py-2 rounded-xl font-medium text-sm" style={{
+ background: draggedBooking.status === 'pending' ? 'linear-gradient(90deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 152, 0, 0.2) 100%)' :
+ draggedBooking.status === 'in_progress' ? 'linear-gradient(90deg, rgba(33, 150, 243, 0.2) 0%, rgba(63, 81, 181, 0.2) 100%)' :
+ 'linear-gradient(90deg, rgba(76, 175, 80, 0.2) 0%, rgba(56, 142, 60, 0.2) 100%)',
+ color: draggedBooking.status === 'pending' ? '#E65100' :
+ draggedBooking.status === 'in_progress' ? '#0D47A1' :
+ '#1B5E20'
+ }}>
+ 🚀 กำลังย้ายคิว...
+ </div>
+ </>
+ );
+ })()}
+ </div>
+ )}
+
  {/* Modals */}
  <EditBookingModal
  booking={editingBooking}
@@ -1163,6 +1272,7 @@ export default function HomePage() {
  isOpen={isDiscountModalOpen}
  onClose={handleDiscountModalClose}
  onComplete={handleCompleteWithDiscount}
+ services={services}
  />
 
  <BookingModal

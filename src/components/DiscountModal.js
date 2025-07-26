@@ -1,25 +1,110 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { getConfig } from '@/lib/firestore';
 
 export default function DiscountModal({ isOpen, onClose, booking, onComplete, services = [] }) {
+  // iPad iOS 15 detection
+  const [isOnIpad, setIsOnIpad] = useState(false);
   const [discountType, setDiscountType] = useState('none');
   const [discountValue, setDiscountValue] = useState('');
   const [finalPrice, setFinalPrice] = useState(0);
   const [config, setConfig] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Get service price from services data
-  const originalPrice = (() => {
-    if (!booking || !services.length) return 0;
+  // iPad detection
+  useEffect(() => {
+    const isIpadDevice = /iPad|Macintosh/i.test(navigator.userAgent) && 
+      'ontouchend' in document ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    
+    setIsOnIpad(isIpadDevice);
+    
+    if (isIpadDevice && isOpen) {
+      // Prevent body scroll on iPad when modal is open
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+    }
+    
+    return () => {
+      if (isIpadDevice) {
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.width = '';
+        document.body.style.height = '';
+      }
+    };
+  }, [isOpen]);
+
+  // Get service price - prioritize booking.originalPrice if available
+  const originalPrice = useMemo(() => {
+    // Only calculate when modal is open and we have booking data
+    if (!isOpen || !booking) {
+      return 0;
+    }
+
+    // ✅ Priority 1: Use originalPrice from booking if available (most accurate)
+    if (booking.originalPrice && booking.originalPrice > 0) {
+      console.log('✅ Using originalPrice from booking:', booking.originalPrice);
+      return booking.originalPrice;
+    }
+
+    // ✅ Priority 2: Use finalPrice as fallback if originalPrice is missing
+    if (booking.finalPrice && booking.finalPrice > 0) {
+      console.log('✅ Using finalPrice from booking as fallback:', booking.finalPrice);
+      return booking.finalPrice;
+    }
+
+    // ✅ Priority 3: Calculate from services data only as last resort
+    console.log('🔍 DiscountModal Debug - calculating from services:', {
+      booking: booking,
+      services: services,
+      servicesLength: services?.length,
+      bookingServiceId: booking?.serviceId
+    });
+
+    if (!services || services.length === 0) {
+      console.warn('⚠️ No services data available - using booking fallbacks');
+      return booking?.servicePrice || 0;
+    }
+    
+    // Find service by ID
+    const service = services.find(s => s.id === booking.serviceId);
+    
+    if (!service) {
+      console.warn('⚠️ Service not found for booking:', booking.serviceId);
+      return booking?.servicePrice || 0;
+    }
+    
+    if (!service.priceByDuration) {
+      console.warn('⚠️ Service priceByDuration not found:', service);
+      return booking?.servicePrice || service.price || 0;
+    }
+    
+    const priceForDuration = service.priceByDuration[booking.duration];
+    if (!priceForDuration && priceForDuration !== 0) {
+      console.warn('⚠️ Price not found for duration:', booking.duration);
+      return booking?.servicePrice || 0;
+    }
+    
+    console.log('✅ Price calculated from services:', priceForDuration, 'for service:', service.name);
+    return priceForDuration;
+  }, [isOpen, booking, services]); // Only recalculate when these dependencies change
+
+  // Get service name - memoized to avoid recalculation
+  const serviceName = useMemo(() => {
+    if (!isOpen || !booking) return '';
     
     const service = services.find(s => s.id === booking.serviceId);
-    if (!service?.priceByDuration) return booking.servicePrice || 0;
-    
-    return service.priceByDuration[booking.duration] || booking.servicePrice || 0;
-  })();
+    if (service) {
+      return service.name;
+    } else {
+      return booking.serviceName || 'ไม่พบข้อมูลบริการ';
+    }
+  }, [isOpen, booking, services]);
 
   // Load config
   useEffect(() => {
@@ -114,6 +199,7 @@ export default function DiscountModal({ isOpen, onClose, booking, onComplete, se
     }
   }, [isOpen, onClose]);
 
+  // Early return after all hooks to prevent unnecessary rendering
   if (!isOpen || !booking) return null;
 
   const handleBackdropClick = (e) => {
@@ -125,98 +211,186 @@ export default function DiscountModal({ isOpen, onClose, booking, onComplete, se
 
   return (
     <div 
-      className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${
+        isOnIpad ? 'bg-black/50' : 'bg-black/30 backdrop-blur-sm'
+      }`}
+      style={{
+        backgroundColor: isOnIpad ? 'rgba(0, 0, 0, 0.5)' : undefined,
+        backdropFilter: isOnIpad ? 'none' : 'blur(4px)',
+        WebkitBackdropFilter: isOnIpad ? 'none' : 'blur(4px)',
+        height: isOnIpad ? '100vh' : '100vh',
+        minHeight: isOnIpad ? '100vh' : '100vh',
+        maxHeight: isOnIpad ? '100vh' : '100vh',
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch'
+      }}
       onClick={handleBackdropClick}
     >
       <div 
-        className="bg-white/95 backdrop-blur-md rounded-xl shadow-2xl max-w-lg w-full mx-4 my-8 border border-white/20 max-h-[90vh] overflow-y-auto"
+        className={`rounded-2xl shadow-2xl w-full border transform transition-all duration-300 relative ${
+          isOnIpad 
+            ? 'bg-white max-w-2xl max-h-[95vh] border-gray-200' 
+            : 'bg-white/95 backdrop-blur-md max-w-lg max-h-[90vh] border-white/20'
+        }`}
+        style={{
+          backdropFilter: isOnIpad ? 'none' : 'blur(20px)',
+          WebkitBackdropFilter: isOnIpad ? 'none' : 'blur(20px)',
+          transform: isOnIpad ? 'translateZ(0)' : undefined,
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-white/10 bg-gradient-to-r from-green-50/90 to-emerald-50/80 backdrop-blur-sm rounded-t-xl">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white shadow-lg">
+        <div className={`flex items-center justify-between p-6 border-b rounded-t-2xl ${
+          isOnIpad 
+            ? 'bg-white border-gray-200 sticky top-0 z-10' 
+            : 'border-white/10 bg-gradient-to-r from-green-50/90 to-emerald-50/80 backdrop-blur-sm sticky top-0'
+        }`}>
+          <div className="flex items-center space-x-4">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg ${
+              isOnIpad 
+                ? 'bg-green-500' 
+                : 'bg-gradient-to-br from-green-500 to-emerald-600'
+            }`}>
               ✅
             </div>
             <div>
-              <h2 className="text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+              <h2 className={`text-2xl font-bold ${
+                isOnIpad 
+                  ? 'text-gray-800' 
+                  : 'bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent'
+              }`}>
                 เสร็จสิ้นบริการ
               </h2>
-              <p className="text-xs text-gray-600 font-medium">สรุปค่าใช้จ่ายสำหรับลูกค้า</p>
+              <p className="text-sm text-gray-600 font-medium">สรุปค่าใช้จ่ายสำหรับลูกค้า</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-red-100/50 hover:text-red-600 rounded-lg transition-all duration-200 text-gray-500"
+            className={`p-3 rounded-xl transition-all duration-200 ${
+              isOnIpad 
+                ? 'hover:bg-gray-100 text-gray-500 hover:text-gray-700' 
+                : 'hover:bg-red-100/50 hover:text-red-600 text-gray-500'
+            }`}
+            style={{ 
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation'
+            }}
           >
-            <XMarkIcon className="h-5 w-5" />
+            <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSubmit} className="p-5 bg-gradient-to-br from-white/80 to-green-50/50 backdrop-blur-sm rounded-b-xl space-y-4">
+        <div 
+          className="flex-1 overflow-y-auto"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            height: isOnIpad ? 'calc(95vh - 120px)' : 'calc(90vh - 80px)',
+            maxHeight: isOnIpad ? 'calc(95vh - 120px)' : 'calc(90vh - 80px)'
+          }}
+        >
+          <form 
+            onSubmit={handleSubmit} 
+            className={`p-6 space-y-6 ${
+              isOnIpad 
+                ? 'bg-white' 
+                : 'bg-gradient-to-br from-white/80 to-green-50/50 backdrop-blur-sm'
+            } rounded-b-2xl`}
+          >
           
           {/* Customer Service Summary */}
-          <div className="bg-gradient-to-r from-blue-50/90 to-indigo-50/80 backdrop-blur-sm border border-blue-200/30 rounded-lg p-4">
-            <h3 className="text-base font-bold text-blue-800 mb-3 flex items-center">
-              <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className={`border rounded-xl p-4 ${
+            isOnIpad 
+              ? 'bg-gray-50 border-gray-200' 
+              : 'bg-gradient-to-r from-blue-50/90 to-indigo-50/80 backdrop-blur-sm border-blue-200/30'
+          }`}>
+            <h3 className={`text-lg font-bold mb-4 flex items-center ${
+              isOnIpad ? 'text-gray-800' : 'text-blue-800'
+            }`}>
+              <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
               ข้อมูลการบริการ
             </h3>
-            <div className="grid grid-cols-1 gap-2">
-              <div className="flex justify-between items-center p-2.5 bg-white/60 rounded-lg">
-                <span className="text-gray-700 font-medium text-sm">👤 ลูกค้า:</span>
-                <span className="font-bold text-gray-800 text-sm">{booking.customerName}</span>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center p-3 bg-white/60 rounded-lg">
+                <span className="text-gray-700 font-medium">👤 ลูกค้า:</span>
+                <span className="font-bold text-gray-800">{booking.customerName}</span>
               </div>
-              <div className="flex justify-between items-center p-2.5 bg-white/60 rounded-lg">
-                <span className="text-gray-700 font-medium text-sm">✨ บริการ:</span>
-                <span className="font-bold text-gray-800 text-sm">
+              <div className="flex justify-between items-center p-3 bg-white/60 rounded-lg">
+                <span className="text-gray-700 font-medium">✨ บริการ:</span>
+                <span className="font-bold text-gray-800">{serviceName}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-white/60 rounded-lg">
+                <span className="text-gray-700 font-medium">⏱️ ระยะเวลา:</span>
+                <span className="font-bold text-gray-800">{booking.duration} นาที</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-white/60 rounded-lg">
+                <span className="text-gray-700 font-medium">🕐 เวลา:</span>
+                <span className="font-bold text-gray-800">
                   {(() => {
-                    const service = services.find(s => s.id === booking.serviceId);
-                    return service?.name || booking.serviceName || 'ไม่ระบุ';
+                    const startTime = new Date(booking.startTime || Date.now());
+                    const endTime = new Date(startTime.getTime() + (booking.duration * 60000));
+                    
+                    const formatTime = (date) => {
+                      return date.toLocaleString('th-TH', {
+                        day: 'numeric',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                      });
+                    };
+                    
+                    const startFormatted = formatTime(startTime);
+                    const endTimeOnly = endTime.toLocaleString('th-TH', {
+                      hour: '2-digit', 
+                      minute: '2-digit',
+                      hour12: false
+                    });
+                    
+                    return `${startFormatted} - ${endTimeOnly}`;
                   })()}
-                </span>
-              </div>
-              <div className="flex justify-between items-center p-2.5 bg-white/60 rounded-lg">
-                <span className="text-gray-700 font-medium text-sm">⏱️ ระยะเวลา:</span>
-                <span className="font-bold text-gray-800 text-sm">{booking.duration} นาที</span>
-              </div>
-              <div className="flex justify-between items-center p-2.5 bg-white/60 rounded-lg">
-                <span className="text-gray-700 font-medium text-sm">🕐 เวลา:</span>
-                <span className="font-bold text-gray-800 text-sm">
-                  {new Date(booking.startTime || Date.now()).toLocaleString('th-TH', {
-                    day: 'numeric',
-                    month: 'short',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
                 </span>
               </div>
             </div>
           </div>
 
           {/* Price Calculation Section */}
-          <div className="bg-gradient-to-r from-yellow-50/90 to-orange-50/80 backdrop-blur-sm border border-yellow-200/30 rounded-lg p-4">
-            <h3 className="text-base font-bold text-orange-800 mb-3 flex items-center">
-              <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className={`border rounded-xl p-4 ${
+            isOnIpad 
+              ? 'bg-gray-50 border-gray-200' 
+              : 'bg-gradient-to-r from-yellow-50/90 to-orange-50/80 backdrop-blur-sm border-yellow-200/30'
+          }`}>
+            <h3 className={`text-lg font-bold mb-4 flex items-center ${
+              isOnIpad ? 'text-gray-800' : 'text-orange-800'
+            }`}>
+              <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
               คำนวณค่าบริการ
             </h3>
             
-            {/* Original Price Display */}
-            <div className="mb-3 p-3 bg-white/70 rounded-lg border-l-4 border-blue-400">
+            {/* Original Price Display with debug info */}
+            <div className="mb-4 p-4 bg-white/70 rounded-lg border-l-4 border-blue-400">
               <div className="flex justify-between items-center">
                 <span className="text-base font-semibold text-gray-700">💰 ราคาตามเมนู:</span>
                 <span className="text-xl font-bold text-blue-600">
                   ฿{originalPrice.toLocaleString()}
                 </span>
               </div>
+              {originalPrice === 0 && (
+                <div className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded">
+                  ⚠️ ไม่พบราคาในระบบ - กรุณาตรวจสอบข้อมูลบริการ
+                </div>
+              )}
             </div>
 
             {/* Discount Type Selection */}
-            <div className="mb-3">
+            <div className="mb-4">
               <label className="block text-sm font-bold text-gray-700 mb-2">
                 🎁 ส่วนลดพิเศษ (ถ้ามี)
               </label>
@@ -226,7 +400,16 @@ export default function DiscountModal({ isOpen, onClose, booking, onComplete, se
                   setDiscountType(e.target.value);
                   setDiscountValue('');
                 }}
-                className="w-full p-3 border border-yellow-200/50 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md text-sm"
+                className={`w-full p-4 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm transition-all duration-200 ${
+                  isOnIpad 
+                    ? 'bg-white border-gray-300 text-base' 
+                    : 'border-yellow-200/50 bg-white/90 backdrop-blur-sm hover:shadow-md'
+                }`}
+                style={{
+                  WebkitTapHighlightColor: 'transparent',
+                  fontSize: isOnIpad ? '16px' : undefined,
+                  touchAction: 'manipulation'
+                }}
               >
                 <option value="none">🚫 ไม่มีส่วนลด</option>
                 <option value="percentage">📊 ส่วนลดเปอร์เซ็นต์ (%)</option>
@@ -236,7 +419,7 @@ export default function DiscountModal({ isOpen, onClose, booking, onComplete, se
 
             {/* Discount Value Input */}
             {discountType !== 'none' && (
-              <div className="mb-3">
+              <div className="mb-4">
                 <label className="block text-sm font-bold text-gray-700 mb-2">
                   {discountType === 'percentage' ? '📊 ระบุเปอร์เซ็นต์ส่วนลด' : '💸 ระบุจำนวนเงินส่วนลด'}
                 </label>
@@ -248,11 +431,20 @@ export default function DiscountModal({ isOpen, onClose, booking, onComplete, se
                     min="0"
                     max={discountType === 'percentage' ? '100' : originalPrice}
                     step={discountType === 'percentage' ? '1' : '10'}
-                    className="w-full p-3 border border-yellow-200/50 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 pr-12 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md font-semibold text-sm"
+                    className={`w-full p-4 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 pr-12 shadow-sm transition-all duration-200 font-semibold ${
+                      isOnIpad 
+                        ? 'bg-white border-gray-300 text-base' 
+                        : 'border-yellow-200/50 bg-white/90 backdrop-blur-sm hover:shadow-md'
+                    }`}
+                    style={{
+                      WebkitTapHighlightColor: 'transparent',
+                      fontSize: isOnIpad ? '16px' : undefined,
+                      touchAction: 'manipulation'
+                    }}
                     placeholder={discountType === 'percentage' ? 'เช่น 10' : 'เช่น 100'}
                   />
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <span className="text-orange-600 font-bold text-sm">
+                    <span className="text-orange-600 font-bold">
                       {discountType === 'percentage' ? '%' : '฿'}
                     </span>
                   </div>
@@ -266,17 +458,22 @@ export default function DiscountModal({ isOpen, onClose, booking, onComplete, se
             )}
           </div>
 
-          {/* Final Price */}
-                    {/* Final Price Summary */}
-          <div className="bg-gradient-to-r from-green-50/90 to-emerald-50/80 backdrop-blur-sm border-2 border-green-300/50 rounded-lg p-4 shadow-lg">
-            <h3 className="text-base font-bold text-green-800 mb-3 flex items-center">
-              <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {/* Final Price Summary */}
+          <div className={`border-2 rounded-xl p-4 shadow-lg ${
+            isOnIpad 
+              ? 'bg-gray-50 border-green-300' 
+              : 'bg-gradient-to-r from-green-50/90 to-emerald-50/80 backdrop-blur-sm border-green-300/50'
+          }`}>
+            <h3 className={`text-lg font-bold mb-4 flex items-center ${
+              isOnIpad ? 'text-gray-800' : 'text-green-800'
+            }`}>
+              <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               สรุปค่าใช้จ่าย
             </h3>
             
-            <div className="space-y-3">
+            <div className="space-y-4">
               {/* Discount Applied Display */}
               {discountAmount > 0 && (
                 <div className="p-3 bg-red-50/70 rounded-lg border-l-4 border-red-400">
@@ -317,15 +514,15 @@ export default function DiscountModal({ isOpen, onClose, booking, onComplete, se
                   <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span className="font-semibold text-sm">💳 วิธีการชำระเงิน: เงินสด / โอนเงิน</span>
+                  <span className="font-semibold">💳 วิธีการชำระเงิน: เงินสด / โอนเงิน</span>
                 </div>
               </div>
 
               {/* Commission Information */}
               {config?.commissionRate && (
                 <div className="p-3 bg-purple-50/70 rounded-lg border border-purple-200/50">
-                  <h4 className="font-semibold text-purple-800 text-sm mb-2">📊 การแบ่งรายได้:</h4>
-                  <div className="space-y-1 text-xs">
+                  <h4 className="font-semibold text-purple-800 mb-2">📊 การแบ่งรายได้:</h4>
+                  <div className="space-y-1 text-sm">
                     <div className="flex justify-between">
                       <span className="text-purple-700">👩‍⚕️ ค่าคอมมิชชั่นหมอนวด ({(config.commissionRate * 100).toFixed(0)}%):</span>
                       <span className="font-bold text-purple-800">
@@ -345,18 +542,36 @@ export default function DiscountModal({ isOpen, onClose, booking, onComplete, se
           </div>
 
           {/* Action Buttons */}
-          <div className="flex space-x-3 pt-2">
+          <div className="flex space-x-4 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-lg font-semibold hover:from-gray-200 hover:to-gray-300 transition-all duration-200 shadow-sm hover:shadow-md border border-gray-300/50 text-sm"
+              className={`flex-1 px-6 py-4 border-2 font-semibold rounded-xl transition-all duration-200 ${
+                isOnIpad 
+                  ? 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50' 
+                  : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300 border-gray-300/50'
+              }`}
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
+                minHeight: isOnIpad ? '48px' : undefined
+              }}
             >
               ❌ ยกเลิก
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-bold hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 text-sm"
+              className={`flex-1 px-6 py-4 font-bold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center ${
+                isOnIpad 
+                  ? 'bg-green-600 text-white hover:bg-green-700 disabled:bg-gray-400' 
+                  : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 transform hover:scale-105'
+              }`}
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
+                minHeight: isOnIpad ? '48px' : undefined
+              }}
             >
               {isLoading ? (
                 <span className="flex items-center justify-center">
@@ -371,7 +586,8 @@ export default function DiscountModal({ isOpen, onClose, booking, onComplete, se
               )}
             </button>
           </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );

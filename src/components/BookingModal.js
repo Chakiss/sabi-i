@@ -31,6 +31,34 @@ const parseFirebaseDate = (dateValue) => {
 };
 
 export default function BookingModal({ isOpen, onClose, therapists, services, onBookingAdded }) {
+  // iPad iOS 15 detection
+  const [isOnIpad, setIsOnIpad] = useState(false);
+  
+  useEffect(() => {
+    const isIpadDevice = /iPad|Macintosh/i.test(navigator.userAgent) && 
+      'ontouchend' in document ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    
+    setIsOnIpad(isIpadDevice);
+    
+    if (isIpadDevice && isOpen) {
+      // Prevent body scroll on iPad when modal is open
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+    }
+    
+    return () => {
+      if (isIpadDevice) {
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.width = '';
+        document.body.style.height = '';
+      }
+    };
+  }, [isOpen]);
+
   const [formData, setFormData] = useState({
     customerName: '',
     customerPhone: '',
@@ -473,43 +501,112 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
 
   return (
     <div 
-      className="fixed inset-0 bg-gradient-to-br from-black/40 via-purple-900/20 to-blue-900/30 backdrop-blur-md flex items-center justify-center z-50 p-4"
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${
+        isOnIpad ? 'bg-black/50' : 'bg-gradient-to-br from-black/40 via-purple-900/20 to-blue-900/30 backdrop-blur-md'
+      }`}
+      style={{
+        backgroundColor: isOnIpad ? 'rgba(0, 0, 0, 0.5)' : undefined,
+        backdropFilter: isOnIpad ? 'none' : 'blur(10px)',
+        WebkitBackdropFilter: isOnIpad ? 'none' : 'blur(10px)',
+        // Fix viewport height issues on iPad
+        height: isOnIpad ? '100vh' : '100vh',
+        minHeight: isOnIpad ? '100vh' : '100vh',
+        maxHeight: isOnIpad ? '100vh' : '100vh',
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch'
+      }}
       onClick={handleBackdropClick}
     >
       <div 
-        className="bg-gradient-to-br from-white/95 to-blue-50/90 backdrop-blur-xl rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-visible border border-white/30 transform transition-all duration-300 relative"
+        className={`rounded-2xl shadow-2xl w-full border transform transition-all duration-300 relative ${
+          isOnIpad 
+            ? 'bg-white max-w-2xl max-h-[95vh] border-gray-200' 
+            : 'bg-gradient-to-br from-white/95 to-blue-50/90 backdrop-blur-xl max-w-lg max-h-[90vh] border-white/30'
+        }`}
+        style={{
+          backdropFilter: isOnIpad ? 'none' : 'blur(20px)',
+          WebkitBackdropFilter: isOnIpad ? 'none' : 'blur(20px)',
+          transform: isOnIpad ? 'translateZ(0)' : undefined,
+          // Better scrolling on iPad
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-white/20 bg-gradient-to-r from-white/90 to-blue-50/80 backdrop-blur-sm rounded-t-2xl sticky top-0">
+        <div className={`flex items-center justify-between p-6 border-b rounded-t-2xl ${
+          isOnIpad 
+            ? 'bg-white border-gray-200 sticky top-0 z-10' 
+            : 'border-white/20 bg-gradient-to-r from-white/90 to-blue-50/80 backdrop-blur-sm sticky top-0'
+        }`}>
           <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white shadow-lg">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg ${
+              isOnIpad 
+                ? 'bg-blue-500' 
+                : 'bg-gradient-to-br from-blue-500 to-purple-600'
+            }`}>
               <SparklesIcon className="h-6 w-6" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">จองคิวใหม่</h2>
+              <h2 className={`text-2xl font-bold ${
+                isOnIpad 
+                  ? 'text-gray-800' 
+                  : 'bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'
+              }`}>
+                จองคิวใหม่
+              </h2>
               <p className="text-sm text-gray-600 font-medium">กรอกข้อมูลการจองคิวของคุณ</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-red-100/80 hover:text-red-600 rounded-xl transition-all duration-200 text-gray-500"
+            className={`p-3 rounded-xl transition-all duration-200 ${
+              isOnIpad 
+                ? 'hover:bg-gray-100 text-gray-500 hover:text-gray-700' 
+                : 'hover:bg-red-100/80 hover:text-red-600 text-gray-500'
+            }`}
+            style={{ 
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation'
+            }}
           >
             <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="max-h-[calc(90vh-80px)] overflow-y-auto overflow-x-visible">
-          <form onSubmit={handleSubmit} className="p-6 space-y-6 bg-gradient-to-br from-white/70 to-blue-50/50 backdrop-blur-sm rounded-b-2xl overflow-visible">
+        <div 
+          className="flex-1 overflow-y-auto"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            // Fix iPad scrolling issues
+            height: isOnIpad ? 'calc(95vh - 120px)' : 'calc(90vh - 80px)',
+            maxHeight: isOnIpad ? 'calc(95vh - 120px)' : 'calc(90vh - 80px)'
+          }}
+        >
+          <form 
+            onSubmit={handleSubmit} 
+            className={`p-6 space-y-6 ${
+              isOnIpad 
+                ? 'bg-white' 
+                : 'bg-gradient-to-br from-white/70 to-blue-50/50 backdrop-blur-sm'
+            } rounded-b-2xl`}
+          >
           
           {/* Customer Information Section */}
-          <div className="bg-gradient-to-r from-blue-50/80 to-indigo-50/60 backdrop-blur-sm border border-blue-200/30 rounded-xl p-4 relative z-10 overflow-visible">
-            <h3 className="text-lg font-semibold text-blue-800 mb-4 flex items-center">
+          <div className={`border rounded-xl p-4 relative ${
+            isOnIpad 
+              ? 'bg-gray-50 border-gray-200' 
+              : 'bg-gradient-to-r from-blue-50/80 to-indigo-50/60 backdrop-blur-sm border-blue-200/30'
+          }`}>
+            <h3 className={`text-lg font-semibold mb-4 flex items-center ${
+              isOnIpad ? 'text-gray-800' : 'text-blue-800'
+            }`}>
               <UserIcon className="h-5 w-5 mr-2" />
               ข้อมูลลูกค้า
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
                   <UserIcon className="h-4 w-4 inline mr-1 text-blue-500" />
@@ -520,7 +617,16 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
                   name="customerName"
                   value={formData.customerName}
                   onChange={handleInputChange}
-                  className="w-full p-4 border border-blue-200/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md"
+                  className={`w-full p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all duration-200 ${
+                    isOnIpad 
+                      ? 'bg-white border-gray-300 text-base' 
+                      : 'border-blue-200/50 bg-white/90 backdrop-blur-sm hover:shadow-md'
+                  }`}
+                  style={{
+                    WebkitTapHighlightColor: 'transparent',
+                    fontSize: isOnIpad ? '16px' : undefined, // Prevent zoom on iOS
+                    touchAction: 'manipulation'
+                  }}
                   placeholder="กรุณาใส่ชื่อ-นามสกุล"
                   required
                 />
@@ -544,7 +650,16 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
                       setFilteredCustomers(filtered);
                       setShowSuggestions(filtered.length > 0);
                     }}
-                    className="w-full p-4 border border-green-200/50 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md"
+                    className={`w-full p-4 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 shadow-sm transition-all duration-200 ${
+                      isOnIpad 
+                        ? 'bg-white border-gray-300 text-base' 
+                        : 'border-green-200/50 bg-white/90 backdrop-blur-sm hover:shadow-md'
+                    }`}
+                    style={{
+                      WebkitTapHighlightColor: 'transparent',
+                      fontSize: isOnIpad ? '16px' : undefined, // Prevent zoom on iOS
+                      touchAction: 'manipulation'
+                    }}
                     placeholder="08X-XXX-XXXX"
                     required
                     autoComplete="off"
@@ -558,9 +673,25 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
                 
                 {/* Customer Suggestions Dropdown */}
                 {showSuggestions && filteredCustomers.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 z-[100] mt-1 bg-white/98 backdrop-blur-xl border border-green-200/50 rounded-xl shadow-2xl max-h-80 overflow-y-auto">
-                    <div className="p-3 border-b border-gray-100/50 bg-green-50/50 sticky top-0">
-                      <div className="text-xs font-semibold text-green-600 flex items-center">
+                  <div 
+                    className={`absolute top-full left-0 right-0 mt-1 border rounded-xl shadow-2xl max-h-80 overflow-y-auto ${
+                      isOnIpad 
+                        ? 'bg-white border-gray-300 z-50' 
+                        : 'bg-white/98 backdrop-blur-xl border-green-200/50 z-[100]'
+                    }`}
+                    style={{
+                      WebkitOverflowScrolling: 'touch',
+                      zIndex: isOnIpad ? 50 : 100
+                    }}
+                  >
+                    <div className={`p-3 border-b sticky top-0 ${
+                      isOnIpad 
+                        ? 'bg-gray-50 border-gray-200' 
+                        : 'border-gray-100/50 bg-green-50/50'
+                    }`}>
+                      <div className={`text-xs font-semibold flex items-center ${
+                        isOnIpad ? 'text-gray-600' : 'text-green-600'
+                      }`}>
                         <SparklesIcon className="h-3 w-3 mr-1" />
                         ลูกค้าในระบบ ({filteredCustomers.length} คน)
                       </div>
@@ -571,7 +702,15 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
                         <div
                           key={customer.phone}
                           onClick={() => handleCustomerSelect(customer)}
-                          className="px-4 py-3 hover:bg-green-50/80 cursor-pointer transition-colors duration-150 first:rounded-t-xl last:rounded-b-xl"
+                          className={`px-4 py-3 cursor-pointer transition-colors duration-150 first:rounded-t-xl last:rounded-b-xl ${
+                            isOnIpad 
+                              ? 'hover:bg-gray-50 active:bg-gray-100' 
+                              : 'hover:bg-green-50/80'
+                          }`}
+                          style={{
+                            WebkitTapHighlightColor: 'transparent',
+                            touchAction: 'manipulation'
+                          }}
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
@@ -660,8 +799,14 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
           </div>
 
           {/* Service Information Section */}
-          <div className="bg-gradient-to-r from-purple-50/80 to-pink-50/60 backdrop-blur-sm border border-purple-200/30 rounded-xl p-4 relative z-0">
-            <h3 className="text-lg font-semibold text-purple-800 mb-4 flex items-center">
+          <div className={`border rounded-xl p-4 relative ${
+            isOnIpad 
+              ? 'bg-gray-50 border-gray-200' 
+              : 'bg-gradient-to-r from-purple-50/80 to-pink-50/60 backdrop-blur-sm border-purple-200/30'
+          }`}>
+            <h3 className={`text-lg font-semibold mb-4 flex items-center ${
+              isOnIpad ? 'text-gray-800' : 'text-purple-800'
+            }`}>
               <SparklesIcon className="h-5 w-5 mr-2" />
               เลือกบริการ
             </h3>
@@ -676,7 +821,16 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
                   name="serviceId"
                   value={formData.serviceId}
                   onChange={handleInputChange}
-                  className="w-full p-4 border border-purple-200/50 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md"
+                  className={`w-full p-4 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-sm transition-all duration-200 ${
+                    isOnIpad 
+                      ? 'bg-white border-gray-300 text-base' 
+                      : 'border-purple-200/50 bg-white/90 backdrop-blur-sm hover:shadow-md'
+                  }`}
+                  style={{
+                    WebkitTapHighlightColor: 'transparent',
+                    fontSize: isOnIpad ? '16px' : undefined,
+                    touchAction: 'manipulation'
+                  }}
                   required
                 >
                   <option value="">🎯 เลือกบริการที่ต้องการ</option>
@@ -698,7 +852,16 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
                     name="duration"
                     value={formData.duration}
                     onChange={handleInputChange}
-                    className="w-full p-4 border border-purple-200/50 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md"
+                    className={`w-full p-4 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-sm transition-all duration-200 ${
+                      isOnIpad 
+                        ? 'bg-white border-gray-300 text-base' 
+                        : 'border-purple-200/50 bg-white/90 backdrop-blur-sm hover:shadow-md'
+                    }`}
+                    style={{
+                      WebkitTapHighlightColor: 'transparent',
+                      fontSize: isOnIpad ? '16px' : undefined,
+                      touchAction: 'manipulation'
+                    }}
                     required
                   >
                     {Object.entries(selectedService.priceByDuration || {}).map(([duration, price]) => (
@@ -719,7 +882,16 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
                   name="therapistId"
                   value={formData.therapistId}
                   onChange={handleInputChange}
-                  className="w-full p-4 border border-purple-200/50 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md"
+                  className={`w-full p-4 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-sm transition-all duration-200 ${
+                    isOnIpad 
+                      ? 'bg-white border-gray-300 text-base' 
+                      : 'border-purple-200/50 bg-white/90 backdrop-blur-sm hover:shadow-md'
+                  }`}
+                  style={{
+                    WebkitTapHighlightColor: 'transparent',
+                    fontSize: isOnIpad ? '16px' : undefined,
+                    touchAction: 'manipulation'
+                  }}
                   required
                 >
                   <option value="">👩‍⚕️ เลือกหมอนวด</option>
@@ -734,12 +906,18 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
           </div>
 
           {/* Date and Time Section */}
-          <div className="bg-gradient-to-r from-green-50/80 to-emerald-50/60 backdrop-blur-sm border border-green-200/30 rounded-xl p-4">
-            <h3 className="text-lg font-semibold text-green-800 mb-4 flex items-center">
+          <div className={`border rounded-xl p-4 ${
+            isOnIpad 
+              ? 'bg-gray-50 border-gray-200' 
+              : 'bg-gradient-to-r from-green-50/80 to-emerald-50/60 backdrop-blur-sm border-green-200/30'
+          }`}>
+            <h3 className={`text-lg font-semibold mb-4 flex items-center ${
+              isOnIpad ? 'text-gray-800' : 'text-green-800'
+            }`}>
               <CalendarIcon className="h-5 w-5 mr-2" />
               เวลานัดหมาย
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-700">
                   <CalendarIcon className="h-4 w-4 inline mr-1 text-green-500" />
@@ -751,7 +929,16 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
                   value={formData.date}
                   onChange={handleInputChange}
                   min={new Date().toISOString().split('T')[0]}
-                  className="w-full p-4 border border-green-200/50 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md"
+                  className={`w-full p-4 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 shadow-sm transition-all duration-200 ${
+                    isOnIpad 
+                      ? 'bg-white border-gray-300 text-base' 
+                      : 'border-green-200/50 bg-white/90 backdrop-blur-sm hover:shadow-md'
+                  }`}
+                  style={{
+                    WebkitTapHighlightColor: 'transparent',
+                    fontSize: isOnIpad ? '16px' : undefined,
+                    touchAction: 'manipulation'
+                  }}
                   required
                 />
               </div>
@@ -765,7 +952,16 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
                   name="time"
                   value={formData.time}
                   onChange={handleInputChange}
-                  className="w-full p-4 border border-green-200/50 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md disabled:opacity-50"
+                  className={`w-full p-4 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 shadow-sm transition-all duration-200 disabled:opacity-50 ${
+                    isOnIpad 
+                      ? 'bg-white border-gray-300 text-base' 
+                      : 'border-green-200/50 bg-white/90 backdrop-blur-sm hover:shadow-md'
+                  }`}
+                  style={{
+                    WebkitTapHighlightColor: 'transparent',
+                    fontSize: isOnIpad ? '16px' : undefined,
+                    touchAction: 'manipulation'
+                  }}
                   required
                   disabled={!formData.therapistId || !formData.date || !formData.duration}
                 >
@@ -944,14 +1140,32 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-4 border-2 border-gray-300/50 text-gray-700 rounded-xl hover:bg-gray-50/80 hover:border-gray-400/50 font-semibold backdrop-blur-sm transition-all duration-200 transform hover:scale-[1.02]"
+              className={`flex-1 px-6 py-4 border-2 font-semibold rounded-xl transition-all duration-200 ${
+                isOnIpad 
+                  ? 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50' 
+                  : 'border-gray-300/50 text-gray-700 hover:bg-gray-50/80 hover:border-gray-400/50 backdrop-blur-sm transform hover:scale-[1.02]'
+              }`}
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
+                minHeight: isOnIpad ? '48px' : undefined
+              }}
             >
               ❌ ยกเลิก
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-6 py-4 bg-gradient-to-r from-blue-600/90 to-purple-600/90 hover:from-blue-700/90 hover:to-purple-700/90 disabled:from-gray-400/50 disabled:to-gray-500/50 text-white rounded-xl font-semibold backdrop-blur-sm transition-all duration-200 transform hover:scale-[1.02] shadow-lg disabled:shadow-none flex items-center justify-center"
+              className={`flex-1 px-6 py-4 text-white rounded-xl font-semibold transition-all duration-200 shadow-lg disabled:shadow-none flex items-center justify-center ${
+                isOnIpad 
+                  ? 'bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400' 
+                  : 'bg-gradient-to-r from-blue-600/90 to-purple-600/90 hover:from-blue-700/90 hover:to-purple-700/90 disabled:from-gray-400/50 disabled:to-gray-500/50 backdrop-blur-sm transform hover:scale-[1.02]'
+              }`}
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
+                minHeight: isOnIpad ? '48px' : undefined
+              }}
             >
               {loading ? (
                 <>

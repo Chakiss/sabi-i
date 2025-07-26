@@ -273,40 +273,40 @@ export default function HomePage() {
 
  if (loading) {
  return (
- <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F8F5F2] via-[#ECE8E4] to-[#F0EBE7]">
- <div className="bg-gradient-to-br from-white/95 to-[#F8F5F2]/90 backdrop-blur-xl rounded-3xl shadow-2xl p-12 text-center border border-[#B89B85]/20 max-w-md mx-4">
+ <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50/90 via-purple-50/80 to-blue-50/70">
+ <div className="bg-gradient-to-br from-white/95 to-purple-50/90 backdrop-blur-xl rounded-3xl shadow-2xl p-12 text-center border border-white/30 max-w-md mx-4">
  {/* Animated Logo */}
  <div className="relative mb-8">
- <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-[#B89B85] via-[#A1826F] to-[#B89B85]/80 flex items-center justify-center shadow-2xl animate-pulse">
+ <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500 flex items-center justify-center shadow-2xl animate-pulse">
  <SparklesIcon className="h-10 w-10 text-white" />
  </div>
  {/* Floating particles */}
  <div className="absolute inset-0 flex items-center justify-center">
- <div className="w-4 h-4 bg-[#B89B85]/60 rounded-full animate-bounce delay-0 absolute -top-2 -left-2"></div>
- <div className="w-3 h-3 bg-[#A1826F]/60 rounded-full animate-bounce delay-75 absolute -bottom-1 -right-1"></div>
- <div className="w-2 h-2 bg-[#B89B85]/40 rounded-full animate-bounce delay-150 absolute top-1 right-4"></div>
+ <div className="w-4 h-4 bg-pink-400 rounded-full animate-bounce delay-0 absolute -top-2 -left-2"></div>
+ <div className="w-3 h-3 bg-purple-400 rounded-full animate-bounce delay-75 absolute -bottom-1 -right-1"></div>
+ <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce delay-150 absolute top-1 right-4"></div>
  </div>
  </div>
  
  {/* Loading Spinner */}
  <div className="relative mb-6">
- <div className="animate-spin rounded-full h-16 w-16 border-4 border-transparent border-t-[#B89B85] border-r-[#A1826F] mx-auto"></div>
- <div className="absolute inset-0 animate-spin rounded-full h-16 w-16 border-4 border-transparent border-b-[#B89B85]/60 border-l-[#A1826F]/60 mx-auto" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+ <div className="animate-spin rounded-full h-16 w-16 border-4 border-transparent border-t-purple-500 border-r-pink-500 mx-auto"></div>
+ <div className="absolute inset-0 animate-spin rounded-full h-16 w-16 border-4 border-transparent border-b-blue-500 border-l-purple-300 mx-auto" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
  </div>
  
- <h2 className="text-2xl font-bold bg-gradient-to-r from-[#4E3B31] via-[#B89B85] to-[#A1826F] bg-clip-text text-transparent mb-3">
+ <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">
  กำลังโหลดข้อมูล
  </h2>
- <p className="text-[#7E7B77] font-medium">
+ <p className="text-gray-600 font-medium">
  <SparklesIcon className="h-4 w-4 inline mr-1" />
  กรุณารอสักครู่...
  </p>
  
  {/* Progress dots */}
  <div className="flex justify-center space-x-2 mt-6">
- <div className="w-2 h-2 bg-[#B89B85] rounded-full animate-pulse"></div>
- <div className="w-2 h-2 bg-[#A1826F] rounded-full animate-pulse delay-75"></div>
- <div className="w-2 h-2 bg-[#B89B85]/60 rounded-full animate-pulse delay-150"></div>
+ <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+ <div className="w-2 h-2 bg-pink-500 rounded-full animate-pulse delay-75"></div>
+ <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse delay-150"></div>
  </div>
  </div>
  </div>
@@ -322,27 +322,27 @@ export default function HomePage() {
  const doneBookings = sortedBookings.filter(b => b.status === 'done');
 
  return (
- <div className="min-h-screen bg-gradient-to-br from-[#F8F5F2] via-[#ECE8E4] to-[#F0EBE7]">
+ <div className="min-h-screen bg-gradient-to-br from-pink-50/90 via-purple-50/80 to-blue-50/70">
  {/* Main Content */}
  <div className="w-full px-6 lg:px-12 py-12">
  {/* Enhanced Queue Management Section */}
- <div className="bg-gradient-to-br from-white/95 to-[#F8F5F2]/85 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-[#B89B85]/30 mb-8 min-h-[calc(100vh-6rem)] relative overflow-hidden">
+ <div className="bg-gradient-to-br from-white/95 to-blue-50/85 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/40 mb-8 min-h-[calc(100vh-6rem)] relative overflow-hidden">
  {/* Animated Background Elements */}
- <div className="absolute top-10 right-10 w-24 h-24 bg-gradient-to-br from-[#B89B85]/20 to-[#A1826F]/20 rounded-full blur-2xl animate-pulse"></div>
- <div className="absolute bottom-10 left-10 w-32 h-32 bg-gradient-to-br from-[#B89B85]/15 to-[#ECE8E4]/30 rounded-full blur-2xl animate-pulse delay-1000"></div>
+ <div className="absolute top-10 right-10 w-24 h-24 bg-gradient-to-br from-blue-300/20 to-purple-300/20 rounded-full blur-2xl animate-pulse"></div>
+ <div className="absolute bottom-10 left-10 w-32 h-32 bg-gradient-to-br from-pink-300/20 to-yellow-300/20 rounded-full blur-2xl animate-pulse delay-1000"></div>
  
  <div className="relative z-10">
  <div className="flex items-center justify-between mb-8">
  <div className="flex items-center space-x-4">
- <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#B89B85] via-[#A1826F] to-[#B89B85]/80 flex items-center justify-center text-white shadow-xl hover:rotate-6 no-transition ">
+ <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-xl hover:rotate-6 no-transition ">
  <ClipboardDocumentListIcon className="h-8 w-8" />
  </div>
  <div>
- <h2 className="text-3xl font-bold bg-gradient-to-r from-[#4E3B31] via-[#B89B85] to-[#A1826F] bg-clip-text text-transparent">
+ <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
  จัดการคิววันนี้
  </h2>
- <p className="text-[#7E7B77] font-medium flex items-center">
- <span className="w-3 h-3 bg-[#B89B85] rounded-full mr-2 animate-pulse inline-block"></span>
+ <p className="text-gray-600 font-medium flex items-center">
+ <span className="w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse inline-block"></span>
  ({sortedBookings.length} คิว) อัพเดทสถานะและติดตามคิว
  </p>
  </div>
@@ -350,9 +350,9 @@ export default function HomePage() {
  <div className="flex space-x-3">
  <button
  onClick={handleNewBooking}
- className="group relative px-6 py-3 bg-gradient-to-r from-[#B89B85] to-[#A1826F] text-white font-semibold rounded-xl shadow-lg no-transition hover:scale-105 flex items-center space-x-2 overflow-hidden"
+ className="group relative px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg no-transition hover:scale-105 flex items-center space-x-2 overflow-hidden"
  >
- <div className="absolute inset-0 bg-gradient-to-r from-[#A1826F] to-[#B89B85] opacity-0 group-hover:opacity-100 no-transition "></div>
+ <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 no-transition "></div>
  <div className="relative z-10 flex items-center space-x-2">
  <SparklesIcon className="h-5 w-5 group-hover:rotate-180 no-transition " />
  <span>จองคิวใหม่</span>
@@ -365,17 +365,17 @@ export default function HomePage() {
  <div className="text-center py-20">
  <div className="mb-8">
  <div className="text-8xl mb-4 animate-bounce">🌸</div>
- <div className="w-32 h-32 mx-auto bg-gradient-to-br from-[#F8F5F2] to-[#ECE8E4] rounded-full flex items-center justify-center shadow-xl mb-6">
- <CalendarDaysIcon className="h-16 w-16 text-[#B89B85]" />
+ <div className="w-32 h-32 mx-auto bg-gradient-to-br from-pink-100 to-purple-100 rounded-full flex items-center justify-center shadow-xl mb-6">
+ <CalendarDaysIcon className="h-16 w-16 text-purple-400" />
  </div>
  </div>
- <h3 className="text-3xl font-bold text-[#4E3B31] mb-4">ยังไม่มีคิววันนี้</h3>
- <p className="text-[#7E7B77] mb-8 text-lg">เมื่อมีการจองคิว รายการจะปรากฏที่นี่</p>
+ <h3 className="text-3xl font-bold text-gray-700 mb-4">ยังไม่มีคิววันนี้</h3>
+ <p className="text-gray-600 mb-8 text-lg">เมื่อมีการจองคิว รายการจะปรากฏที่นี่</p>
  <button
  onClick={handleNewBooking}
- className="group relative px-10 py-4 bg-gradient-to-r from-[#B89B85] to-[#A1826F] text-white font-bold rounded-2xl shadow-xl hover:shadow-2xl no-transition hover:scale-105 text-lg overflow-hidden"
+ className="group relative px-10 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold rounded-2xl shadow-xl hover:shadow-2xl no-transition hover:scale-105 text-lg overflow-hidden"
  >
- <div className="absolute inset-0 bg-gradient-to-r from-[#A1826F] to-[#B89B85] opacity-0 group-hover:opacity-100 no-transition "></div>
+ <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 no-transition "></div>
  <div className="relative z-10 flex items-center space-x-3">
  <SparklesIcon className="h-6 w-6 group-hover:rotate-180 no-transition " />
  <span>จองคิวใหม่</span>
@@ -433,8 +433,8 @@ export default function HomePage() {
  {index + 1}
  </div>
  <div>
- <h3 className="font-bold text-[#4E3B31] text-lg">{booking.customerName}</h3>
- <p className="text-sm text-[#7E7B77]">{booking.customerPhone}</p>
+ <h3 className="font-bold text-gray-800 text-lg">{booking.customerName}</h3>
+ <p className="text-sm text-gray-600">{booking.customerPhone}</p>
  </div>
  </div>
  <div className="text-right">
@@ -511,13 +511,13 @@ export default function HomePage() {
  <div className="flex space-x-2">
  <button
  onClick={() => handleStatusUpdate(booking.id, 'in_progress')}
- className="flex-1 px-3 py-2 bg-gradient-to-r from-[#B89B85] to-[#A1826F] text-white text-sm font-semibold rounded-xl hover:shadow-lg no-transition hover:scale-105"
+ className="flex-1 px-3 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg no-transition hover:scale-105"
  >
  🏃‍♀️ เริ่มนวด
  </button>
  <button
  onClick={() => handleEditBooking(booking)}
- className="px-3 py-2 bg-white/90 hover:bg-white text-[#7E7B77] hover:text-[#4E3B31] text-sm font-semibold rounded-xl border border-[#B89B85]/20 hover:border-[#B89B85] hover:shadow-lg no-transition "
+ className="px-3 py-2 bg-white/90 hover:bg-white text-gray-700 text-sm font-semibold rounded-xl border border-gray-200 hover:shadow-lg no-transition "
  >
  ✏️
  </button>
@@ -665,7 +665,7 @@ export default function HomePage() {
  </button>
  <button
  onClick={() => handleEditBooking(booking)}
- className="px-3 py-2 bg-white/90 hover:bg-white text-[#7E7B77] hover:text-[#4E3B31] text-sm font-semibold rounded-xl border border-[#B89B85]/20 hover:border-[#B89B85] hover:shadow-lg no-transition "
+ className="px-3 py-2 bg-white/90 hover:bg-white text-gray-700 text-sm font-semibold rounded-xl border border-gray-200 hover:shadow-lg no-transition "
  >
  ✏️
  </button>
@@ -675,12 +675,12 @@ export default function HomePage() {
  })}
  
  {inProgressBookings.length === 0 && (
- <div className="text-center py-12 text-[#7E7B77] flex-1 flex flex-col justify-center">
+ <div className="text-center py-12 text-gray-500 flex-1 flex flex-col justify-center">
  <div className="w-20 h-20 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-4 shadow-lg">
  <PlayCircleIcon className="h-10 w-10 text-blue-400" />
  </div>
  <p className="text-base font-medium">ไม่มีคิวที่กำลังนวด</p>
- <p className="text-sm text-[#7E7B77]/70 mt-1">คิวที่เริ่มแล้วจะปรากฏที่นี่</p>
+ <p className="text-sm text-gray-400 mt-1">คิวที่เริ่มแล้วจะปรากฏที่นี่</p>
  </div>
  )}
  </div>
@@ -807,12 +807,12 @@ export default function HomePage() {
  })}
  
  {doneBookings.length === 0 && (
- <div className="text-center py-12 text-[#7E7B77] flex-1 flex flex-col justify-center">
+ <div className="text-center py-12 text-gray-500 flex-1 flex flex-col justify-center">
  <div className="w-20 h-20 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-4 shadow-lg">
  <CheckCircleIcon className="h-10 w-10 text-green-400" />
  </div>
  <p className="text-base font-medium">ยังไม่มีคิวที่เสร็จ</p>
- <p className="text-sm text-[#7E7B77]/70 mt-1">คิวที่เสร็จแล้วจะปรากฏที่นี่</p>
+ <p className="text-sm text-gray-400 mt-1">คิวที่เสร็จแล้วจะปรากฏที่นี่</p>
  </div>
  )}
  </div>

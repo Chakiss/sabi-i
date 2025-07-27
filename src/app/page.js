@@ -54,12 +54,51 @@ export default function HomePage() {
 
  // Performance optimization for iPad
  const [isOnIpad, setIsOnIpad] = useState(false);
+ const [isLowEndDevice, setIsLowEndDevice] = useState(false);
 
  // Detect iPad for optimization
  useEffect(() => {
  const isIpadDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
  setIsOnIpad(isIpadDevice);
+ 
+ // Detect low-end devices (iPad Air 2, etc.)
+ const isLowEnd = isIpadDevice && (
+ !CSS.supports('backdrop-filter', 'blur(10px)') ||
+ navigator.hardwareConcurrency <= 2 ||
+ navigator.deviceMemory <= 4
+ );
+ setIsLowEndDevice(isLowEnd);
+ 
+ // Aggressive performance optimizations for low-end devices
+ if (isLowEnd) {
+ // Disable all visual effects
+ document.documentElement.style.setProperty('--animation-duration', '0s');
+ document.documentElement.style.setProperty('--transition-duration', '0s');
+ document.documentElement.classList.add('low-end-device');
+ 
+ // Reduce rendering complexity
+ const style = document.createElement('style');
+ style.textContent = `
+ .low-end-device * {
+ will-change: auto !important;
+ transform: translateZ(0) !important;
+ backface-visibility: hidden !important;
+ }
+ .low-end-device .no-transition {
+ transition: none !important;
+ animation: none !important;
+ }
+ .low-end-device [style*="backdrop-filter"] {
+ backdrop-filter: none !important;
+ -webkit-backdrop-filter: none !important;
+ }
+ .low-end-device [style*="blur"] {
+ filter: none !important;
+ }
+ `;
+ document.head.appendChild(style);
+ }
  
  // Reduce animations on older devices
  if (isIpadDevice && CSS.supports && !CSS.supports('backdrop-filter', 'blur(10px)')) {
@@ -69,7 +108,7 @@ export default function HomePage() {
  // Optimize scroll performance on iPad
  if (isIpadDevice) {
  const handleScroll = () => {
- // Throttle scroll events for better performance
+ // Minimal scroll handling for better performance
  };
  
  let ticking = false;
@@ -351,15 +390,14 @@ export default function HomePage() {
  const handleTouchMove = (e) => {
  if (!draggedBooking) return;
  
- // Only call preventDefault if event supports it and is not passive
+ // Check if we can preventDefault without passive event listener error
  try {
- if (!e.defaultPrevented && e.cancelable) {
- e.preventDefault(); // Prevent scrolling
+ if (e.cancelable && !e.defaultPrevented) {
+ e.preventDefault(); // Prevent scrolling only if allowed
  }
  e.stopPropagation();
  } catch (error) {
- // Silently handle passive event listener error
- console.debug('Touch event handling in passive mode');
+ // Handle passive event listener gracefully
  }
  
  const touch = e.touches[0];
@@ -403,17 +441,15 @@ export default function HomePage() {
  return;
  }
 
- // Safely handle preventDefault for non-passive events
+ // Check if we can preventDefault without passive event listener error
  try {
- if (!e.defaultPrevented && e.cancelable) {
+ if (e.cancelable && !e.defaultPrevented) {
  e.preventDefault();
  }
  e.stopPropagation();
  } catch (error) {
- // Silently handle passive event listener error
- console.debug('Touch end event handling in passive mode');
+ // Handle passive event listener gracefully
  }
- e.stopPropagation();
  
  const touch = e.changedTouches[0];
  const element = document.elementFromPoint(touch.clientX, touch.clientY);

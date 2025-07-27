@@ -71,14 +71,8 @@ export default function DiscountModal({ isOpen, onClose, booking, onComplete, se
       return booking?.servicePrice || 0;
     }
     
-    // Find service by ID - search in sorted services
-    const sortedServices = [...services].sort((a, b) => {
-      const orderA = a.order ?? 999;
-      const orderB = b.order ?? 999;
-      return orderA - orderB;
-    });
-    
-    const service = sortedServices.find(s => s.id === booking.serviceId);
+    // Find service by ID
+    const service = services.find(s => s.id === booking.serviceId);
     
     if (!service) {
       console.warn('⚠️ Service not found for booking:', booking.serviceId);

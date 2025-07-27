@@ -36,8 +36,8 @@ export default function AppWrapper({ children }) {
         {/* แสดง ViewerNavigation เสมอเมื่อยังไม่ได้ login */}
         <ViewerNavigation />
         
-        {/* Main Content Area - ใช้ PublicRoute แทน ProtectedRoute */}
-        <main className="flex-1 overflow-auto">
+        {/* Main Content Area - ใช้ PublicRoute แทน ProtectedRoute - ปรับ margin สำหรับ sidebar */}
+        <main className="ml-16 flex-1 overflow-auto transition-all duration-300">
           <PublicRoute>
             <div className="w-full">
               {children}
@@ -54,8 +54,8 @@ export default function AppWrapper({ children }) {
       {/* Navigation - แสดงตาม role ที่ login */}
       {role === 'admin' ? <AdminNavigation /> : <ViewerNavigation />}
       
-      {/* Main Content Area */}
-      <main className="flex-1 overflow-auto">
+      {/* Main Content Area - ปรับ margin สำหรับ sidebar ทั้ง admin และ viewer */}
+      <main className="ml-16 flex-1 overflow-auto transition-all duration-300">
         <ProtectedRoute>
           <div className="w-full">
             {children}

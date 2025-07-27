@@ -1,4 +1,4 @@
-// Improved AdminNavigation component (UI + structure enhancements)
+// Improved AdminNavigation component - iPad Landscape Collapsible Sidebar
 'use client';
 
 import Link from 'next/link';
@@ -9,7 +9,7 @@ import {
   HomeIcon, CalendarDaysIcon, UserGroupIcon, WrenchScrewdriverIcon,
   ChartBarIcon, Cog6ToothIcon, QueueListIcon, ClockIcon,
   CogIcon, ChevronDownIcon, LockClosedIcon, ArrowRightOnRectangleIcon,
-  UsersIcon
+  UsersIcon, Bars3Icon, XMarkIcon
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeIconSolid, CalendarDaysIcon as CalendarDaysIconSolid, 
@@ -26,6 +26,16 @@ const MENU = [
 ];
 
 const DROPDOWNS = [
+ 
+  {
+    label: 'Report',
+    icon: ChartBarIcon,
+    items: [
+      { id: 'reports', name: 'รายงาน', href: '/reports', icon: ChartBarIcon, activeIcon: ChartBarIconSolid },
+      { id: 'dashboard', name: 'แดชบอร์ด', href: '/dashboard', icon: Cog6ToothIcon, activeIcon: Cog6ToothIconSolid }
+    ],
+    lock: true
+  },
   {
     label: 'จัดการ',
     icon: CogIcon,
@@ -35,28 +45,27 @@ const DROPDOWNS = [
       { id: 'users', name: 'จัดการผู้ใช้', href: '/admin/users', icon: UsersIcon, activeIcon: UsersIconSolid }
     ],
     lock: true
-  },
-  {
-    label: 'Report',
-    icon: ChartBarIcon,
-    items: [
-      { id: 'reports', name: 'รายงาน', href: '/reports', icon: ChartBarIcon, activeIcon: ChartBarIconSolid },
-      { id: 'dashboard', name: 'แดชบอร์ด', href: '/dashboard', icon: Cog6ToothIcon, activeIcon: Cog6ToothIconSolid }
-    ],
-    lock: true
   }
 ];
 
 const AdminNavigation = memo(function AdminNavigation() {
   const { logout, getUserDisplayName } = useAuth();
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
   const pathname = usePathname();
-  const refs = useRef([]);
+  const dropdownRefs = useRef([]);
 
+  const toggleSidebar = () => {
+    setSidebarExpanded(!sidebarExpanded);
+  };
+
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
-      refs.current.forEach((ref, i) => {
-        if (ref && !ref.contains(e.target)) setOpenDropdown((prev) => (prev === i ? null : prev));
+      dropdownRefs.current.forEach((ref, i) => {
+        if (ref && !ref.contains(e.target)) {
+          setOpenDropdown((prev) => (prev === i ? null : prev));
+        }
       });
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -64,160 +73,198 @@ const AdminNavigation = memo(function AdminNavigation() {
   }, []);
 
   return (
-    <nav className="bg-[#F8F5F2]/95 backdrop-blur-lg border-b border-[#B89B85]/30 sticky top-0 z-50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-8">
-        <div className="flex justify-between items-center h-16">
-
-          {/* Logo Section */}
-          <Link href="/" className="flex items-center gap-4 group">
-            <div className="relative">
-              <div className="w-10 h-10 rounded-2xl overflow-hidden bg-gradient-to-br from-[#B89B85] via-[#B89B85]/90 to-[#B89B85]/70 shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
-                <Image src="/logo.jpg" alt="Logo" width={40} height={40} className="object-cover" priority />
+    <>
+      {/* Sidebar Navigation */}
+      <div 
+        className={`fixed left-0 top-0 h-full bg-gradient-to-b from-[#F8F5F2] via-white to-[#F8F5F2] shadow-xl border-r border-[#B89B85]/20 transition-all duration-300 ease-in-out z-50 ${
+          sidebarExpanded ? 'w-64' : 'w-16'
+        }`}
+        onMouseEnter={() => setSidebarExpanded(true)}
+        onMouseLeave={() => setSidebarExpanded(false)}
+      >
+        {/* Header */}
+        <div className="p-4 border-b border-[#B89B85]/10">
+          <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-3 group">
+              <div className="w-8 h-8 rounded-lg overflow-hidden bg-gradient-to-br from-[#B89B85] to-[#A1826F] shadow-md border border-[#B89B85]/20 group-hover:shadow-lg transition-shadow flex-shrink-0">
+                <Image 
+                  src="/logo.jpg" 
+                  alt="Saba-i Admin Logo" 
+                  width={32} 
+                  height={32} 
+                  className="object-cover" 
+                  priority 
+                />
               </div>
-              <div className="absolute -inset-1 bg-gradient-to-r from-[#B89B85]/20 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            </div>
-            <div className="hidden lg:block">
-              <h1 className="text-xl font-bold bg-gradient-to-r from-[#4E3B31] via-[#B89B85] to-[#A1826F] bg-clip-text text-transparent">
-                Saba-i
-              </h1>
-              <p className="text-xs text-[#7E7B77] font-medium -mt-1">Admin Panel</p>
-            </div>
-          </Link>
+              {sidebarExpanded && (
+                <div className="overflow-hidden">
+                  <h1 className="text-lg font-semibold font-heading bg-gradient-to-r from-[#4E3B31] to-[#B89B85] bg-clip-text text-transparent whitespace-nowrap">
+                    Saba-i Admin
+                  </h1>
+                </div>
+              )}
+            </Link>
+          </div>
+        </div>
 
-          {/* Center Navigation */}
-          <div className="hidden xl:flex items-center gap-1 flex-1 justify-center">
-            {MENU.map(({ id, name, href, icon, activeIcon }) => {
-              const isActive = pathname === href || (href !== '/' && pathname.startsWith(href));
-              const Icon = isActive ? activeIcon : icon;
+        {/* Menu Items */}
+        <div className="flex-1 py-4">
+          <nav className="space-y-2 px-3">
+            {/* Direct Menu Items */}
+            {MENU.map((item) => {
+              const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+              const Icon = isActive ? item.activeIcon : item.icon;
+              
               return (
                 <Link 
-                  key={id} 
-                  href={href} 
+                  key={item.id} 
+                  href={item.href} 
                   className={`
-                    relative group px-5 py-3 rounded-2xl font-medium text-sm transition-all duration-300 flex items-center gap-3
+                    relative flex items-center px-3 py-3 rounded-xl font-medium text-sm transition-all duration-200 group
                     ${isActive 
-                      ? 'text-[#B89B85] bg-[#B89B85]/10 shadow-sm' 
-                      : 'text-[#7E7B77] hover:text-[#4E3B31] hover:bg-[#B89B85]/5'
+                      ? 'bg-gradient-to-r from-[#B89B85]/10 to-[#A1826F]/10 text-[#B89B85] border border-[#B89B85]/20 shadow-sm' 
+                      : 'text-[#7E7B77] hover:text-[#4E3B31] hover:bg-[#F8F5F2] hover:shadow-sm'
                     }
                   `}
+                  title={!sidebarExpanded ? item.name : undefined}
                 >
-                  <div className={`
-                    p-2 rounded-xl transition-all duration-300
-                    ${isActive 
-                      ? 'bg-[#B89B85]/20 text-[#B89B85]' 
-                      : 'bg-[#ECE8E4] text-[#A5A5A5] group-hover:bg-[#B89B85]/10 group-hover:text-[#B89B85]'
-                    }
-                  `}>
-                    <Icon className="h-4 w-4" />
-                  </div>
-                  <span className="font-semibold">{name}</span>
+                  <Icon className={`h-5 w-5 flex-shrink-0 ${
+                    isActive ? 'text-[#B89B85]' : 'text-[#A5A5A5] group-hover:text-[#4E3B31]'
+                  } transition-colors`} />
+                  
+                  {sidebarExpanded && (
+                    <span className="ml-3 whitespace-nowrap overflow-hidden">
+                      {item.name}
+                    </span>
+                  )}
+                  
                   {isActive && (
-                    <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gradient-to-r from-transparent via-[#B89B85] to-transparent rounded-full"></div>
+                    <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-[#B89B85] rounded-l-full"></div>
                   )}
                 </Link>
               );
             })}
 
-            {/* Dropdown Menus */}
-            {DROPDOWNS.map((drop, i) => {
-              const hasActiveItem = drop.items.some(item => pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)));
+            {/* Dropdown Sections */}
+            {DROPDOWNS.map((dropdown, dropdownIndex) => {
+              const hasActiveItem = dropdown.items.some(item => 
+                pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
+              );
+              const DropdownIcon = dropdown.icon;
+              
               return (
-                <div key={drop.label} className="relative" ref={(el) => (refs.current[i] = el)}>
+                <div key={dropdown.label} className="relative" ref={el => dropdownRefs.current[dropdownIndex] = el}>
                   <button
-                    onClick={() => setOpenDropdown(openDropdown === i ? null : i)}
+                    onClick={() => setOpenDropdown(openDropdown === dropdownIndex ? null : dropdownIndex)}
                     className={`
-                      group px-5 py-3 rounded-2xl font-medium text-sm transition-all duration-300 flex items-center gap-3
+                      w-full flex items-center px-3 py-3 rounded-xl font-medium text-sm transition-all duration-200 group
                       ${hasActiveItem 
-                        ? 'text-[#B89B85] bg-[#B89B85]/10 shadow-sm' 
-                        : 'text-[#7E7B77] hover:text-[#4E3B31] hover:bg-[#B89B85]/5'
+                        ? 'bg-gradient-to-r from-[#B89B85]/10 to-[#A1826F]/10 text-[#B89B85] border border-[#B89B85]/20 shadow-sm' 
+                        : 'text-[#7E7B77] hover:text-[#4E3B31] hover:bg-[#F8F5F2] hover:shadow-sm'
                       }
                     `}
+                    title={!sidebarExpanded ? dropdown.label : undefined}
                   >
-                    <div className={`
-                      p-2 rounded-xl transition-all duration-300
-                      ${hasActiveItem 
-                        ? 'bg-[#B89B85]/20 text-[#B89B85]' 
-                        : 'bg-[#ECE8E4] text-[#A5A5A5] group-hover:bg-[#B89B85]/10 group-hover:text-[#B89B85]'
-                      }
-                    `}>
-                      <drop.icon className="h-4 w-4" />
-                    </div>
-                    <span className="font-semibold">{drop.label}</span>
-                    <ChevronDownIcon className={`w-4 h-4 transition-transform duration-200 ${openDropdown === i ? 'rotate-180' : ''}`} />
+                    <DropdownIcon className={`h-5 w-5 flex-shrink-0 ${
+                      hasActiveItem ? 'text-[#B89B85]' : 'text-[#A5A5A5] group-hover:text-[#4E3B31]'
+                    } transition-colors`} />
+                    
+                    {sidebarExpanded && (
+                      <>
+                        <span className="ml-3 whitespace-nowrap overflow-hidden flex-1 text-left">
+                          {dropdown.label}
+                        </span>
+                        <ChevronDownIcon className={`h-4 w-4 transition-transform duration-200 ${
+                          openDropdown === dropdownIndex ? 'rotate-180' : ''
+                        }`} />
+                      </>
+                    )}
                   </button>
 
-                  {openDropdown === i && (
-                    <div className="absolute top-full left-0 mt-3 w-56 bg-[#F8F5F2]/98 backdrop-blur-xl border border-[#B89B85]/30 rounded-2xl shadow-2xl shadow-[#4E3B31]/10 overflow-hidden">
-                      <div className="p-2">
-                        {drop.items.map(({ id, name, href, icon: ItemIcon, activeIcon }) => {
-                          const isItemActive = pathname === href || (href !== '/' && pathname.startsWith(href));
-                          const ItemIconComponent = isItemActive ? activeIcon : ItemIcon;
-                          return (
-                            <Link
-                              key={id}
-                              href={href}
-                              className={`
-                                group flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all duration-200
-                                ${isItemActive 
-                                  ? 'bg-[#B89B85] text-white font-semibold shadow-sm' 
-                                  : 'text-[#4E3B31] hover:text-[#B89B85] hover:bg-[#B89B85]/10'
-                                }
-                              `}
-                              onClick={() => setOpenDropdown(null)}
-                            >
-                              <div className={`
-                                p-1.5 rounded-lg transition-all duration-200
-                                ${isItemActive 
-                                  ? 'bg-white/20 text-white' 
-                                  : 'bg-[#ECE8E4] text-[#A5A5A5] group-hover:bg-[#B89B85]/10 group-hover:text-[#B89B85]'
-                                }
-                              `}>
-                                <ItemIconComponent className="w-3.5 h-3.5" />
-                              </div>
-                              {name}
-                            </Link>
-                          );
-                        })}
-                      </div>
+                  {/* Dropdown Menu */}
+                  {openDropdown === dropdownIndex && sidebarExpanded && (
+                    <div className="mt-2 ml-3 space-y-1 border-l border-[#B89B85]/20 pl-3">
+                      {dropdown.items.map((item) => {
+                        const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+                        const Icon = isActive ? item.activeIcon : item.icon;
+                        
+                        return (
+                          <Link
+                            key={item.id}
+                            href={item.href}
+                            className={`
+                              flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 group
+                              ${isActive 
+                                ? 'bg-[#B89B85] text-white font-semibold shadow-sm' 
+                                : 'text-[#7E7B77] hover:text-[#4E3B31] hover:bg-[#B89B85]/5'
+                              }
+                            `}
+                            onClick={() => setOpenDropdown(null)}
+                          >
+                            <Icon className={`h-4 w-4 flex-shrink-0 ${
+                              isActive ? 'text-white' : 'text-[#A5A5A5] group-hover:text-[#4E3B31]'
+                            } transition-colors`} />
+                            <span className="ml-3 whitespace-nowrap overflow-hidden">
+                              {item.name}
+                            </span>
+                          </Link>
+                        );
+                      })}
                     </div>
-                  )}
-                  {hasActiveItem && (
-                    <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gradient-to-r from-transparent via-[#B89B85] to-transparent rounded-full"></div>
                   )}
                 </div>
               );
             })}
-          </div>
+          </nav>
+        </div>
 
-          {/* User Section */}
-          <div className="flex items-center gap-4">
-            <div className="hidden lg:flex items-center gap-3">
-              <div className="text-right">
-                <p className="text-sm font-semibold text-[#4E3B31]">{getUserDisplayName?.() || 'Admin'}</p>
-                <p className="text-xs text-[#7E7B77] font-medium">Administrator</p>
+        {/* User Section */}
+        <div className="border-t border-[#B89B85]/10 p-3">
+          <div className="space-y-3">
+            {/* User Info */}
+            <div className="flex items-center px-3 py-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#B89B85] to-[#A1826F] text-white flex items-center justify-center text-sm font-semibold shadow-md flex-shrink-0">
+                {getUserDisplayName ? getUserDisplayName().charAt(0).toUpperCase() : 'A'}
               </div>
-              <div className="relative group">
-                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#B89B85] via-[#B89B85]/90 to-[#A1826F] text-white flex items-center justify-center text-sm font-bold shadow-lg group-hover:shadow-xl transition-all duration-300">
-                  {getUserDisplayName?.().charAt(0).toUpperCase() || 'A'}
+              {sidebarExpanded && (
+                <div className="ml-3 overflow-hidden">
+                  <p className="text-sm text-[#4E3B31] font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+                    {getUserDisplayName ? getUserDisplayName() : 'Admin'}
+                  </p>
+                  <p className="text-xs text-[#7E7B77] whitespace-nowrap">Administrator</p>
                 </div>
-                <div className="absolute -inset-1 bg-gradient-to-r from-[#B89B85]/20 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              </div>
+              )}
             </div>
-
+            
             {/* Logout Button */}
             <button 
               onClick={logout} 
-              className="group p-3 text-[#7E7B77] hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all duration-200 relative"
-              title="ออกจากระบบ"
+              className="w-full flex items-center px-3 py-2 text-[#7E7B77] hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-200"
+              title={!sidebarExpanded ? "ออกจากระบบ" : undefined}
             >
-              <ArrowRightOnRectangleIcon className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
+              <ArrowRightOnRectangleIcon className="h-5 w-5 flex-shrink-0" />
+              {sidebarExpanded && (
+                <span className="ml-3 text-sm font-medium">ออกจากระบบ</span>
+              )}
             </button>
           </div>
+        </div>
 
+        {/* Toggle Button */}
+        <div className="absolute -right-3 top-4">
+          <button
+            onClick={toggleSidebar}
+            className="w-6 h-6 bg-white border border-[#B89B85]/30 rounded-full shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center text-[#B89B85] hover:text-[#A1826F]"
+          >
+            {sidebarExpanded ? (
+              <XMarkIcon className="h-3 w-3" />
+            ) : (
+              <Bars3Icon className="h-3 w-3" />
+            )}
+          </button>
         </div>
       </div>
-    </nav>
-
+    </>
   );
 });
 

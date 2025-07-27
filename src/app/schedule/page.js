@@ -21,7 +21,8 @@ export default function SchedulePage() {
   const [therapists, setTherapists] = useState([]);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedTherapist, setSelectedTherapist] = useState('all'); // 'all' or therapist id
+  const [showCalendar, setShowCalendar] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -48,7 +49,10 @@ export default function SchedulePage() {
     fetchData();
   }, [selectedDate]); // Re-run when selectedDate changes
 
-
+  const isToday = (date) => {
+    const today = new Date();
+    return date && date.toDateString() === today.toDateString();
+  };
 
   // Calendar helpers
   const getDaysInMonth = (date) => {
@@ -74,6 +78,8 @@ export default function SchedulePage() {
     return days;
   };
 
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
   const navigateMonth = (direction) => {
     setCurrentMonth(prev => {
       const newMonth = new Date(prev);
@@ -82,13 +88,13 @@ export default function SchedulePage() {
     });
   };
 
-  const isToday = (date) => {
-    const today = new Date();
-    return date && date.toDateString() === today.toDateString();
-  };
-
   const isSelected = (date) => {
     return date && date.toDateString() === selectedDate.toDateString();
+  };
+
+  const handleDateSelect = (date) => {
+    setSelectedDate(date);
+    setShowCalendar(false);
   };
 
   const getStatusColor = (status) => {
@@ -111,6 +117,16 @@ export default function SchedulePage() {
     }
   };
 
+  // Filter bookings based on selected therapist
+  const filteredBookings = selectedTherapist === 'all' 
+    ? bookings 
+    : bookings.filter(booking => booking.therapistId === selectedTherapist);
+
+  // Get therapists who have bookings for the selected date
+  const therapistsWithBookings = therapists.filter(therapist => 
+    bookings.some(booking => booking.therapistId === therapist.id)
+  );
+
   if (loading && bookings.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#F8F5F2] via-[#ECE8E4] to-[#F0EBE7] flex items-center justify-center">
@@ -125,7 +141,7 @@ export default function SchedulePage() {
     );
   }
 
-  const sortedBookings = bookings.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+  const sortedBookings = filteredBookings.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F8F5F2] via-[#ECE8E4] to-[#F0EBE7]">
@@ -149,136 +165,54 @@ export default function SchedulePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Calendar */}
-          <div className="lg:col-span-2">
-            <div className="bg-gradient-to-br from-white/95 to-[#F8F5F2]/85 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-[#B89B85]/30">
-              {/* Calendar Header */}
-              <div className="flex items-center justify-between mb-6">
+        {/* Date Selector & Stats */}
+        <div className="mb-8">
+          <div className="bg-gradient-to-br from-white/95 to-[#F8F5F2]/85 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-[#B89B85]/30">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              
+              {/* Date Navigation */}
+              <div className="flex items-center gap-4">
                 <button
-                  onClick={() => navigateMonth(-1)}
+                  onClick={() => {
+                    const prevDay = new Date(selectedDate);
+                    prevDay.setDate(selectedDate.getDate() - 1);
+                    setSelectedDate(prevDay);
+                  }}
                   className="p-3 rounded-xl bg-[#ECE8E4] hover:bg-[#B89B85]/10 text-[#7E7B77] hover:text-[#B89B85] transition-all duration-200 shadow-sm"
                 >
                   <ChevronLeftIcon className="h-5 w-5" />
                 </button>
                 
-                <h2 className="text-xl font-bold text-[#4E3B31]">
-                  {dateTimeUtils.formatMonthYear(currentMonth)}
-                </h2>
+                <div className="text-center">
+                  <h2 className="text-2xl font-bold text-[#4E3B31] mb-1">
+                    {dateTimeUtils.formatWeekdayDate(selectedDate)}
+                  </h2>
+                  <p className="text-[#7E7B77] text-sm">
+                    {dateTimeUtils.formatDate(selectedDate, { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </p>
+                </div>
                 
                 <button
-                  onClick={() => navigateMonth(1)}
+                  onClick={() => {
+                    const nextDay = new Date(selectedDate);
+                    nextDay.setDate(selectedDate.getDate() + 1);
+                    setSelectedDate(nextDay);
+                  }}
                   className="p-3 rounded-xl bg-[#ECE8E4] hover:bg-[#B89B85]/10 text-[#7E7B77] hover:text-[#B89B85] transition-all duration-200 shadow-sm"
                 >
                   <ChevronRightIcon className="h-5 w-5" />
                 </button>
               </div>
 
-              {/* Calendar Grid */}
-              <div className="grid grid-cols-7 gap-2 mb-4">
-                {['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'].map(day => (
-                  <div key={day} className="text-center text-sm font-semibold text-[#7E7B77] py-2">
-                    {day}
-                  </div>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-7 gap-2">
-                {getDaysInMonth(currentMonth).map((date, index) => (
-                  <button
-                    key={index}
-                    onClick={() => date && setSelectedDate(date)}
-                    className={`
-                      aspect-square flex items-center justify-center text-sm rounded-xl transition-all duration-200 font-medium
-                      ${!date ? 'invisible' : ''}
-                      ${isToday(date) ? 'bg-[#B89B85]/20 text-[#B89B85] font-bold border border-[#B89B85]/30' : ''}
-                      ${isSelected(date) ? 'bg-[#B89B85] text-white shadow-lg' : 'hover:bg-[#B89B85]/10'}
-                      ${!isToday(date) && !isSelected(date) ? 'text-[#4E3B31] hover:text-[#B89B85]' : ''}
-                    `}
-                    disabled={!date}
-                  >
-                    {date?.getDate()}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Selected Date Info & Bookings */}
-          <div className="space-y-6">
-            {/* Date Info - Enhanced Stats Card */}
-            <div className="bg-gradient-to-br from-white/95 to-[#F8F5F2]/85 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-[#B89B85]/30">
-              <div className="flex items-center mb-6">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#B89B85] to-[#A1826F] flex items-center justify-center text-white mr-3 shadow-lg">
-                  <CalendarDaysIcon className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-[#4E3B31]">
-                    {dateTimeUtils.formatWeekdayDate(selectedDate)}
-                  </h3>
-                  <p className="text-[#7E7B77] text-sm">สรุปคิววันที่เลือก</p>
-                </div>
-              </div>
-              
-              {/* Queue Statistics */}
-              <div className="space-y-4">
-                {/* Total Queue Count - Prominent Display */}
-                <div className="bg-gradient-to-r from-[#B89B85]/10 to-[#A1826F]/10 rounded-2xl p-4 border border-[#B89B85]/20">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 rounded-lg bg-[#B89B85] flex items-center justify-center text-white mr-3 text-sm font-bold">
-                        📊
-                      </div>
-                      <span className="font-semibold text-[#4E3B31]">จำนวนคิวทั้งหมด</span>
-                    </div>
-                    <span className="text-2xl font-bold text-[#B89B85]">{bookings.length}</span>
-                  </div>
-                </div>
-
-                {/* Status Breakdown */}
-                <div className="grid grid-cols-1 gap-3">
-                  <div className="flex justify-between items-center py-2">
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
-                      <span className="text-[#7E7B77] text-sm">รอคิว</span>
-                    </div>
-                    <span className="text-yellow-600 font-bold">
-                      {bookings.filter(b => b.status === 'pending').length} คิว
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center py-2">
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                      <span className="text-[#7E7B77] text-sm">กำลังนวด</span>
-                    </div>
-                    <span className="text-blue-600 font-bold">
-                      {bookings.filter(b => b.status === 'in_progress').length} คิว
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center py-2">
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                      <span className="text-[#7E7B77] text-sm">เสร็จแล้ว</span>
-                    </div>
-                    <span className="text-green-600 font-bold">
-                      {bookings.filter(b => b.status === 'done').length} คิว
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Navigation */}
-            <div className="bg-gradient-to-br from-white/95 to-[#F8F5F2]/85 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-[#B89B85]/30">
-              <h4 className="font-semibold text-[#4E3B31] mb-4 flex items-center">
-                <SparklesIcon className="h-4 w-4 mr-2 text-[#B89B85]" />
-                เลือกวันที่เร็ว
-              </h4>
-              <div className="space-y-3">
+              {/* Quick Date Selection */}
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setSelectedDate(new Date())}
-                  className="w-full text-left px-4 py-3 rounded-xl bg-[#ECE8E4] hover:bg-[#B89B85]/10 text-[#4E3B31] hover:text-[#B89B85] text-sm transition-all duration-200 font-medium"
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    isToday(selectedDate) 
+                      ? 'bg-[#B89B85] text-white shadow-lg' 
+                      : 'bg-[#ECE8E4] hover:bg-[#B89B85]/10 text-[#4E3B31] hover:text-[#B89B85]'
+                  }`}
                 >
                   📅 วันนี้
                 </button>
@@ -288,37 +222,110 @@ export default function SchedulePage() {
                     tomorrow.setDate(tomorrow.getDate() + 1);
                     setSelectedDate(tomorrow);
                   }}
-                  className="w-full text-left px-4 py-3 rounded-xl bg-[#ECE8E4] hover:bg-[#B89B85]/10 text-[#4E3B31] hover:text-[#B89B85] text-sm transition-all duration-200 font-medium"
+                  className="px-4 py-2 rounded-xl bg-[#ECE8E4] hover:bg-[#B89B85]/10 text-[#4E3B31] hover:text-[#B89B85] text-sm font-medium transition-all duration-200"
                 >
                   🔜 พรุ่งนี้
                 </button>
                 <button
-                  onClick={() => {
-                    const nextWeek = new Date();
-                    nextWeek.setDate(nextWeek.getDate() + 7);
-                    setSelectedDate(nextWeek);
-                  }}
-                  className="w-full text-left px-4 py-3 rounded-xl bg-[#ECE8E4] hover:bg-[#B89B85]/10 text-[#4E3B31] hover:text-[#B89B85] text-sm transition-all duration-200 font-medium"
+                  onClick={() => setShowCalendar(true)}
+                  className="px-4 py-2 rounded-xl bg-[#ECE8E4] hover:bg-[#B89B85]/10 text-[#4E3B31] hover:text-[#B89B85] text-sm font-medium transition-all duration-200"
                 >
-                  📆 สัปดาห์หน้า
+                  📆 เลือกวันที่
                 </button>
+              </div>
+
+              {/* Queue Statistics */}
+              <div className="flex items-center gap-6">
+                <div className="bg-gradient-to-r from-[#B89B85]/10 to-[#A1826F]/10 rounded-2xl p-4 border border-[#B89B85]/20">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-[#B89B85] flex items-center justify-center text-white text-sm font-bold">
+                      📊
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-[#B89B85]">{filteredBookings.length}</div>
+                      <div className="text-xs text-[#7E7B77] font-medium">
+                        {selectedTherapist === 'all' ? 'คิวทั้งหมด' : 'คิวที่แสดง'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                    <span className="text-[#7E7B77]">รอคิว</span>
+                    <span className="text-yellow-600 font-bold">
+                      {filteredBookings.filter(b => b.status === 'pending').length}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    <span className="text-[#7E7B77]">กำลังนวด</span>
+                    <span className="text-blue-600 font-bold">
+                      {filteredBookings.filter(b => b.status === 'in_progress').length}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span className="text-[#7E7B77]">เสร็จแล้ว</span>
+                    <span className="text-green-600 font-bold">
+                      {filteredBookings.filter(b => b.status === 'done').length}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <span className="text-[#7E7B77]">ยกเลิก</span>
+                    <span className="text-red-600 font-bold">
+                      {filteredBookings.filter(b => b.status === 'cancelled').length}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Bookings for Selected Date */}
+        {/* Bookings for Selected Date - Full Width */}
         <div className="mt-8">
           <div className="bg-gradient-to-br from-white/95 to-[#F8F5F2]/85 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-[#B89B85]/30">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-bold text-[#4E3B31] flex items-center">
                 <ClockIcon className="h-6 w-6 mr-3 text-[#B89B85]" />
-                คิววันที่ {dateTimeUtils.formatDate(selectedDate, { day: 'numeric', month: 'long', year: 'numeric' })}
+                รายการคิววันที่ {dateTimeUtils.formatDate(selectedDate, { day: 'numeric', month: 'long', year: 'numeric' })}
               </h3>
-              <div className="bg-[#B89B85]/10 px-4 py-2 rounded-xl">
-                <span className="text-[#B89B85] font-bold">{sortedBookings.length} คิว</span>
-              </div>
             </div>
+
+            {/* Therapist Filter */}
+            {therapistsWithBookings.length > 0 && (
+              <div className="mb-6">
+                <h4 className="text-sm font-semibold text-[#7E7B77] mb-3">กรองตามหมอนวด:</h4>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setSelectedTherapist('all')}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      selectedTherapist === 'all'
+                        ? 'bg-[#B89B85] text-white shadow-md' 
+                        : 'bg-[#ECE8E4] hover:bg-[#B89B85]/10 text-[#4E3B31] hover:text-[#B89B85]'
+                    }`}
+                  >
+                    👥 ทั้งหมด ({bookings.length})
+                  </button>
+                  {therapistsWithBookings.map(therapist => (
+                    <button
+                      key={therapist.id}
+                      onClick={() => setSelectedTherapist(therapist.id)}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        selectedTherapist === therapist.id
+                          ? 'bg-[#B89B85] text-white shadow-md' 
+                          : 'bg-[#ECE8E4] hover:bg-[#B89B85]/10 text-[#4E3B31] hover:text-[#B89B85]'
+                      }`}
+                    >
+                      👤 {therapist.name} ({bookings.filter(b => b.therapistId === therapist.id).length})
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {loading ? (
               <div className="text-center py-12">
@@ -333,11 +340,41 @@ export default function SchedulePage() {
                 <div className="w-24 h-24 mx-auto bg-gradient-to-br from-[#F8F5F2] to-[#ECE8E4] rounded-full flex items-center justify-center mb-6 shadow-lg">
                   <CalendarDaysIcon className="h-12 w-12 text-[#B89B85]" />
                 </div>
-                <h3 className="text-xl font-bold text-[#4E3B31] mb-2">ไม่มีคิววันนี้</h3>
-                <p className="text-[#7E7B77]">ยังไม่มีการจองคิวสำหรับวันที่เลือก</p>
+                <h3 className="text-xl font-bold text-[#4E3B31] mb-2">
+                  {selectedTherapist === 'all' ? 'ไม่มีคิววันนี้' : 'ไม่มีคิวสำหรับหมอนวดที่เลือก'}
+                </h3>
+                <p className="text-[#7E7B77]">
+                  {selectedTherapist === 'all' 
+                    ? 'ยังไม่มีการจองคิวสำหรับวันที่เลือก' 
+                    : 'ลองเลือกหมอนวดคนอื่นหรือดูทั้งหมด'
+                  }
+                </p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-2">
+                {/* Header Row */}
+                <div className="flex items-center w-full gap-4 px-4 py-2 bg-[#F8F5F2] rounded-lg">
+                  <div className="w-24 flex-shrink-0 text-xs font-semibold text-[#7E7B77] text-center">
+                    เวลา
+                  </div>
+                  <div className="w-32 flex-shrink-0 text-xs font-semibold text-[#7E7B77]">
+                    ลูกค้า
+                  </div>
+                  <div className="w-36 flex-shrink-0 text-xs font-semibold text-[#7E7B77]">
+                    บริการ
+                  </div>
+                  <div className="w-24 flex-shrink-0 text-xs font-semibold text-[#7E7B77]">
+                    หมอนวด
+                  </div>
+                  <div className="w-20 flex-shrink-0 text-xs font-semibold text-[#7E7B77]">
+                    สถานะ
+                  </div>
+                  <div className="w-4 flex-shrink-0 text-xs font-semibold text-[#7E7B77] text-center">
+                    📝
+                  </div>
+                </div>
+
+                {/* Queue Items */}
                 {sortedBookings.map(booking => {
                   const therapist = therapists.find(t => t.id === booking.therapistId);
                   const service = services.find(s => s.id === booking.serviceId);
@@ -347,52 +384,57 @@ export default function SchedulePage() {
                   return (
                     <div
                       key={booking.id}
-                      className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg border-l-4 border-[#B89B85] hover:shadow-xl transition-all duration-200"
+                      className="bg-white/90 backdrop-blur-sm rounded-xl px-4 py-3 shadow-md border-l-4 border-[#B89B85] hover:shadow-lg transition-all duration-200 h-[60px] flex items-center"
                     >
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h4 className="font-bold text-[#4E3B31] text-lg">
-                            {booking.customerName}
-                          </h4>
-                          <p className="text-[#7E7B77] text-sm flex items-center">
-                            <UserIcon className="h-4 w-4 mr-1" />
-                            {booking.customerPhone}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(booking.status)}`}>
-                            {getStatusText(booking.status)}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div className="bg-[#F8F5F2] rounded-lg p-3">
-                          <span className="text-[#7E7B77] block mb-1">เวลา</span>
-                          <div className="font-semibold text-[#4E3B31]">
+                      <div className="flex items-center w-full gap-4">
+                        
+                        {/* Time Section - Compact */}
+                        <div className="flex-shrink-0 w-24 text-center">
+                          <div className="text-xs font-bold text-[#4E3B31]">
                             {dateTimeUtils.formatTime(startTime)} - {dateTimeUtils.formatTime(endTime)}
                           </div>
                         </div>
-                        <div className="bg-[#F8F5F2] rounded-lg p-3">
-                          <span className="text-[#7E7B77] block mb-1">บริการ</span>
-                          <div className="font-semibold text-[#4E3B31]">{service?.name}</div>
+
+                        {/* Customer Name - Fixed width to prevent wrapping */}
+                        <div className="w-32 flex-shrink-0">
+                          <div className="font-semibold text-[#4E3B31] text-sm truncate">
+                            {booking.customerName}
+                          </div>
+                          <div className="text-xs text-[#7E7B77] truncate">
+                            {booking.customerPhone}
+                          </div>
                         </div>
-                        <div className="bg-[#F8F5F2] rounded-lg p-3">
-                          <span className="text-[#7E7B77] block mb-1">หมอนวด</span>
-                          <div className="font-semibold text-[#4E3B31]">{therapist?.name}</div>
+
+                        {/* Service - Fixed width */}
+                        <div className="w-36 flex-shrink-0">
+                          <div className="text-sm text-[#4E3B31] truncate" title={service?.name}>
+                            {service?.name}
+                          </div>
                         </div>
-                        <div className="bg-[#F8F5F2] rounded-lg p-3">
-                          <span className="text-[#7E7B77] block mb-1">ระยะเวลา</span>
-                          <div className="font-semibold text-[#4E3B31]">{booking.duration} นาที</div>
+
+                        {/* Therapist - Fixed width */}
+                        <div className="w-24 flex-shrink-0">
+                          <div className="text-sm text-[#4E3B31] truncate" title={therapist?.name}>
+                            {therapist?.name}
+                          </div>
+                        </div>
+
+                        {/* Status - Fixed width */}
+                        <div className="w-20 flex-shrink-0">
+                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(booking.status)} truncate`}>
+                            {getStatusText(booking.status)}
+                          </span>
+                        </div>
+
+                        {/* Notes indicator - Only show if has notes */}
+                        <div className="w-4 flex-shrink-0 text-center">
+                          {booking.notes && (
+                            <div className="w-4 h-4 bg-yellow-100 rounded-full flex items-center justify-center" title={booking.notes}>
+                              <span className="text-xs">📝</span>
+                            </div>
+                          )}
                         </div>
                       </div>
-
-                      {booking.notes && (
-                        <div className="mt-4 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
-                          <span className="text-[#7E7B77] text-sm font-medium">หมายเหตุ: </span>
-                          <span className="text-[#4E3B31]">{booking.notes}</span>
-                        </div>
-                      )}
                     </div>
                   );
                 })}
@@ -400,6 +442,77 @@ export default function SchedulePage() {
             )}
           </div>
         </div>
+        {/* Calendar Modal */}
+        {showCalendar && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div className="bg-white rounded-3xl shadow-2xl p-8 m-4 max-w-md w-full">
+              {/* Calendar Header */}
+              <div className="flex items-center justify-between mb-6">
+                <button
+                  onClick={() => navigateMonth(-1)}
+                  className="p-2 rounded-lg bg-[#ECE8E4] hover:bg-[#B89B85]/10 text-[#7E7B77] hover:text-[#B89B85] transition-all duration-200"
+                >
+                  <ChevronLeftIcon className="h-5 w-5" />
+                </button>
+                
+                <h3 className="text-xl font-bold text-[#4E3B31]">
+                  {dateTimeUtils.formatMonthYear(currentMonth)}
+                </h3>
+                
+                <button
+                  onClick={() => navigateMonth(1)}
+                  className="p-2 rounded-lg bg-[#ECE8E4] hover:bg-[#B89B85]/10 text-[#7E7B77] hover:text-[#B89B85] transition-all duration-200"
+                >
+                  <ChevronRightIcon className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Calendar Grid */}
+              <div className="grid grid-cols-7 gap-2 mb-4">
+                {['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'].map(day => (
+                  <div key={day} className="text-center text-sm font-semibold text-[#7E7B77] py-2">
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-7 gap-2 mb-6">
+                {getDaysInMonth(currentMonth).map((date, index) => (
+                  <button
+                    key={index}
+                    onClick={() => date && handleDateSelect(date)}
+                    className={`
+                      aspect-square flex items-center justify-center text-sm rounded-lg transition-all duration-200 font-medium
+                      ${!date ? 'invisible' : ''}
+                      ${isToday(date) ? 'bg-[#B89B85]/20 text-[#B89B85] font-bold border border-[#B89B85]/30' : ''}
+                      ${isSelected(date) ? 'bg-[#B89B85] text-white shadow-lg' : 'hover:bg-[#B89B85]/10'}
+                      ${!isToday(date) && !isSelected(date) ? 'text-[#4E3B31] hover:text-[#B89B85]' : ''}
+                    `}
+                    disabled={!date}
+                  >
+                    {date?.getDate()}
+                  </button>
+                ))}
+              </div>
+
+              {/* Calendar Footer */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowCalendar(false)}
+                  className="flex-1 px-4 py-2 bg-[#ECE8E4] hover:bg-[#B89B85]/10 text-[#4E3B31] hover:text-[#B89B85] rounded-xl font-medium transition-all duration-200"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  onClick={() => handleDateSelect(new Date())}
+                  className="flex-1 px-4 py-2 bg-[#B89B85] hover:bg-[#A1826F] text-white rounded-xl font-medium transition-all duration-200"
+                >
+                  วันนี้
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

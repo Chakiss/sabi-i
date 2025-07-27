@@ -561,11 +561,18 @@ export default function EditBookingModal({ booking, isOpen, onClose, onUpdate })
                     {services.length === 0 ? (
                       <option disabled>ไม่มีข้อมูลบริการ</option>
                     ) : (
-                      services.map(service => (
-                        <option key={service.id} value={service.id}>
-                          ✨ {service.name} ({service.category})
-                        </option>
-                      ))
+                      services
+                        .sort((a, b) => {
+                          // เรียงตาม order field ถ้ามี, ถ้าไม่มีให้ใช้ 999 เป็นค่า default
+                          const orderA = a.order ?? 999;
+                          const orderB = b.order ?? 999;
+                          return orderA - orderB;
+                        })
+                        .map(service => (
+                          <option key={service.id} value={service.id}>
+                            ✨ {service.name} ({service.category})
+                          </option>
+                        ))
                     )}
                   </select>
                   {services.length === 0 && (

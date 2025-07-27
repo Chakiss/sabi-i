@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { XMarkIcon, CalendarIcon, ClockIcon, UserIcon, PhoneIcon, SparklesIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 import { addBooking, getConfig, getBookingsByDate, getCustomers, getCustomerByPhone, upsertCustomer } from '@/lib/firestore';
 import { toast } from 'react-hot-toast';
@@ -79,6 +79,8 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
   const [customers, setCustomers] = useState([]);
   const [filteredCustomers, setFilteredCustomers] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const phoneInputRef = useRef(null);
+  const [inputPosition, setInputPosition] = useState({ top: 0, left: 0, width: 0 });
 
   // Helper function to get display name for channel
   const getChannelDisplayName = (channel) => {
@@ -265,6 +267,16 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
         );
         setFilteredCustomers(filtered);
         setShowSuggestions(filtered.length > 0);
+        
+        // Update input position for dropdown placement
+        if (phoneInputRef.current && filtered.length > 0) {
+          const rect = phoneInputRef.current.getBoundingClientRect();
+          setInputPosition({
+            top: rect.bottom + window.scrollY,
+            left: rect.left + window.scrollX,
+            width: rect.width
+          });
+        }
       } else {
         setFilteredCustomers([]);
         setShowSuggestions(false);
@@ -499,9 +511,117 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
 
   if (!isOpen) return null;
 
-  return (
+  // Customer suggestions dropdown rendered as portal (outside modal)
+  const customerSuggestionsPortal = showSuggestions && filteredCustomers.length > 0 && (
     <div 
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${
+      className={`fixed border rounded-xl shadow-2xl max-h-80 overflow-y-auto ${
+        isOnIpad 
+          ? 'bg-white border-gray-300' 
+          : 'bg-white/98 backdrop-blur-xl border-green-200/50'
+      }`}
+      style={{
+        WebkitOverflowScrolling: 'touch',
+        zIndex: 50000, // Very high z-index to appear above everything
+        position: 'fixed',
+        top: `${inputPosition.top + 4}px`,
+        left: `${inputPosition.left}px`,
+        width: `${inputPosition.width}px`,
+        maxWidth: '400px'
+      }}
+    >
+      <div className={`p-3 border-b sticky top-0 ${
+        isOnIpad 
+          ? 'bg-gray-50 border-gray-200' 
+          : 'border-gray-100/50 bg-green-50/50'
+      }`}>
+        <div className={`text-xs font-semibold flex items-center ${
+          isOnIpad ? 'text-gray-600' : 'text-green-600'
+        }`}>
+          <SparklesIcon className="h-3 w-3 mr-1" />
+          ลูกค้าในระบบ ({filteredCustomers.length} คน)
+        </div>
+      </div>
+      
+      <div className="divide-y divide-gray-50">
+        {filteredCustomers.map((customer, index) => (
+          <div
+            key={customer.phone}
+            onClick={() => handleCustomerSelect(customer)}
+            className={`px-4 py-3 cursor-pointer transition-colors duration-150 first:rounded-t-xl last:rounded-b-xl ${
+              isOnIpad 
+                ? 'hover:bg-gray-50 active:bg-gray-100' 
+                : 'hover:bg-green-50/80'
+            }`}
+            style={{
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation'
+            }}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start gap-2 mb-2 flex-wrap">
+                  <span className="font-semibold text-gray-800 text-sm break-words leading-tight">{customer.name}</span>
+                  {customer.totalVisits > 1 && (
+                    <span className="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap">
+                      ลูกค้าประจำ
+                    </span>
+                  )}
+                </div>
+                
+                <div className="flex items-center text-xs text-gray-600 mb-2">
+                  <PhoneIcon className="h-3 w-3 mr-1 text-green-500 flex-shrink-0" />
+                  <span className="break-all">{customer.phone}</span>
+                </div>
+                
+                <div className="flex items-start gap-4 text-xs flex-wrap">
+                  {customer.preferredChannel && (
+                    <div className="flex items-center text-blue-600">
+                      <InformationCircleIcon className="h-3 w-3 mr-1 text-blue-400 flex-shrink-0" />
+                      <span className="break-words">{getChannelDisplayName(customer.preferredChannel)}</span>
+                    </div>
+                  )}
+                  {customer.totalVisits && (
+                    <div className="flex items-center text-green-600">
+                      <span className="font-medium whitespace-nowrap">{customer.totalVisits} ครั้ง</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex-shrink-0 text-right">
+                {(customer.lastVisit !== null && customer.lastVisit !== undefined) && (
+                  <div className="text-xs text-gray-400 flex items-center whitespace-nowrap">
+                    <ClockIcon className="h-3 w-3 mr-1" />
+                    {(() => {
+                      const date = parseFirebaseDate(customer.lastVisit);
+                      if (!date) {
+                        console.log('Could not parse lastVisit for customer:', customer.name, 'value:', customer.lastVisit);
+                        return 'ไม่ระบุ';
+                      }
+                      
+                      return date.toLocaleDateString('th-TH', {
+                        day: 'numeric',
+                        month: 'short'
+                      });
+                    })()}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Customer suggestions portal - rendered outside modal */}
+      {customerSuggestionsPortal}
+      
+      {/* Main modal */}
+      <div 
+      className={`fixed inset-0 z-40 flex items-center justify-center p-4 ${
         isOnIpad ? 'bg-black/50' : 'bg-gradient-to-br from-black/40 via-purple-900/20 to-blue-900/30 backdrop-blur-md'
       }`}
       style={{
@@ -537,7 +657,7 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
         {/* Header */}
         <div className={`flex items-center justify-between p-6 border-b rounded-t-2xl ${
           isOnIpad 
-            ? 'bg-white border-gray-200 sticky top-0 z-10' 
+            ? 'bg-white border-gray-200 sticky top-0 z-0' 
             : 'border-white/20 bg-gradient-to-r from-white/90 to-blue-50/80 backdrop-blur-sm sticky top-0'
         }`}>
           <div className="flex items-center space-x-4">
@@ -641,6 +761,7 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
                   <input
                     type="tel"
                     name="customerPhone"
+                    ref={phoneInputRef}
                     value={formData.customerPhone}
                     onChange={handleInputChange}
                     onFocus={() => {
@@ -649,6 +770,16 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
                       );
                       setFilteredCustomers(filtered);
                       setShowSuggestions(filtered.length > 0);
+                      
+                      // Update input position for dropdown placement
+                      if (phoneInputRef.current && filtered.length > 0) {
+                        const rect = phoneInputRef.current.getBoundingClientRect();
+                        setInputPosition({
+                          top: rect.bottom + window.scrollY,
+                          left: rect.left + window.scrollX,
+                          width: rect.width
+                        });
+                      }
                     }}
                     className={`w-full p-4 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 shadow-sm transition-all duration-200 ${
                       isOnIpad 
@@ -670,104 +801,6 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
                     <InformationCircleIcon className="h-3 w-3 mr-1 text-blue-400" />
                     💡 ระบบจะอัพเดทข้อมูลลูกค้าเก่า หรือสร้างใหม่ตามเบอร์โทร
                   </div>
-                
-                {/* Customer Suggestions Dropdown */}
-                {showSuggestions && filteredCustomers.length > 0 && (
-                  <div 
-                    className={`absolute top-full left-0 right-0 mt-1 border rounded-xl shadow-2xl max-h-80 overflow-y-auto ${
-                      isOnIpad 
-                        ? 'bg-white border-gray-300 z-50' 
-                        : 'bg-white/98 backdrop-blur-xl border-green-200/50 z-[100]'
-                    }`}
-                    style={{
-                      WebkitOverflowScrolling: 'touch',
-                      zIndex: isOnIpad ? 50 : 100
-                    }}
-                  >
-                    <div className={`p-3 border-b sticky top-0 ${
-                      isOnIpad 
-                        ? 'bg-gray-50 border-gray-200' 
-                        : 'border-gray-100/50 bg-green-50/50'
-                    }`}>
-                      <div className={`text-xs font-semibold flex items-center ${
-                        isOnIpad ? 'text-gray-600' : 'text-green-600'
-                      }`}>
-                        <SparklesIcon className="h-3 w-3 mr-1" />
-                        ลูกค้าในระบบ ({filteredCustomers.length} คน)
-                      </div>
-                    </div>
-                    
-                    <div className="divide-y divide-gray-50">
-                      {filteredCustomers.map((customer, index) => (
-                        <div
-                          key={customer.phone}
-                          onClick={() => handleCustomerSelect(customer)}
-                          className={`px-4 py-3 cursor-pointer transition-colors duration-150 first:rounded-t-xl last:rounded-b-xl ${
-                            isOnIpad 
-                              ? 'hover:bg-gray-50 active:bg-gray-100' 
-                              : 'hover:bg-green-50/80'
-                          }`}
-                          style={{
-                            WebkitTapHighlightColor: 'transparent',
-                            touchAction: 'manipulation'
-                          }}
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start gap-2 mb-2 flex-wrap">
-                                <span className="font-semibold text-gray-800 text-sm break-words leading-tight">{customer.name}</span>
-                                {customer.totalVisits > 1 && (
-                                  <span className="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap">
-                                    ลูกค้าประจำ
-                                  </span>
-                                )}
-                              </div>
-                              
-                              <div className="flex items-center text-xs text-gray-600 mb-2">
-                                <PhoneIcon className="h-3 w-3 mr-1 text-green-500 flex-shrink-0" />
-                                <span className="break-all">{customer.phone}</span>
-                              </div>
-                              
-                              <div className="flex items-start gap-4 text-xs flex-wrap">
-                                {customer.preferredChannel && (
-                                  <div className="flex items-center text-blue-600">
-                                    <InformationCircleIcon className="h-3 w-3 mr-1 text-blue-400 flex-shrink-0" />
-                                    <span className="break-words">{getChannelDisplayName(customer.preferredChannel)}</span>
-                                  </div>
-                                )}
-                                {customer.totalVisits && (
-                                  <div className="flex items-center text-green-600">
-                                    <span className="font-medium whitespace-nowrap">{customer.totalVisits} ครั้ง</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            
-                            <div className="flex-shrink-0 text-right">
-                              {(customer.lastVisit !== null && customer.lastVisit !== undefined) && (
-                                <div className="text-xs text-gray-400 flex items-center whitespace-nowrap">
-                                  <ClockIcon className="h-3 w-3 mr-1" />
-                                  {(() => {
-                                    const date = parseFirebaseDate(customer.lastVisit);
-                                    if (!date) {
-                                      console.log('Could not parse lastVisit for customer:', customer.name, 'value:', customer.lastVisit);
-                                      return 'ไม่ระบุ';
-                                    }
-                                    
-                                    return date.toLocaleDateString('th-TH', {
-                                      day: 'numeric',
-                                      month: 'short'
-                                    });
-                                  })()}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
                 </div>
               </div>
             </div>
@@ -834,11 +867,18 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
                   required
                 >
                   <option value="">🎯 เลือกบริการที่ต้องการ</option>
-                  {services.map(service => (
-                    <option key={service.id} value={service.id}>
-                      ✨ {service.name} ({service.category})
-                    </option>
-                  ))}
+                  {services
+                    .sort((a, b) => {
+                      // เรียงตาม order field ถ้ามี, ถ้าไม่มีให้ใช้ 999 เป็นค่า default
+                      const orderA = a.order ?? 999;
+                      const orderB = b.order ?? 999;
+                      return orderA - orderB;
+                    })
+                    .map(service => (
+                      <option key={service.id} value={service.id}>
+                        ✨ {service.name} ({service.category})
+                      </option>
+                    ))}
                 </select>
               </div>
 
@@ -1216,5 +1256,6 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
         </div>
       </div>
     </div>
+    </>
   );
 }

@@ -2,6 +2,7 @@ import { Nunito, Kanit } from "next/font/google";
 import "./globals.css";
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from '../contexts/AuthContext';
+import { PerformanceProvider } from '../contexts/PerformanceContext';
 import AppWrapper from '../components/AppWrapper';
 
 const nunito = Nunito({
@@ -41,9 +42,11 @@ export default function RootLayout({ children }) {
         className={`${kanit.variable} ${nunito.variable} font-body antialiased bg-background`}
       >
         <AuthProvider>
-          <AppWrapper>
-            {children}
-          </AppWrapper>
+          <PerformanceProvider>
+            <AppWrapper>
+              {children}
+            </AppWrapper>
+          </PerformanceProvider>
         </AuthProvider>
         <Toaster
           position="top-right"

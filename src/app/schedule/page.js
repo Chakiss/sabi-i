@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getTodayBookings, getTherapists, getServices, getBookingsByDate } from '@/lib/firestore';
+import { getTodayBookings, getTherapists, getServices, getBookingsByDate, updateBookingStatus } from '@/lib/firestore';
 import { dateTimeUtils } from '@/lib/dateTimeUtils';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
@@ -12,7 +12,10 @@ import {
   CalendarDaysIcon,
   ClockIcon,
   UserIcon,
-  SparklesIcon
+  SparklesIcon,
+  PencilIcon,
+  CheckIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 
 export default function SchedulePage() {
@@ -23,6 +26,8 @@ export default function SchedulePage() {
   const [loading, setLoading] = useState(true);
   const [selectedTherapist, setSelectedTherapist] = useState('all'); // 'all' or therapist id
   const [showCalendar, setShowCalendar] = useState(false);
+  const [editingBookingId, setEditingBookingId] = useState(null);
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -116,6 +121,33 @@ export default function SchedulePage() {
       default: return status;
     }
   };
+
+  // Handle status change
+  const handleStatusChange = async (bookingId, newStatus) => {
+    try {
+      setEditingBookingId(bookingId);
+      await updateBookingStatus(bookingId, newStatus);
+      
+      // Refresh bookings data
+      const updatedBookings = await getBookingsByDate(selectedDate);
+      setBookings(updatedBookings);
+      
+      toast.success('อัพเดทสถานะสำเร็จ');
+      setStatusDropdownOpen(null);
+    } catch (error) {
+      console.error('Error updating booking status:', error);
+      toast.error('เกิดข้อผิดพลาดในการอัพเดทสถานะ');
+    } finally {
+      setEditingBookingId(null);
+    }
+  };
+
+  // Status options for dropdown
+  const statusOptions = [
+    { value: 'pending', label: 'รอคิว', color: 'text-yellow-600' },
+    { value: 'in_progress', label: 'กำลังนวด', color: 'text-blue-600' },
+    { value: 'done', label: 'เสร็จแล้ว', color: 'text-green-600' }
+  ];
 
   // Filter bookings based on selected therapist
   const filteredBookings = selectedTherapist === 'all' 
@@ -369,6 +401,9 @@ export default function SchedulePage() {
                   <div className="w-20 flex-shrink-0 text-xs font-semibold text-[#7E7B77]">
                     สถานะ
                   </div>
+                  <div className="w-8 flex-shrink-0 text-xs font-semibold text-[#7E7B77] text-center">
+                    แก้ไข
+                  </div>
                   <div className="w-4 flex-shrink-0 text-xs font-semibold text-[#7E7B77] text-center">
                     📝
                   </div>
@@ -384,7 +419,9 @@ export default function SchedulePage() {
                   return (
                     <div
                       key={booking.id}
-                      className="bg-white/90 backdrop-blur-sm rounded-xl px-4 py-3 shadow-md border-l-4 border-[#B89B85] hover:shadow-lg transition-all duration-200 h-[60px] flex items-center"
+                      className={`bg-white/90 backdrop-blur-sm rounded-xl px-4 py-3 shadow-md border-l-4 border-[#B89B85] hover:shadow-lg transition-all duration-200 h-[60px] flex items-center booking-row ${
+                        statusDropdownOpen === booking.id ? 'dropdown-active' : ''
+                      }`}
                     >
                       <div className="flex items-center w-full gap-4">
                         
@@ -427,6 +464,65 @@ export default function SchedulePage() {
                           <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(booking.status)} truncate`}>
                             {getStatusText(booking.status)}
                           </span>
+                        </div>
+
+                        {/* Edit Status Button - Fixed width */}
+                        <div className={`w-8 flex-shrink-0 relative status-dropdown ${
+                          statusDropdownOpen === booking.id ? 'dropdown-open' : ''
+                        }`}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setStatusDropdownOpen(statusDropdownOpen === booking.id ? null : booking.id);
+                            }}
+                            disabled={editingBookingId === booking.id}
+                            className="w-6 h-6 rounded-full bg-[#B89B85] hover:bg-[#A1826F] text-white flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="แก้ไขสถานะ"
+                          >
+                            {editingBookingId === booking.id ? (
+                              <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                              <PencilIcon className="h-3 w-3" />
+                            )}
+                          </button>
+
+                          {/* Status Dropdown */}
+                          {statusDropdownOpen === booking.id && (
+                            <>
+                              {/* Backdrop */}
+                              <div 
+                                className="dropdown-backdrop"
+                                onClick={() => setStatusDropdownOpen(null)}
+                              />
+                              {/* Dropdown Menu */}
+                              <div className="absolute top-8 right-0 z-[9999] bg-white rounded-lg shadow-xl border border-gray-200 py-1 min-w-[120px]">
+                                {statusOptions.map((option) => (
+                                  <button
+                                    key={option.value}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (option.value !== booking.status) {
+                                        handleStatusChange(booking.id, option.value);
+                                      }
+                                    }}
+                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                                      option.value === booking.status 
+                                        ? 'bg-gray-100 font-medium' 
+                                        : 'hover:bg-gray-50'
+                                    } ${option.color}`}
+                                    disabled={option.value === booking.status}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <span>{option.label}</span>
+                                      {option.value === booking.status && (
+                                        <CheckIcon className="h-4 w-4 text-green-600" />
+                                      )}
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            </>
+                          )}
                         </div>
 
                         {/* Notes indicator - Only show if has notes */}

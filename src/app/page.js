@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { getTodayBookings, getTherapists, getServices, updateBookingStatus } from '@/lib/firestore';
 import { dateTimeUtils } from '@/lib/dateTimeUtils';
@@ -48,6 +48,10 @@ export default function HomePage() {
  // Touch drag and drop state for mobile/tablet support
  const [isDragging, setIsDragging] = useState(false);
  const [draggedBooking, setDraggedBooking] = useState(null);
+
+ // Enhanced iPad performance state
+ const [performanceMode, setPerformanceMode] = useState('normal');
+ const [isRendering, setIsRendering] = useState(false);
  const [touchStartPos, setTouchStartPos] = useState({ x: 0, y: 0 });
  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -57,6 +61,7 @@ export default function HomePage() {
  const [isLowEndDevice, setIsLowEndDevice] = useState(false);
  const [isVeryLowEndDevice, setIsVeryLowEndDevice] = useState(false);
  const [lastTouchMove, setLastTouchMove] = useState(0);
+ const [touchStarted, setTouchStarted] = useState(false);
 
  // Detect iPad for optimization
  useEffect(() => {
@@ -192,7 +197,65 @@ export default function HomePage() {
  if (styleEl) styleEl.remove();
  };
  }
+ 
+ // Advanced Performance Mode Detection
+ if (isVeryLowEnd) {
+ setPerformanceMode('ultra');
+ } else if (isLowEnd) {
+ setPerformanceMode('high');
+ } else {
+ setPerformanceMode('normal');
  }
+ 
+ // Enhanced scroll optimization for iPad
+ let scrollTimeout;
+ const handleScroll = () => {
+ document.documentElement.classList.add('scrolling');
+ clearTimeout(scrollTimeout);
+ scrollTimeout = setTimeout(() => {
+ document.documentElement.classList.remove('scrolling');
+ }, 150);
+ };
+ 
+ window.addEventListener('scroll', handleScroll, { passive: true });
+ window.addEventListener('touchmove', handleScroll, { passive: true });
+ 
+ return () => {
+ window.removeEventListener('scroll', handleScroll);
+ window.removeEventListener('touchmove', handleScroll);
+ clearTimeout(scrollTimeout);
+ };
+ }
+ 
+ // Enhanced touch handling for iPad
+ const optimizeTouchEvents = () => {
+ // Throttle touch events to 30fps for very low-end devices
+ let touchThrottle = false;
+ const touchThrottleDelay = isVeryLowEndDevice ? 33 : 16; // 30fps vs 60fps
+ 
+ const throttledTouchHandler = (e) => {
+ if (touchThrottle) return;
+ touchThrottle = true;
+ 
+ setTimeout(() => {
+ touchThrottle = false;
+ }, touchThrottleDelay);
+ };
+ 
+ document.addEventListener('touchstart', throttledTouchHandler, { passive: true });
+ document.addEventListener('touchmove', throttledTouchHandler, { passive: true });
+ 
+ return () => {
+ document.removeEventListener('touchstart', throttledTouchHandler);
+ document.removeEventListener('touchmove', throttledTouchHandler);
+ };
+ };
+ 
+ const touchCleanup = optimizeTouchEvents();
+ 
+ return () => {
+ touchCleanup();
+ };
  
  // Reduce animations on older devices
  if (isIpadDevice && CSS.supports && !CSS.supports('backdrop-filter', 'blur(10px)')) {
@@ -225,7 +288,7 @@ export default function HomePage() {
  document.removeEventListener('touchmove', optimizedScroll);
  };
  }
- }, []);
+ }, [isVeryLowEndDevice]);
 
  // Debounced resize handler for better performance
  useEffect(() => {
@@ -282,6 +345,102 @@ export default function HomePage() {
  
  return () => clearInterval(timer);
  }, []);
+
+ // Virtual scrolling and image optimization for iPad
+ useEffect(() => {
+ if (performanceMode === 'ultra' || performanceMode === 'high') {
+ // Lazy load images
+ const lazyImages = document.querySelectorAll('img[loading="lazy"]');
+ if ('IntersectionObserver' in window) {
+ const imageObserver = new IntersectionObserver((entries, observer) => {
+ entries.forEach(entry => {
+ if (entry.isIntersecting) {
+ const img = entry.target;
+ img.src = img.dataset.src;
+ img.classList.remove('lazy');
+ observer.unobserve(img);
+ }
+ });
+ }, {
+ rootMargin: '50px'
+ });
+ 
+ lazyImages.forEach(img => imageObserver.observe(img));
+ 
+ return () => {
+ imageObserver.disconnect();
+ };
+ }
+ 
+ // Virtual scrolling for large lists
+ const containers = document.querySelectorAll('.virtual-scroll');
+ containers.forEach(container => {
+ let visibleStart = 0;
+ let visibleEnd = 20; // Show only 20 items at a time
+ 
+ const handleVirtualScroll = () => {
+ const scrollTop = container.scrollTop;
+ const itemHeight = 80; // Estimated item height
+ const containerHeight = container.clientHeight;
+ 
+ visibleStart = Math.floor(scrollTop / itemHeight);
+ visibleEnd = Math.min(
+ visibleStart + Math.ceil(containerHeight / itemHeight) + 5,
+ container.children.length
+ );
+ 
+ // Hide items outside visible range
+ Array.from(container.children).forEach((child, index) => {
+ if (index < visibleStart || index > visibleEnd) {
+ child.style.display = 'none';
+ } else {
+ child.style.display = '';
+ }
+ });
+ };
+ 
+ container.addEventListener('scroll', handleVirtualScroll, { passive: true });
+ });
+ }
+ }, [performanceMode]);
+
+ // Advanced memory management
+ useEffect(() => {
+ if (performanceMode === 'ultra') {
+ // Limit concurrent re-renders
+ let renderQueue = [];
+ let isProcessing = false;
+ 
+ const processRenderQueue = () => {
+ if (renderQueue.length === 0 || isProcessing) return;
+ 
+ isProcessing = true;
+ setIsRendering(true);
+ 
+ const batch = renderQueue.splice(0, 3); // Process 3 at a time
+ 
+ requestIdleCallback(() => {
+ batch.forEach(fn => fn());
+ isProcessing = false;
+ setIsRendering(false);
+ 
+ if (renderQueue.length > 0) {
+ setTimeout(processRenderQueue, 16); // Next frame
+ }
+ });
+ };
+ 
+ window.queueRender = (fn) => {
+ renderQueue.push(fn);
+ processRenderQueue();
+ };
+ 
+ return () => {
+ delete window.queueRender;
+ renderQueue = [];
+ };
+ }
+ }, [performanceMode]);
 
  useEffect(() => {
  const fetchDashboardData = async () => {
@@ -343,7 +502,7 @@ export default function HomePage() {
  }, []);
 
  // Queue management functions
- const fetchDashboardData = async () => {
+ const fetchDashboardData = useCallback(async () => {
  try {
  const [bookings, therapistsData, servicesData] = await Promise.all([
  getTodayBookings(),
@@ -395,9 +554,9 @@ export default function HomePage() {
  } catch (error) {
  console.error('Error fetching dashboard data:', error);
  }
- };
+ }, []);
 
- const handleStatusUpdate = async (bookingId, newStatus, discountData = null) => {
+ const handleStatusUpdate = useCallback(async (bookingId, newStatus, discountData = null) => {
  try {
  await updateBookingStatus(bookingId, newStatus, discountData);
  await fetchDashboardData(); // Refresh data
@@ -406,7 +565,7 @@ export default function HomePage() {
  console.error('Error updating booking status:', error);
  toast.error('เกิดข้อผิดพลาดในการอัพเดทสถานะ');
  }
- };
+ }, [fetchDashboardData]);
 
  const handleEditBooking = (booking) => {
  setEditingBooking(booking);
@@ -422,10 +581,10 @@ export default function HomePage() {
  fetchDashboardData(); // Refresh data after update
  };
 
- const handleCompleteBooking = (booking) => {
+ const handleCompleteBooking = useCallback((booking) => {
  setCompletingBooking(booking);
  setIsDiscountModalOpen(true);
- };
+ }, []);
 
  const handleDiscountModalClose = () => {
  setIsDiscountModalOpen(false);
@@ -445,6 +604,150 @@ export default function HomePage() {
  const handleBookingModalClose = () => {
  setIsBookingModalOpen(false);
  };
+
+ // Global touch event listeners for drag and drop - moved after function declarations
+ useEffect(() => {
+ const handleGlobalTouchMove = (e) => {
+ if (!draggedBooking || !isDragging || !touchStarted) return;
+ 
+ // Prevent scrolling during drag
+ if (e.cancelable) {
+ e.preventDefault();
+ }
+ 
+ // Throttle touch events for very low-end devices
+ if (isVeryLowEndDevice) {
+ const now = Date.now();
+ if (now - lastTouchMove < 32) return; // ~30fps instead of 60fps
+ setLastTouchMove(now);
+ }
+ 
+ const touch = e.touches[0];
+ if (!touch) return;
+ 
+ const deltaX = Math.abs(touch.clientX - touchStartPos.x);
+ const deltaY = Math.abs(touch.clientY - touchStartPos.y);
+ 
+ // Increase threshold for better touch handling on iPad
+ const threshold = isVeryLowEndDevice ? 20 : 15;
+ if (deltaX > threshold || deltaY > threshold) {
+ setIsDragging(true);
+ }
+ 
+ // อัพเดทตำแหน่งของ card ที่ลากไปมา
+ setDragPosition({ 
+ x: touch.clientX - dragOffset.x, 
+ y: touch.clientY - dragOffset.y 
+ });
+ 
+ // Optimized element detection for iPad
+ const element = document.elementFromPoint(touch.clientX, touch.clientY);
+ const dropZone = element?.closest('[data-drop-zone]');
+ 
+ // Remove previous drop zone highlights
+ document.querySelectorAll('[data-drop-zone]').forEach(zone => {
+ zone.classList.remove('drag-over');
+ });
+ 
+ if (dropZone) {
+ const targetStatus = dropZone.getAttribute('data-drop-zone');
+ 
+ // Add visual feedback to drop zone
+ dropZone.classList.add('drag-over');
+ 
+ // Haptic feedback เมื่อเข้า drop zone (only if not very low-end)
+ if (dragOverZone !== targetStatus && navigator.vibrate && !isVeryLowEndDevice) {
+ navigator.vibrate(30);
+ }
+ 
+ setDragOverZone(targetStatus);
+ } else {
+ setDragOverZone(null);
+ }
+ };
+
+ const handleGlobalTouchEnd = async (e) => {
+ if (!touchStarted) return;
+ 
+ // Clean up drop zone highlights
+ document.querySelectorAll('[data-drop-zone]').forEach(zone => {
+ zone.classList.remove('drag-over');
+ });
+ 
+ if (!draggedBooking || !isDragging) {
+ // Reset state
+ setDraggedBooking(null);
+ setIsDragging(false);
+ setDragOverZone(null);
+ setTouchStarted(false);
+ return;
+ }
+
+ // Check if we can preventDefault without passive event listener error
+ try {
+ if (e.cancelable && !e.defaultPrevented) {
+ e.preventDefault();
+ }
+ } catch (error) {
+ // Handle passive event listener gracefully
+ }
+ 
+ const touch = e.changedTouches[0];
+ if (!touch) {
+ // Reset state
+ setDraggedBooking(null);
+ setIsDragging(false);
+ setDragOverZone(null);
+ setTouchStarted(false);
+ return;
+ }
+ 
+ const element = document.elementFromPoint(touch.clientX, touch.clientY);
+ const dropZone = element?.closest('[data-drop-zone]');
+ 
+ if (dropZone) {
+ const targetStatus = dropZone.getAttribute('data-drop-zone');
+ 
+ if (draggedBooking.status !== targetStatus) {
+ try {
+ if (targetStatus === 'done') {
+ handleCompleteBooking(draggedBooking);
+ } else {
+ await handleStatusUpdate(draggedBooking.id, targetStatus);
+ }
+ toast.success('ย้ายคิวสำเร็จ');
+ 
+ // Add success haptic feedback
+ if (navigator.vibrate) {
+ navigator.vibrate([100, 30, 100]);
+ }
+ } catch (error) {
+ console.error('Error updating booking status:', error);
+ toast.error('เกิดข้อผิดพลาดในการอัพเดทสถานะ');
+ }
+ }
+ }
+ 
+ // Reset drag state
+ setDraggedBooking(null);
+ setIsDragging(false);
+ setDragOverZone(null);
+ setTouchStarted(false);
+ };
+
+ // Add global touch event listeners for drag operations
+ if (isOnIpad || /iPhone|iPod/.test(navigator.userAgent)) {
+ document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
+ document.addEventListener('touchend', handleGlobalTouchEnd, { passive: false });
+ document.addEventListener('touchcancel', handleGlobalTouchEnd, { passive: false });
+ 
+ return () => {
+ document.removeEventListener('touchmove', handleGlobalTouchMove);
+ document.removeEventListener('touchend', handleGlobalTouchEnd);
+ document.removeEventListener('touchcancel', handleGlobalTouchEnd);
+ };
+ }
+ }, [draggedBooking, isDragging, touchStarted, touchStartPos, dragOffset, dragOverZone, lastTouchMove, isVeryLowEndDevice, isOnIpad, handleStatusUpdate, handleCompleteBooking]);
 
  const handleBookingAdded = () => {
  fetchDashboardData(); // Refresh data after new booking
@@ -513,14 +816,21 @@ export default function HomePage() {
  const element = e.currentTarget;
  const rect = element.getBoundingClientRect();
  
- // คำนวณ offset จากจุดที่กดไปจนถึงมุมบนซ้ายของ element
- const offsetX = touch.clientX - rect.left;
- const offsetY = touch.clientY - rect.top;
+ // คำนวณ offset จากจุดที่กดไปจนถึงกึ่งกลางของ element สำหรับ UX ที่ดีขึ้น
+ const centerOffsetX = rect.width / 2;
+ const centerOffsetY = rect.height / 2;
  
+ // บันทึกตำแหน่งเริ่มต้น
  setTouchStartPos({ x: touch.clientX, y: touch.clientY });
- setDragOffset({ x: offsetX, y: offsetY });
- setDragPosition({ x: touch.clientX - offsetX, y: touch.clientY - offsetY });
+ setDragOffset({ x: centerOffsetX, y: centerOffsetY });
+ 
+ // ตั้งตำแหน่งเริ่มต้นให้ card อยู่กึ่งกลางใต้นิ้ว
+ setDragPosition({ 
+ x: touch.clientX - centerOffsetX, 
+ y: touch.clientY - centerOffsetY 
+ });
  setDraggedBooking(booking);
+ setTouchStarted(true);
  
  // Add haptic feedback for better UX on iOS
  if (navigator.vibrate) {
@@ -529,117 +839,15 @@ export default function HomePage() {
  };
 
  const handleTouchMove = (e) => {
- if (!draggedBooking) return;
- 
- // Throttle touch events for very low-end devices
- if (isVeryLowEndDevice) {
- const now = Date.now();
- if (now - lastTouchMove < 32) return; // ~30fps instead of 60fps
- setLastTouchMove(now);
- }
- 
- // Check if we can preventDefault without passive event listener error
- try {
- if (e.cancelable && !e.defaultPrevented) {
- e.preventDefault(); // Prevent scrolling only if allowed
- }
- e.stopPropagation();
- } catch (error) {
- // Handle passive event listener gracefully
- }
- 
- const touch = e.touches[0];
- const deltaX = Math.abs(touch.clientX - touchStartPos.x);
- const deltaY = Math.abs(touch.clientY - touchStartPos.y);
- 
- // Increase threshold for better touch handling on iPad
- const threshold = isVeryLowEndDevice ? 20 : 15;
- if (deltaX > threshold || deltaY > threshold) {
- setIsDragging(true);
- }
- 
- // อัพเดทตำแหน่งของ card ที่ลากไปมา
- setDragPosition({ 
- x: touch.clientX - dragOffset.x, 
- y: touch.clientY - dragOffset.y 
- });
- 
- // Optimized element detection for iPad
- const element = document.elementFromPoint(touch.clientX, touch.clientY);
- const dropZone = element?.closest('[data-drop-zone]');
- if (dropZone) {
- const targetStatus = dropZone.getAttribute('data-drop-zone');
- 
- // Haptic feedback เมื่อเข้า drop zone (only if not very low-end)
- if (dragOverZone !== targetStatus && navigator.vibrate && !isVeryLowEndDevice) {
- navigator.vibrate(30);
- }
- 
- setDragOverZone(targetStatus);
- } else {
- setDragOverZone(null);
- }
+ // This function is now handled by global touch listener
+ // Keep for backward compatibility but do nothing
+ return;
  };
 
  const handleTouchEnd = async (e) => {
- if (!draggedBooking || !isDragging) {
- // Reset state
- setDraggedBooking(null);
- setIsDragging(false);
- setDragOverZone(null);
+ // This function is now handled by global touch listener
+ // Keep for backward compatibility but do nothing
  return;
- }
-
- // Check if we can preventDefault without passive event listener error
- try {
- if (e.cancelable && !e.defaultPrevented) {
- e.preventDefault();
- }
- e.stopPropagation();
- } catch (error) {
- // Handle passive event listener gracefully
- }
- 
- const touch = e.changedTouches[0];
- const element = document.elementFromPoint(touch.clientX, touch.clientY);
- const dropZone = element?.closest('[data-drop-zone]');
- 
- if (dropZone) {
- const targetStatus = dropZone.getAttribute('data-drop-zone');
- 
- if (draggedBooking.status !== targetStatus) {
- try {
- if (targetStatus === 'done') {
- handleCompleteBooking(draggedBooking);
- } else {
- await handleStatusUpdate(draggedBooking.id, targetStatus);
- }
- toast.success('ย้ายคิวสำเร็จ');
- 
- // Add success haptic feedback
- if (navigator.vibrate) {
- navigator.vibrate([100, 30, 100]);
- }
- } catch (error) {
- console.error('Error in touch drag and drop:', error);
- toast.error('เกิดข้อผิดพลาดในการย้ายคิว');
- 
- // Add error haptic feedback
- if (navigator.vibrate) {
- navigator.vibrate([200, 100, 200]);
- }
- }
- }
- }
-
- // Reset state with delay to prevent ghost clicks
- setTimeout(() => {
- setDraggedBooking(null);
- setIsDragging(false);
- setDragOverZone(null);
- setDragPosition({ x: 0, y: 0 });
- setDragOffset({ x: 0, y: 0 });
- }, 100);
  };
 
  if (loading) {
@@ -916,7 +1124,7 @@ export default function HomePage() {
  onTouchStart={(e) => handleTouchStart(e, booking)}
  onTouchMove={handleTouchMove}
  onTouchEnd={handleTouchEnd}
- className={`rounded-2xl p-4 shadow-lg border cursor-move touch-none ${
+ className={`rounded-2xl p-4 shadow-lg border cursor-move touch-manipulation ${
  isOnIpad ? '' : 'no-transition'
  } ${
  isDragging && draggedBooking?.id === booking.id ? 'opacity-30 scale-95 ring-2 ring-orange-400 ring-opacity-50' : ''
@@ -1122,7 +1330,7 @@ export default function HomePage() {
  onTouchStart={(e) => handleTouchStart(e, booking)}
  onTouchMove={handleTouchMove}
  onTouchEnd={handleTouchEnd}
- className={`rounded-2xl p-4 shadow-lg border cursor-move touch-none ${
+ className={`rounded-2xl p-4 shadow-lg border cursor-move touch-manipulation ${
  isOnIpad ? '' : 'no-transition'
  } ${
  isDragging && draggedBooking?.id === booking.id ? 'opacity-30 scale-95 ring-2 ring-blue-400 ring-opacity-50' : ''
@@ -1429,27 +1637,44 @@ export default function HomePage() {
  </div>
  </div>
 
- {/* Floating Drag Card สำหรับ iPad */}
+ {/* Floating Drag Card สำหรับ iPad - Enhanced UX */}
  {isDragging && draggedBooking && (
  <div
- className={`floating-drag-card drag-shadow rounded-2xl p-4 border-2 touch-none ${
- isVeryLowEndDevice ? 'shadow-md' : ''
+ className={`floating-drag-card drag-shadow rounded-2xl p-4 border-2 touch-manipulation ${
+ isVeryLowEndDevice ? 'shadow-md' : 'shadow-2xl'
  }`}
  style={{
+ position: 'fixed',
  left: dragPosition.x,
  top: dragPosition.y,
+ zIndex: 9999,
  background: 'rgba(255, 255, 255, 0.95)',
- borderColor: draggedBooking.status === 'pending' ? 'rgba(255, 193, 7, 0.8)' : 
+ borderColor: dragOverZone ? '#10B981' : (
+ draggedBooking.status === 'pending' ? 'rgba(255, 193, 7, 0.8)' : 
  draggedBooking.status === 'in_progress' ? 'rgba(33, 150, 243, 0.8)' : 
- 'rgba(76, 175, 80, 0.8)',
+ 'rgba(76, 175, 80, 0.8)'
+ ),
+ borderWidth: dragOverZone ? '3px' : '2px',
+ borderStyle: dragOverZone ? 'solid' : 'dashed',
  backdropFilter: isVeryLowEndDevice ? 'none' : 'blur(10px)',
  WebkitBackdropFilter: isVeryLowEndDevice ? 'none' : 'blur(10px)',
  userSelect: 'none',
+ pointerEvents: 'none',
  minWidth: '300px',
  maxWidth: '350px',
- transform: isVeryLowEndDevice ? 'translateZ(0)' : undefined
+ transform: `rotate(3deg) scale(1.05) ${isVeryLowEndDevice ? 'translateZ(0)' : ''}`,
+ transition: 'transform 0.1s ease-out, border-color 0.2s ease-out',
+ opacity: 0.95
  }}
  >
+ {/* Pulse effect when over drop zone */}
+ {dragOverZone && (
+ <div className="absolute inset-0 bg-green-200 rounded-2xl animate-pulse opacity-20"></div>
+ )}
+ 
+ {/* Drop shadow for depth */}
+ <div className="absolute inset-0 bg-black rounded-2xl opacity-10 transform translate-x-1 translate-y-1 -z-10"></div>
+ 
  {(() => {
  const service = services.find(s => s.id === draggedBooking.serviceId);
  const therapist = therapists.find(t => t.id === draggedBooking.therapistId);
@@ -1539,6 +1764,117 @@ export default function HomePage() {
  services={services}
  onBookingAdded={handleBookingAdded}
  />
+
+ {/* Performance monitoring overlay for debugging */}
+ {performanceMode !== 'normal' && (
+ <div className="fixed bottom-4 right-4 bg-black bg-opacity-50 text-white px-3 py-2 rounded-lg text-xs z-50">
+ <div>Mode: {performanceMode.toUpperCase()}</div>
+ <div>Rendering: {isRendering ? 'ON' : 'OFF'}</div>
+ <div>Memory: {navigator.deviceMemory || 'Unknown'}GB</div>
+ <div>Cores: {navigator.hardwareConcurrency || 'Unknown'}</div>
+ </div>
+ )}
+
+ {/* Additional CSS for enhanced iPad performance */}
+ <style jsx global>{`
+ /* Ultra performance mode styles */
+ .ultra-performance * {
+ will-change: auto !important;
+ transform: translateZ(0) !important;
+ }
+ 
+ .ultra-performance .card,
+ .ultra-performance .rounded-xl,
+ .ultra-performance .shadow-lg {
+ box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+ }
+ 
+ .ultra-performance .bg-gradient-to-r,
+ .ultra-performance .bg-gradient-to-br {
+ background: var(--fallback-bg, #f0f0f0) !important;
+ }
+ 
+ /* Optimized scrolling */
+ .virtual-scroll {
+ -webkit-overflow-scrolling: touch;
+ overflow-y: auto;
+ scroll-snap-type: y proximity;
+ }
+ 
+ .virtual-scroll > * {
+ scroll-snap-align: start;
+ }
+ 
+ /* Reduce repaints during scrolling */
+ .scrolling * {
+ pointer-events: none !important;
+ }
+ 
+ /* Memory-efficient animations */
+ @media (prefers-reduced-motion: no-preference) {
+ .normal-performance .transition-all {
+ transition: transform 0.2s ease-out, opacity 0.2s ease-out !important;
+ }
+ }
+ 
+ .high-performance .transition-all,
+ .ultra-performance .transition-all {
+ transition: none !important;
+ }
+ 
+ /* Optimized touch targets for iPad */
+ @media (pointer: coarse) {
+ button, .cursor-pointer {
+ min-height: 44px;
+ min-width: 44px;
+ }
+ }
+ 
+ /* Lazy loading placeholder */
+ img.lazy {
+ opacity: 0;
+ transition: opacity 0.3s;
+ }
+ 
+ img.lazy.loaded {
+ opacity: 1;
+ }
+ 
+ /* Enhanced drag card styles */
+ .floating-drag-card {
+ position: fixed;
+ z-index: 9999;
+ will-change: transform;
+ backface-visibility: hidden;
+ -webkit-backface-visibility: hidden;
+ }
+ 
+ .drag-shadow {
+ filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.3));
+ }
+ 
+ /* Touch improvements for iPad */
+ @media (pointer: coarse) {
+ .floating-drag-card {
+ transform: rotate(2deg) scale(1.08) !important;
+ }
+ 
+ /* Visual feedback for drop zones on touch devices */
+ [data-drop-zone].drag-over {
+ background: rgba(16, 185, 129, 0.1) !important;
+ border-color: #10B981 !important;
+ box-shadow: 0 0 20px rgba(16, 185, 129, 0.3) !important;
+ }
+ 
+ /* Improve touch responsiveness */
+ .booking-card {
+ touch-action: manipulation;
+ user-select: none;
+ -webkit-user-select: none;
+ -webkit-touch-callout: none;
+ }
+ }
+ `}</style>
  </div>
  );
 }

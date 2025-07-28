@@ -19,6 +19,7 @@ import {
   UsersIcon as UsersIconSolid, UserIcon as UserIconSolid
 } from '@heroicons/react/24/solid';
 import { useAuth } from '../contexts/AuthContext';
+import { usePerformance } from '../contexts/PerformanceContext';
 
 const MENU = [
   { id: 'home', name: 'หน้าแรก', href: '/', icon: HomeIcon, activeIcon: HomeIconSolid },
@@ -51,6 +52,7 @@ const DROPDOWNS = [
 
 const AdminNavigation = memo(function AdminNavigation() {
   const { logout, getUserDisplayName } = useAuth();
+  const { performanceMode, shouldReduceAnimations } = usePerformance();
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [isOnIpad, setIsOnIpad] = useState(false);
@@ -120,11 +122,14 @@ const AdminNavigation = memo(function AdminNavigation() {
     <>
       {/* Sidebar Navigation */}
       <div 
-        className={`admin-sidebar fixed left-0 top-0 h-full bg-gradient-to-b from-[#F8F5F2] via-white to-[#F8F5F2] shadow-xl border-r border-[#B89B85]/20 transition-all duration-300 ease-in-out z-50 ${
+        className={`admin-sidebar fixed left-0 top-0 h-full bg-gradient-to-b from-[#F8F5F2] via-white to-[#F8F5F2] shadow-xl border-r border-[#B89B85]/20 z-50 ${
           sidebarExpanded ? 'w-64' : 'w-16'
-        }`}
+        } ${shouldReduceAnimations() ? '' : 'transition-all duration-300 ease-in-out'}`}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        style={{
+          transition: shouldReduceAnimations() ? 'none' : undefined
+        }}
       >
         {/* Header */}
         <div className="p-4 border-b border-[#B89B85]/10">

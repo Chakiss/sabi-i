@@ -55,6 +55,8 @@ export default function HomePage() {
  // Performance optimization for iPad
  const [isOnIpad, setIsOnIpad] = useState(false);
  const [isLowEndDevice, setIsLowEndDevice] = useState(false);
+ const [isVeryLowEndDevice, setIsVeryLowEndDevice] = useState(false);
+ const [lastTouchMove, setLastTouchMove] = useState(0);
 
  // Detect iPad for optimization
  useEffect(() => {
@@ -70,12 +72,24 @@ export default function HomePage() {
  );
  setIsLowEndDevice(isLowEnd);
  
+ // Detect very low-end devices (iPad Air 2 iOS 15)
+ const isVeryLowEnd = isIpadDevice && (
+ navigator.hardwareConcurrency <= 2 &&
+ (navigator.deviceMemory <= 2 || !navigator.deviceMemory) &&
+ !window.DeviceMotionEvent?.requestPermission // iOS 15 feature detection
+ );
+ setIsVeryLowEndDevice(isVeryLowEnd);
+ 
  // Aggressive performance optimizations for low-end devices
  if (isLowEnd) {
  // Disable all visual effects
  document.documentElement.style.setProperty('--animation-duration', '0s');
  document.documentElement.style.setProperty('--transition-duration', '0s');
  document.documentElement.classList.add('low-end-device');
+ 
+ if (isVeryLowEnd) {
+ document.documentElement.classList.add('very-low-end-device');
+ }
  
  // Reduce rendering complexity
  const style = document.createElement('style');
@@ -96,8 +110,88 @@ export default function HomePage() {
  .low-end-device [style*="blur"] {
  filter: none !important;
  }
+ 
+ /* Very low-end device specific optimizations */
+ .very-low-end-device .animate-pulse {
+ animation: none !important;
+ }
+ .very-low-end-device .animate-bounce {
+ animation: none !important;
+ }
+ .very-low-end-device .group:hover * {
+ transform: none !important;
+ }
+ .very-low-end-device .shadow-xl,
+ .very-low-end-device .shadow-2xl {
+ box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+ }
+ .very-low-end-device .gradient-bg {
+ background: #F8F5F2 !important;
+ }
+ .very-low-end-device .hover\\:scale-105:hover {
+ transform: none !important;
+ }
+ .very-low-end-device .hover\\:rotate-6:hover {
+ transform: none !important;
+ }
  `;
  document.head.appendChild(style);
+ 
+ // Memory management for very low-end devices
+ if (isVeryLowEnd) {
+ const performGC = () => {
+ if (window.gc) {
+ window.gc();
+ }
+ // Force garbage collection by creating and releasing objects
+ const temp = new Array(1000).fill(null);
+ temp.length = 0;
+ };
+ 
+ // Periodic cleanup every 30 seconds
+ const gcInterval = setInterval(performGC, 30000);
+ 
+ // Additional CSS optimizations for very low-end devices
+ const additionalStyle = document.createElement('style');
+ additionalStyle.id = 'very-low-end-optimizations';
+ additionalStyle.textContent = `
+ /* Scrollbar optimization */
+ .very-low-end-device ::-webkit-scrollbar {
+ width: 8px !important;
+ height: 8px !important;
+ }
+ .very-low-end-device ::-webkit-scrollbar-track {
+ background: transparent !important;
+ }
+ .very-low-end-device ::-webkit-scrollbar-thumb {
+ background-color: rgba(0,0,0,0.2) !important;
+ border-radius: 4px !important;
+ }
+ 
+ /* Disable complex transforms */
+ .very-low-end-device * {
+ text-shadow: none !important;
+ }
+ 
+ /* Optimize overflow handling */
+ .very-low-end-device .overflow-y-auto {
+ -webkit-overflow-scrolling: touch !important;
+ scroll-behavior: auto !important;
+ }
+ 
+ /* Disable pointer events during animations */
+ .very-low-end-device.scrolling * {
+ pointer-events: none !important;
+ }
+ `;
+ document.head.appendChild(additionalStyle);
+ 
+ return () => {
+ clearInterval(gcInterval);
+ const styleEl = document.getElementById('very-low-end-optimizations');
+ if (styleEl) styleEl.remove();
+ };
+ }
  }
  
  // Reduce animations on older devices
@@ -132,6 +226,53 @@ export default function HomePage() {
  };
  }
  }, []);
+
+ // Debounced resize handler for better performance
+ useEffect(() => {
+ let resizeTimeout;
+ const handleResize = () => {
+ clearTimeout(resizeTimeout);
+ resizeTimeout = setTimeout(() => {
+ // Handle resize logic for responsive design
+ if (isVeryLowEndDevice) {
+ // Force minimal layout recalculation for very low-end devices
+ document.body.style.minHeight = window.innerHeight + 'px';
+ }
+ }, 250);
+ };
+ 
+ window.addEventListener('resize', handleResize, { passive: true });
+ return () => {
+ window.removeEventListener('resize', handleResize);
+ clearTimeout(resizeTimeout);
+ };
+ }, [isVeryLowEndDevice]);
+
+ // Additional scroll optimization for very low-end devices
+ useEffect(() => {
+ if (isVeryLowEndDevice) {
+ let scrollTimeout;
+ const optimizedScroll = () => {
+ clearTimeout(scrollTimeout);
+ scrollTimeout = setTimeout(() => {
+ // Re-enable interactions after scroll stops
+ document.body.style.pointerEvents = 'auto';
+ }, 150);
+ 
+ // Temporarily disable pointer events during scroll for performance
+ document.body.style.pointerEvents = 'none';
+ };
+ 
+ window.addEventListener('scroll', optimizedScroll, { passive: true });
+ window.addEventListener('touchmove', optimizedScroll, { passive: true });
+ 
+ return () => {
+ window.removeEventListener('scroll', optimizedScroll);
+ window.removeEventListener('touchmove', optimizedScroll);
+ clearTimeout(scrollTimeout);
+ };
+ }
+ }, [isVeryLowEndDevice]);
 
  // Update current time every minute
  useEffect(() => {
@@ -390,6 +531,13 @@ export default function HomePage() {
  const handleTouchMove = (e) => {
  if (!draggedBooking) return;
  
+ // Throttle touch events for very low-end devices
+ if (isVeryLowEndDevice) {
+ const now = Date.now();
+ if (now - lastTouchMove < 32) return; // ~30fps instead of 60fps
+ setLastTouchMove(now);
+ }
+ 
  // Check if we can preventDefault without passive event listener error
  try {
  if (e.cancelable && !e.defaultPrevented) {
@@ -405,7 +553,8 @@ export default function HomePage() {
  const deltaY = Math.abs(touch.clientY - touchStartPos.y);
  
  // Increase threshold for better touch handling on iPad
- if (deltaX > 15 || deltaY > 15) {
+ const threshold = isVeryLowEndDevice ? 20 : 15;
+ if (deltaX > threshold || deltaY > threshold) {
  setIsDragging(true);
  }
  
@@ -421,8 +570,8 @@ export default function HomePage() {
  if (dropZone) {
  const targetStatus = dropZone.getAttribute('data-drop-zone');
  
- // Haptic feedback เมื่อเข้า drop zone
- if (dragOverZone !== targetStatus && navigator.vibrate) {
+ // Haptic feedback เมื่อเข้า drop zone (only if not very low-end)
+ if (dragOverZone !== targetStatus && navigator.vibrate && !isVeryLowEndDevice) {
  navigator.vibrate(30);
  }
  
@@ -496,41 +645,53 @@ export default function HomePage() {
  if (loading) {
  return (
  <div className="min-h-screen flex items-center justify-center" style={{ 
- background: 'linear-gradient(135deg, #F8F5F2 0%, #ECE8E4 50%, #F0EBE7 100%)' 
+ background: isVeryLowEndDevice 
+ ? '#F8F5F2' 
+ : 'linear-gradient(135deg, #F8F5F2 0%, #ECE8E4 50%, #F0EBE7 100%)' 
  }}>
- <div className="rounded-3xl shadow-2xl p-12 text-center border max-w-md mx-4" style={{
+ <div className={`rounded-3xl p-12 text-center border max-w-md mx-4 ${
+ isVeryLowEndDevice ? 'shadow-md' : 'shadow-2xl'
+ }`} style={{
  background: 'rgba(255, 255, 255, 0.95)',
  borderColor: 'rgba(184, 155, 133, 0.2)',
- backdropFilter: 'blur(20px)',
- WebkitBackdropFilter: 'blur(20px)'
+ backdropFilter: isVeryLowEndDevice ? 'none' : 'blur(20px)',
+ WebkitBackdropFilter: isVeryLowEndDevice ? 'none' : 'blur(20px)'
  }}>
  {/* Animated Logo */}
  <div className="relative mb-8">
- <div className="w-20 h-20 mx-auto rounded-3xl flex items-center justify-center shadow-2xl animate-pulse" style={{
+ <div className={`w-20 h-20 mx-auto rounded-3xl flex items-center justify-center ${
+ isVeryLowEndDevice ? 'shadow-md' : 'shadow-2xl animate-pulse'
+ }`} style={{
  background: 'linear-gradient(135deg, #B89B85 0%, #A1826F 50%, rgba(184, 155, 133, 0.8) 100%)'
  }}>
  <SparklesIcon className="h-10 w-10 text-white" />
  </div>
- {/* Floating particles */}
+ {/* Floating particles - only for higher-end devices */}
+ {!isVeryLowEndDevice && (
  <div className="absolute inset-0 flex items-center justify-center">
  <div className="w-4 h-4 rounded-full animate-bounce delay-0 absolute -top-2 -left-2" style={{ backgroundColor: 'rgba(184, 155, 133, 0.6)' }}></div>
  <div className="w-3 h-3 rounded-full animate-bounce delay-75 absolute -bottom-1 -right-1" style={{ backgroundColor: 'rgba(161, 130, 111, 0.6)' }}></div>
  <div className="w-2 h-2 rounded-full animate-bounce delay-150 absolute top-1 right-4" style={{ backgroundColor: 'rgba(184, 155, 133, 0.4)' }}></div>
  </div>
+ )}
  </div>
  
  {/* Loading Spinner */}
  <div className="relative mb-6">
- <div className="animate-spin rounded-full h-16 w-16 border-4 border-transparent mx-auto" style={{
+ <div className={`${
+ isVeryLowEndDevice ? '' : 'animate-spin'
+ } rounded-full h-16 w-16 border-4 border-transparent mx-auto`} style={{
  borderTopColor: '#B89B85',
  borderRightColor: '#A1826F'
  }}></div>
+ {!isVeryLowEndDevice && (
  <div className="absolute inset-0 animate-spin rounded-full h-16 w-16 border-4 border-transparent mx-auto" style={{ 
  borderBottomColor: 'rgba(184, 155, 133, 0.6)',
  borderLeftColor: 'rgba(161, 130, 111, 0.6)',
  animationDirection: 'reverse', 
  animationDuration: '1.5s' 
  }}></div>
+ )}
  </div>
  
  <h2 className="text-2xl font-bold mb-3" style={{
@@ -549,9 +710,15 @@ export default function HomePage() {
  
  {/* Progress dots */}
  <div className="flex justify-center space-x-2 mt-6">
- <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: '#B89B85' }}></div>
- <div className="w-2 h-2 rounded-full animate-pulse delay-75" style={{ backgroundColor: '#A1826F' }}></div>
- <div className="w-2 h-2 rounded-full animate-pulse delay-150" style={{ backgroundColor: 'rgba(184, 155, 133, 0.6)' }}></div>
+ <div className={`w-2 h-2 rounded-full ${
+ isVeryLowEndDevice ? '' : 'animate-pulse'
+ }`} style={{ backgroundColor: '#B89B85' }}></div>
+ <div className={`w-2 h-2 rounded-full ${
+ isVeryLowEndDevice ? '' : 'animate-pulse delay-75'
+ }`} style={{ backgroundColor: '#A1826F' }}></div>
+ <div className={`w-2 h-2 rounded-full ${
+ isVeryLowEndDevice ? '' : 'animate-pulse delay-150'
+ }`} style={{ backgroundColor: 'rgba(184, 155, 133, 0.6)' }}></div>
  </div>
  </div>
  </div>
@@ -568,12 +735,16 @@ export default function HomePage() {
 
  return (
  <div className="min-h-screen" style={{ 
- background: 'linear-gradient(135deg, #F8F5F2 0%, #ECE8E4 50%, #F0EBE7 100%)' 
+ background: isVeryLowEndDevice 
+ ? '#F8F5F2' 
+ : 'linear-gradient(135deg, #F8F5F2 0%, #ECE8E4 50%, #F0EBE7 100%)' 
  }}>
  {/* Main Content */}
  <div className="w-full px-6 lg:px-12 py-12">
  {/* Enhanced Queue Management Section */}
- <div className="rounded-3xl shadow-2xl p-8 border mb-8 min-h-[calc(100vh-6rem)] relative overflow-hidden" style={{
+ <div className={`rounded-3xl p-8 border mb-8 min-h-[calc(100vh-6rem)] relative overflow-hidden ${
+ isVeryLowEndDevice ? 'shadow-md' : 'shadow-2xl'
+ }`} style={{
  background: 'rgba(255, 255, 255, 0.95)',
  borderColor: 'rgba(184, 155, 133, 0.3)',
  backdropFilter: isOnIpad ? 'none' : 'blur(20px)',
@@ -581,7 +752,7 @@ export default function HomePage() {
  willChange: isOnIpad ? 'auto' : 'transform'
  }}>
  {/* Animated Background Elements - Disabled on older iPads for performance */}
- {!isOnIpad && (
+ {!isOnIpad && !isVeryLowEndDevice && (
  <>
  <div className="absolute top-10 right-10 w-24 h-24 rounded-full blur-2xl animate-pulse" style={{
  background: 'linear-gradient(135deg, rgba(184, 155, 133, 0.2) 0%, rgba(161, 130, 111, 0.2) 100%)'
@@ -595,23 +766,29 @@ export default function HomePage() {
  <div className="relative z-10">
  <div className="flex items-center justify-between mb-8">
  <div className="flex items-center space-x-4">
- <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-xl hover:rotate-6 no-transition" style={{
+ <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-xl ${
+ isVeryLowEndDevice ? '' : 'hover:rotate-6'
+ } no-transition`} style={{
  background: 'linear-gradient(135deg, #B89B85 0%, #A1826F 50%, rgba(184, 155, 133, 0.8) 100%)'
  }}>
  <ClipboardDocumentListIcon className="h-8 w-8" />
  </div>
  <div>
  <h2 className="text-3xl font-bold" style={{
- background: 'linear-gradient(90deg, #4E3B31 0%, #B89B85 50%, #A1826F 100%)',
- WebkitBackgroundClip: 'text',
- WebkitTextFillColor: 'transparent',
- backgroundClip: 'text',
+ background: isVeryLowEndDevice 
+ ? '#4E3B31' 
+ : 'linear-gradient(90deg, #4E3B31 0%, #B89B85 50%, #A1826F 100%)',
+ WebkitBackgroundClip: isVeryLowEndDevice ? 'initial' : 'text',
+ WebkitTextFillColor: isVeryLowEndDevice ? '#4E3B31' : 'transparent',
+ backgroundClip: isVeryLowEndDevice ? 'initial' : 'text',
  color: '#4E3B31' /* Fallback for unsupported browsers */
  }}>
  จัดการคิววันนี้
  </h2>
  <p className="font-medium flex items-center" style={{ color: '#7E7B77' }}>
- <span className="w-3 h-3 rounded-full mr-2 animate-pulse inline-block" style={{ backgroundColor: '#B89B85' }}></span>
+ <span className={`w-3 h-3 rounded-full mr-2 ${
+ isVeryLowEndDevice ? '' : 'animate-pulse'
+ } inline-block`} style={{ backgroundColor: '#B89B85' }}></span>
  ({sortedBookings.length} คิว) ลากและวางเพื่อเปลี่ยนสถานะ
  </p>
  </div>
@@ -619,15 +796,21 @@ export default function HomePage() {
  <div className="flex space-x-3">
  <button
  onClick={handleNewBooking}
- className="group relative px-6 py-3 text-white font-semibold rounded-xl shadow-lg no-transition hover:scale-105 flex items-center space-x-2 overflow-hidden" style={{
+ className={`group relative px-6 py-3 text-white font-semibold rounded-xl ${
+ isVeryLowEndDevice ? 'shadow-md' : 'shadow-lg hover:scale-105'
+ } no-transition flex items-center space-x-2 overflow-hidden`} style={{
  background: 'linear-gradient(90deg, #B89B85 0%, #A1826F 100%)'
  }}
  >
+ {!isVeryLowEndDevice && (
  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 no-transition" style={{
  background: 'linear-gradient(90deg, #A1826F 0%, #B89B85 100%)'
  }}></div>
+ )}
  <div className="relative z-10 flex items-center space-x-2">
- <SparklesIcon className="h-5 w-5 group-hover:rotate-180 no-transition " />
+ <SparklesIcon className={`h-5 w-5 ${
+ isVeryLowEndDevice ? '' : 'group-hover:rotate-180'
+ } no-transition`} />
  <span>จองคิวใหม่</span>
  </div>
  </button>
@@ -637,8 +820,12 @@ export default function HomePage() {
  {sortedBookings.length === 0 ? (
  <div className="text-center py-20">
  <div className="mb-8">
- <div className="text-8xl mb-4 animate-bounce">🌸</div>
- <div className="w-32 h-32 mx-auto bg-gradient-to-br from-[#F8F5F2] to-[#ECE8E4] rounded-full flex items-center justify-center shadow-xl mb-6">
+ <div className={`text-8xl mb-4 ${
+ isVeryLowEndDevice ? '' : 'animate-bounce'
+ }`}>🌸</div>
+ <div className={`w-32 h-32 mx-auto bg-gradient-to-br from-[#F8F5F2] to-[#ECE8E4] rounded-full flex items-center justify-center ${
+ isVeryLowEndDevice ? 'shadow-md' : 'shadow-xl'
+ } mb-6`}>
  <CalendarDaysIcon className="h-16 w-16 text-[#B89B85]" />
  </div>
  </div>
@@ -646,17 +833,25 @@ export default function HomePage() {
  <p className="text-[#7E7B77] mb-8 text-lg">เมื่อมีการจองคิว รายการจะปรากฏที่นี่</p>
  <button
  onClick={handleNewBooking}
- className="group relative px-10 py-4 text-white font-bold rounded-2xl shadow-xl hover:shadow-2xl no-transition hover:scale-105 text-lg overflow-hidden" style={{
+ className={`group relative px-10 py-4 text-white font-bold rounded-2xl ${
+ isVeryLowEndDevice ? 'shadow-md' : 'shadow-xl hover:shadow-2xl hover:scale-105'
+ } no-transition text-lg overflow-hidden`} style={{
  background: 'linear-gradient(90deg, #B89B85 0%, #A1826F 100%)'
  }}
  >
+ {!isVeryLowEndDevice && (
  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 no-transition" style={{
  background: 'linear-gradient(90deg, #A1826F 0%, #B89B85 100%)'
  }}></div>
+ )}
  <div className="relative z-10 flex items-center space-x-3">
- <SparklesIcon className="h-6 w-6 group-hover:rotate-180 no-transition " />
+ <SparklesIcon className={`h-6 w-6 ${
+ isVeryLowEndDevice ? '' : 'group-hover:rotate-180'
+ } no-transition`} />
  <span>จองคิวใหม่</span>
- <svg className="h-6 w-6 group-hover:translate-x-2 no-transition " fill="none" stroke="currentColor" viewBox="0 0 24 24">
+ <svg className={`h-6 w-6 ${
+ isVeryLowEndDevice ? '' : 'group-hover:translate-x-2'
+ } no-transition`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5-5 5M6 12h12" />
  </svg>
  </div>
@@ -1237,7 +1432,9 @@ export default function HomePage() {
  {/* Floating Drag Card สำหรับ iPad */}
  {isDragging && draggedBooking && (
  <div
- className="floating-drag-card drag-shadow rounded-2xl p-4 border-2 touch-none"
+ className={`floating-drag-card drag-shadow rounded-2xl p-4 border-2 touch-none ${
+ isVeryLowEndDevice ? 'shadow-md' : ''
+ }`}
  style={{
  left: dragPosition.x,
  top: dragPosition.y,
@@ -1245,11 +1442,12 @@ export default function HomePage() {
  borderColor: draggedBooking.status === 'pending' ? 'rgba(255, 193, 7, 0.8)' : 
  draggedBooking.status === 'in_progress' ? 'rgba(33, 150, 243, 0.8)' : 
  'rgba(76, 175, 80, 0.8)',
- backdropFilter: 'blur(10px)',
- WebkitBackdropFilter: 'blur(10px)',
+ backdropFilter: isVeryLowEndDevice ? 'none' : 'blur(10px)',
+ WebkitBackdropFilter: isVeryLowEndDevice ? 'none' : 'blur(10px)',
  userSelect: 'none',
  minWidth: '300px',
- maxWidth: '350px'
+ maxWidth: '350px',
+ transform: isVeryLowEndDevice ? 'translateZ(0)' : undefined
  }}
  >
  {(() => {

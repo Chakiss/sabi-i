@@ -11,7 +11,7 @@ import {
   HomeIcon as HomeIconSolid, ClockIcon as ClockIconSolid
 } from '@heroicons/react/24/solid';
 import { useAuth } from '../contexts/AuthContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import LoginPage from './LoginPage';
 
 const menuItems = [
@@ -23,21 +23,62 @@ const ViewerNavigation = memo(function ViewerNavigation() {
   const { user, logout, getUserDisplayName } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [isOnIpad, setIsOnIpad] = useState(false);
   const pathname = usePathname();
+
+  // Detect iPad
+  useEffect(() => {
+    const isIpadDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    setIsOnIpad(isIpadDevice);
+  }, []);
+
+  // Handle outside click for iPad
+  useEffect(() => {
+    if (isOnIpad && sidebarExpanded) {
+      const handleOutsideClick = (e) => {
+        // Check if click is outside sidebar
+        const sidebar = document.querySelector('.viewer-sidebar');
+        if (sidebar && !sidebar.contains(e.target)) {
+          setSidebarExpanded(false);
+        }
+      };
+
+      document.addEventListener('touchstart', handleOutsideClick);
+      document.addEventListener('click', handleOutsideClick);
+
+      return () => {
+        document.removeEventListener('touchstart', handleOutsideClick);
+        document.removeEventListener('click', handleOutsideClick);
+      };
+    }
+  }, [isOnIpad, sidebarExpanded]);
 
   const toggleSidebar = () => {
     setSidebarExpanded(!sidebarExpanded);
+  };
+
+  const handleMouseEnter = () => {
+    if (!isOnIpad) {
+      setSidebarExpanded(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (!isOnIpad) {
+      setSidebarExpanded(false);
+    }
   };
 
   return (
     <>
       {/* Sidebar Navigation */}
       <div 
-        className={`fixed left-0 top-0 h-full bg-gradient-to-b from-white via-[#F8F5F2] to-white shadow-xl border-r border-[#B89B85]/20 transition-all duration-300 ease-in-out z-50 ${
+        className={`viewer-sidebar fixed left-0 top-0 h-full bg-gradient-to-b from-white via-[#F8F5F2] to-white shadow-xl border-r border-[#B89B85]/20 transition-all duration-300 ease-in-out z-50 ${
           sidebarExpanded ? 'w-64' : 'w-16'
         }`}
-        onMouseEnter={() => setSidebarExpanded(true)}
-        onMouseLeave={() => setSidebarExpanded(false)}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         {/* Header */}
         <div className="p-4 border-b border-[#B89B85]/10">
@@ -161,6 +202,14 @@ const ViewerNavigation = memo(function ViewerNavigation() {
           </button>
         </div>
       </div>
+
+      {/* Overlay for iPad when expanded */}
+      {isOnIpad && sidebarExpanded && (
+        <div 
+          className="fixed inset-0 bg-black/20 z-40"
+          onClick={() => setSidebarExpanded(false)}
+        />
+      )}
 
       {/* Login Modal */}
       {showLoginModal && (

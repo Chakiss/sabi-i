@@ -740,3 +740,43 @@ export const upsertUserMetadata = async (userData) => {
     throw error;
   }
 };
+
+// Get all bookings for customer management
+export const getAllBookings = async () => {
+  if (shouldUseMock()) {
+    // Return mock bookings with proper customer data
+    const mockBookings = Object.values(MOCK_DATA.bookings).map(booking => ({
+      ...booking,
+      id: booking.id || `booking_${Date.now()}_${Math.random()}`,
+      customerName: booking.customerName || 'ลูกค้า Test',
+      customerPhone: booking.customerPhone || '08-1234-5678',
+      finalPrice: booking.finalPrice || booking.price || 500,
+      startTime: booking.startTime || new Date().toISOString()
+    }));
+    return mockBookings;
+  }
+
+  try {
+    const bookingsCollection = collection(db, 'bookings');
+    const q = query(bookingsCollection, orderBy('startTime', 'desc'));
+    const querySnapshot = await getDocs(q);
+    
+    const bookings = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      bookings.push({
+        id: doc.id,
+        ...data,
+        startTime: data.startTime?.toDate?.() || data.startTime,
+        endTime: data.endTime?.toDate?.() || data.endTime,
+        createdAt: data.createdAt?.toDate?.() || data.createdAt,
+        updatedAt: data.updatedAt?.toDate?.() || data.updatedAt
+      });
+    });
+    
+    return bookings;
+  } catch (error) {
+    console.error('Error fetching all bookings:', error);
+    throw error;
+  }
+};

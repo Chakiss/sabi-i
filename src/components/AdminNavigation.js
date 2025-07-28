@@ -9,14 +9,14 @@ import {
   HomeIcon, CalendarDaysIcon, UserGroupIcon, WrenchScrewdriverIcon,
   ChartBarIcon, Cog6ToothIcon, QueueListIcon, ClockIcon,
   CogIcon, ChevronDownIcon, LockClosedIcon, ArrowRightOnRectangleIcon,
-  UsersIcon, Bars3Icon, XMarkIcon
+  UsersIcon, Bars3Icon, XMarkIcon, UserIcon
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeIconSolid, CalendarDaysIcon as CalendarDaysIconSolid, 
   UserGroupIcon as UserGroupIconSolid, WrenchScrewdriverIcon as WrenchScrewdriverIconSolid,
   ChartBarIcon as ChartBarIconSolid, Cog6ToothIcon as Cog6ToothIconSolid, 
   QueueListIcon as QueueListIconSolid, ClockIcon as ClockIconSolid,
-  UsersIcon as UsersIconSolid
+  UsersIcon as UsersIconSolid, UserIcon as UserIconSolid
 } from '@heroicons/react/24/solid';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -42,6 +42,7 @@ const DROPDOWNS = [
     items: [
       { id: 'therapists', name: 'นักบำบัด', href: '/therapists', icon: UserGroupIcon, activeIcon: UserGroupIconSolid },
       { id: 'services', name: 'บริการ', href: '/services', icon: WrenchScrewdriverIcon, activeIcon: WrenchScrewdriverIconSolid },
+      { id: 'customers', name: 'ข้อมูลลูกค้า', href: '/customers', icon: UserIcon, activeIcon: UserIconSolid },
       { id: 'users', name: 'จัดการผู้ใช้', href: '/admin/users', icon: UsersIcon, activeIcon: UsersIconSolid }
     ],
     lock: true
@@ -52,11 +53,54 @@ const AdminNavigation = memo(function AdminNavigation() {
   const { logout, getUserDisplayName } = useAuth();
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
+  const [isOnIpad, setIsOnIpad] = useState(false);
   const pathname = usePathname();
   const dropdownRefs = useRef([]);
 
+  // Detect iPad
+  useEffect(() => {
+    const isIpadDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    setIsOnIpad(isIpadDevice);
+  }, []);
+
+  // Handle outside click for iPad
+  useEffect(() => {
+    if (isOnIpad && sidebarExpanded) {
+      const handleOutsideClick = (e) => {
+        // Check if click is outside sidebar
+        const sidebar = document.querySelector('.admin-sidebar');
+        if (sidebar && !sidebar.contains(e.target)) {
+          setSidebarExpanded(false);
+          setOpenDropdown(null);
+        }
+      };
+
+      document.addEventListener('touchstart', handleOutsideClick);
+      document.addEventListener('click', handleOutsideClick);
+
+      return () => {
+        document.removeEventListener('touchstart', handleOutsideClick);
+        document.removeEventListener('click', handleOutsideClick);
+      };
+    }
+  }, [isOnIpad, sidebarExpanded]);
+
   const toggleSidebar = () => {
     setSidebarExpanded(!sidebarExpanded);
+  };
+
+  const handleMouseEnter = () => {
+    if (!isOnIpad) {
+      setSidebarExpanded(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (!isOnIpad) {
+      setSidebarExpanded(false);
+      setOpenDropdown(null);
+    }
   };
 
   // Close dropdowns when clicking outside
@@ -76,11 +120,11 @@ const AdminNavigation = memo(function AdminNavigation() {
     <>
       {/* Sidebar Navigation */}
       <div 
-        className={`fixed left-0 top-0 h-full bg-gradient-to-b from-[#F8F5F2] via-white to-[#F8F5F2] shadow-xl border-r border-[#B89B85]/20 transition-all duration-300 ease-in-out z-50 ${
+        className={`admin-sidebar fixed left-0 top-0 h-full bg-gradient-to-b from-[#F8F5F2] via-white to-[#F8F5F2] shadow-xl border-r border-[#B89B85]/20 transition-all duration-300 ease-in-out z-50 ${
           sidebarExpanded ? 'w-64' : 'w-16'
         }`}
-        onMouseEnter={() => setSidebarExpanded(true)}
-        onMouseLeave={() => setSidebarExpanded(false)}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         {/* Header */}
         <div className="p-4 border-b border-[#B89B85]/10">
@@ -264,6 +308,17 @@ const AdminNavigation = memo(function AdminNavigation() {
           </button>
         </div>
       </div>
+
+      {/* Overlay for iPad when expanded */}
+      {isOnIpad && sidebarExpanded && (
+        <div 
+          className="fixed inset-0 bg-black/20 z-40"
+          onClick={() => {
+            setSidebarExpanded(false);
+            setOpenDropdown(null);
+          }}
+        />
+      )}
     </>
   );
 });

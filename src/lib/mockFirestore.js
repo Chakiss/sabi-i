@@ -267,7 +267,14 @@ export const getConfigMock = async () => {
 
 export const getCustomerByPhoneMock = async (phone) => {
   await delay(200);
-  return mockCustomersStorage.find(customer => customer.phone === phone) || null;
+  const customer = mockCustomersStorage.find(customer => customer.phone === phone);
+  
+  if (customer && !customer.id) {
+    // Add ID to legacy customer data
+    customer.id = customer.phone;
+  }
+  
+  return customer || null;
 };
 
 export const upsertCustomerMock = async (customerData) => {
@@ -277,7 +284,17 @@ export const upsertCustomerMock = async (customerData) => {
   const existingIndex = mockCustomersStorage.findIndex(c => c.phone === phone);
   const existingCustomer = existingIndex >= 0 ? mockCustomersStorage[existingIndex] : null;
   
+  let customerId;
+  if (existingCustomer) {
+    // Use existing ID or fallback to phone
+    customerId = existingCustomer.id || existingCustomer.phone;
+  } else {
+    // Generate new customer ID for new customer
+    customerId = await generateMockCustomerId();
+  }
+  
   const customerDoc = {
+    id: customerId,
     phone,
     ...data,
     totalVisits: existingCustomer ? existingCustomer.totalVisits + 1 : 1,
@@ -295,6 +312,25 @@ export const upsertCustomerMock = async (customerData) => {
   }
   
   return customerDoc;
+};
+
+// Helper function to generate mock customer ID
+const generateMockCustomerId = async () => {
+  const now = new Date();
+  const year = now.getFullYear().toString().slice(-2); // YY
+  const month = (now.getMonth() + 1).toString().padStart(2, '0'); // MM
+  const day = now.getDate().toString().padStart(2, '0'); // DD
+  const datePrefix = `${year}${month}${day}`;
+  
+  // Find existing customers with same date prefix
+  const sameDate = mockCustomersStorage.filter(c => 
+    c.id && c.id.startsWith(datePrefix) && c.id.length === 9
+  );
+  
+  const counter = sameDate.length + 1;
+  const counterStr = counter.toString().padStart(3, '0');
+  
+  return `${datePrefix}${counterStr}`;
 };
 
 export const getCustomersMock = async () => {

@@ -422,6 +422,8 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
       console.log('🔎 Existing customer search result:', existingCustomer);
       
       let customerMessage = '';
+      let customerId = '';
+      
       if (existingCustomer) {
         // Update existing customer with new information
         console.log('🔄 Updating existing customer...');
@@ -438,6 +440,7 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
         }
         
         const updatedCustomer = await upsertCustomer(updateData);
+        customerId = updatedCustomer.id;
         console.log('✅ Customer updated:', updatedCustomer);
         customerMessage = ' 📝 อัพเดทข้อมูลลูกค้าเก่าแล้ว';
         console.log('✅ Updated existing customer:', formData.customerPhone);
@@ -457,14 +460,16 @@ export default function BookingModal({ isOpen, onClose, therapists, services, on
         }
         
         const newCustomer = await upsertCustomer(newCustomerData);
+        customerId = newCustomer.id;
         console.log('✅ New customer created:', newCustomer);
-        customerMessage = ' 🆕 สร้างข้อมูลลูกค้าใหม่แล้ว';
+        customerMessage = ` 🆕 สร้างข้อมูลลูกค้าใหม่แล้ว (ID: ${customerId})`;
         console.log('✅ Created new customer:', formData.customerPhone);
       }
 
       // Create booking data (reuse selectedService and originalPrice from above)
       
       const bookingData = {
+        customerId: customerId, // ✅ Add customer ID to booking
         customerName: formData.customerName.trim(),
         customerPhone: formData.customerPhone.trim(),
         serviceId: formData.serviceId,

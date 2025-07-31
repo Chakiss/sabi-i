@@ -464,14 +464,28 @@ export const getCustomerByPhone = async (phone) => {
 
   console.log('🔥 Using FIREBASE for getCustomerByPhone');
   try {
-    const customerDoc = await getDoc(doc(db, 'customers', phone));
-    console.log('🔍 Firebase customerDoc exists:', customerDoc.exists());
+    // First try to find by phone as document ID (legacy data)
+    const customerDocById = await getDoc(doc(db, 'customers', phone));
+    console.log('🔍 Firebase customerDoc by ID exists:', customerDocById.exists());
     
-    if (customerDoc.exists()) {
-      const result = { phone, ...customerDoc.data() };
-      console.log('✅ Found customer in Firebase:', result);
+    if (customerDocById.exists()) {
+      const result = { id: phone, phone, ...customerDocById.data() };
+      console.log('✅ Found customer by ID in Firebase:', result);
       return result;
     }
+    
+    // Then search by phone field in all documents (new format)
+    const customersRef = collection(db, 'customers');
+    const q = query(customersRef, where('phone', '==', phone));
+    const querySnapshot = await getDocs(q);
+    
+    if (!querySnapshot.empty) {
+      const doc = querySnapshot.docs[0];
+      const result = { id: doc.id, ...doc.data() };
+      console.log('✅ Found customer by phone field in Firebase:', result);
+      return result;
+    }
+    
     console.log('❌ No customer found in Firebase for phone:', phone);
     return null;
   } catch (error) {
@@ -498,26 +512,49 @@ export const upsertCustomer = async (customerData) => {
   try {
     const { phone, ...data } = customerData;
     
-    // Get existing customer
+    // Get existing customer by phone
     const existingCustomer = await getCustomerByPhone(phone);
     console.log('🔍 Existing customer from Firebase:', existingCustomer);
     
-    const customerDoc = {
-      ...data,
-      phone,
-      totalVisits: existingCustomer ? existingCustomer.totalVisits + 1 : 1,
-      lastVisit: Timestamp.now(),
-      updatedAt: Timestamp.now(),
-      // Only include preferredChannel if it has a valid value
-      ...(data.preferredChannel ? { preferredChannel: data.preferredChannel } : 
-         existingCustomer?.preferredChannel ? { preferredChannel: existingCustomer.preferredChannel } : {}),
-      ...(existingCustomer ? {} : { createdAt: Timestamp.now() })
-    };
+    let customerId;
+    let customerDoc;
+    
+    if (existingCustomer) {
+      // Update existing customer
+      customerId = existingCustomer.id || existingCustomer.phone; // Fallback to phone if no ID
+      customerDoc = {
+        ...data,
+        id: customerId,
+        phone,
+        totalVisits: existingCustomer.totalVisits + 1,
+        lastVisit: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+        // Only include preferredChannel if it has a valid value
+        ...(data.preferredChannel ? { preferredChannel: data.preferredChannel } : 
+           existingCustomer?.preferredChannel ? { preferredChannel: existingCustomer.preferredChannel } : {})
+      };
+    } else {
+      // Create new customer with generated ID
+      const { generateCustomerId } = await import('./customerIdGenerator');
+      customerId = await generateCustomerId();
+      
+      customerDoc = {
+        ...data,
+        id: customerId,
+        phone,
+        totalVisits: 1,
+        lastVisit: Timestamp.now(),
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+        // Only include preferredChannel if it has a valid value
+        ...(data.preferredChannel ? { preferredChannel: data.preferredChannel } : {})
+      };
+    }
 
     console.log('📝 Saving to Firebase customers collection:', customerDoc);
-    await setDoc(doc(db, 'customers', phone), customerDoc);
+    await setDoc(doc(db, 'customers', customerId), customerDoc);
     
-    const result = { phone, ...customerDoc };
+    const result = { ...customerDoc };
     console.log('✅ Firebase save successful:', result);
     return result;
   } catch (error) {
@@ -777,6 +814,75 @@ export const getAllBookings = async () => {
     return bookings;
   } catch (error) {
     console.error('Error fetching all bookings:', error);
+    throw error;
+  }
+};
+
+// Customer ID Counter Management
+export const getCustomerCounter = async (datePrefix) => {
+  if (shouldUseMock()) {
+    // Mock implementation - return incremental counter
+    const mockCounters = global.mockCounters || {};
+    if (!mockCounters[datePrefix]) {
+      mockCounters[datePrefix] = 1;
+    } else {
+      mockCounters[datePrefix]++;
+    }
+    global.mockCounters = mockCounters;
+    return mockCounters[datePrefix];
+  }
+
+  try {
+    const counterRef = doc(db, 'counters', `customer_${datePrefix}`);
+    const counterDoc = await getDoc(counterRef);
+    
+    if (counterDoc.exists()) {
+      const currentCount = counterDoc.data().count || 0;
+      const newCount = currentCount + 1;
+      
+      // Update counter atomically
+      await updateDoc(counterRef, { 
+        count: newCount, 
+        updatedAt: Timestamp.now() 
+      });
+      
+      return newCount;
+    } else {
+      // First customer of the day
+      await setDoc(counterRef, { 
+        count: 1, 
+        datePrefix: datePrefix,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now()
+      });
+      
+      return 1;
+    }
+  } catch (error) {
+    console.error('Error managing customer counter:', error);
+    throw error;
+  }
+};
+
+export const updateCustomerCounter = async (datePrefix, newCount) => {
+  if (shouldUseMock()) {
+    const mockCounters = global.mockCounters || {};
+    mockCounters[datePrefix] = newCount;
+    global.mockCounters = mockCounters;
+    return newCount;
+  }
+
+  try {
+    const counterRef = doc(db, 'counters', `customer_${datePrefix}`);
+    await setDoc(counterRef, { 
+      count: newCount, 
+      datePrefix: datePrefix,
+      updatedAt: Timestamp.now() 
+    }, { merge: true });
+    
+    return newCount;
+  } catch (error) {
+    console.error('Error updating customer counter:', error);
     throw error;
   }
 };

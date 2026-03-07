@@ -1,0 +1,29 @@
+{
+  "name": "sabai-booking-board",
+  "version": "1.0.0",
+  "description": "สบาย Saba-i Massage Booking Board - iPad optimized scheduling system",
+  "main": "public/app.js",
+  "scripts": {
+    "serve": "firebase serve --only hosting",
+    "deploy": "firebase deploy",
+    "deploy:hosting": "firebase deploy --only hosting",
+    "deploy:firestore": "firebase deploy --only firestore",
+    "logs": "firebase functions:log"
+  },
+  "keywords": [
+    "firebase",
+    "massage",
+    "booking",
+    "calendar",
+    "ipad",
+    "firestore"
+  ],
+  "author": "Sabai Massage",
+  "license": "MIT",
+  "devDependencies": {
+    "firebase-tools": "^12.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

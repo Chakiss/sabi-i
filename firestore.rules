@@ -1,0 +1,31 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // MVP Security Rules - Open for development
+    // WARNING: These rules allow all read/write access
+    // Replace with proper authentication and authorization for production
+    match /{document=**} {
+      allow read, write: if true;
+    }
+    
+    // Future production rules (commented out for MVP):
+    /*
+    // Therapists collection - read only for authenticated users
+    match /therapists/{therapistId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Bookings collection - authenticated users can read/write their assigned bookings
+    match /bookings/{bookingId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+        (request.auth.token.receptionist == true || 
+         request.auth.token.admin == true);
+      allow delete: if request.auth != null && 
+        (request.auth.token.admin == true);
+    }
+    */
+  }
+}

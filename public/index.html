@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>สบาย Saba-i Booking Board</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app" class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="app-title">สบาย Saba-i Booking Board</h1>
+            <div class="date-nav">
+                <button id="prevDay" class="nav-btn">‹ ก่อนหน้า</button>
+                <span id="selectedDate" class="current-date">Loading...</span>
+                <button id="nextDay" class="nav-btn">ถัดไป ›</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Loading State -->
+            <div id="loadingSpinner" class="loading-spinner hidden">
+                <div class="spinner">Loading...</div>
+            </div>
+
+            <!-- Error Message -->
+            <div id="errorMessage" class="error-message hidden">
+                <span class="error-text"></span>
+                <button id="retryButton" class="retry-btn">ลองใหม่</button>
+            </div>
+
+            <!-- Calendar Grid -->
+            <div id="calendarContainer" class="calendar-container">
+                <!-- Therapist Headers -->
+                <div id="therapistHeaders" class="therapist-headers">
+                    <div class="time-header">เวลา</div>
+                    <!-- Therapist headers will be inserted here by JavaScript -->
+                </div>
+
+                <!-- Scrollable Calendar Grid -->
+                <div class="calendar-scroll">
+                    <div id="calendarGrid" class="calendar-grid">
+                        <!-- Time rows and booking slots will be inserted here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Booking Modal -->
+        <div id="bookingModal" class="modal hidden">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modalTitle">จองเวลา</h3>
+                    <button id="closeModal" class="close-btn">×</button>
+                </div>
+                <form id="bookingForm" class="modal-body">
+                    <div class="form-group">
+                        <label for="modalTherapist">หมอนวด:</label>
+                        <select id="modalTherapist" class="form-input" required>
+                            <!-- Therapist options will be populated by JavaScript -->
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="modalStartTime">เริ่มเวลา:</label>
+                        <select id="modalStartTime" class="form-input" required>
+                            <!-- Time options will be populated by JavaScript -->
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="modalDuration">ระยะเวลา:</label>
+                        <select id="modalDuration" class="form-input" required>
+                            <option value="30">30 นาที</option>
+                            <option value="60">1 ชั่วโมง</option>
+                            <option value="90">1.5 ชั่วโมง</option>
+                            <option value="120">2 ชั่วโมง</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="modalNote">หมายเหตุ (ถ้ามี):</label>
+                        <textarea id="modalNote" class="form-input" rows="3"></textarea>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" id="cancelBooking" class="btn btn-secondary">ยกเลิก</button>
+                        <button type="button" id="deleteBooking" class="btn btn-danger hidden">ลบ</button>
+                        <button type="submit" class="btn btn-primary">บันทึก</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+    <script src="init-sample-data.js"></script>
+</body>
+</html>

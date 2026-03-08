@@ -15,7 +15,10 @@
     <div id="app" class="app-container">
         <!-- Header -->
         <header class="header">
-            <h1 class="app-title">สบาย Saba-i Booking Board</h1>
+            <div class="header-top">
+                <h1 class="app-title">Saba-i Booking Board</h1>
+                <button id="settingsBtn" class="settings-btn">⚙️ จัดการ</button>
+            </div>
             <div class="date-nav">
                 <button id="prevDay" class="nav-btn">‹ ก่อนหน้า</button>
                 <span id="selectedDate" class="current-date">Loading...</span>
@@ -97,6 +100,38 @@
                         <button type="submit" class="btn btn-primary">บันทึก</button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div id="settingsModal" class="modal hidden">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content settings-modal-content">
+                <div class="modal-header">
+                    <h3 id="settingsModalTitle">จัดการหมอนวด</h3>
+                    <button id="closeSettingsModal" class="close-btn">×</button>
+                </div>
+                <div class="modal-body">
+                    <!-- Add Therapist Section -->
+                    <div class="settings-section">
+                        <h4>เพิ่มหมอนวดใหม่</h4>
+                        <form id="addTherapistForm" class="add-therapist-form">
+                            <div class="form-row">
+                                <input type="text" id="therapistName" class="form-input" placeholder="ชื่อหมอนวด" required>
+                                <input type="color" id="therapistColor" class="color-input" value="#4c9fff" title="สีแสดงผล">
+                                <button type="submit" class="btn btn-primary">เพิ่ม</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Therapist List Section -->
+                    <div class="settings-section">
+                        <h4>รายการหมอนวด</h4>
+                        <div id="therapistList" class="therapist-list">
+                            <!-- Therapist items will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

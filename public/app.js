@@ -6,6 +6,7 @@ class SabaiBookingBoard {
         this.timeSlots = [];
         this.selectedBooking = null;
         this.isLoading = false;
+        this.services = [];
         
         this.initializeTimeSlots();
         this.bindEvents();
@@ -35,15 +36,16 @@ class SabaiBookingBoard {
         document.getElementById('prevDay').addEventListener('click', () => this.changeDate(-1));
         document.getElementById('nextDay').addEventListener('click', () => this.changeDate(1));
 
-        // Settings modal
+        // Settings button - navigate to settings page
         document.getElementById('settingsBtn').addEventListener('click', (e) => {
-            console.log('Settings button clicked');
+            console.log('Settings button clicked - navigating to settings page');
             e.preventDefault();
             e.stopPropagation();
-            this.openSettingsModal();
+            window.location.href = 'settings.html';
         });
-        document.getElementById('closeSettingsModal').addEventListener('click', () => this.closeSettingsModal());
-        document.getElementById('addTherapistForm').addEventListener('submit', (e) => this.handleAddTherapist(e));
+        // Settings related event listeners removed - now handled in settings.js
+
+        // Service management event listeners removed - now handled in settings.js
 
         // Modal events
         document.getElementById('closeModal').addEventListener('click', () => this.closeModal());
@@ -59,13 +61,7 @@ class SabaiBookingBoard {
             }
         });
         
-        // Close settings modal on backdrop click
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal-backdrop') && 
-                e.target.closest('#settingsModal')) {
-                this.closeSettingsModal();
-            }
-        });
+        // Settings modal backdrop listener removed - now handled in settings.js
 
         // Retry button
         document.getElementById('retryButton').addEventListener('click', () => this.loadInitialData());
@@ -85,7 +81,8 @@ class SabaiBookingBoard {
             
             await Promise.all([
                 this.loadTherapists(),
-                this.loadBookingsForDate()
+                this.loadBookingsForDate(),
+                this.loadServices()
             ]);
             
             this.renderCalendar();
@@ -137,6 +134,26 @@ class SabaiBookingBoard {
         } catch (error) {
             console.error('Error loading bookings:', error);
             throw error;
+        }
+    }
+
+    // Load services from Firestore
+    async loadServices() {
+        try {
+            const snapshot = await db.collection('services')
+                .orderBy('displayOrder')
+                .get();
+                
+            this.services = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            
+            console.log('Loaded services:', this.services);
+            
+        } catch (error) {
+            console.error('Error loading services:', error);
+            // Don't throw error to prevent blocking app initialization
         }
     }
 
@@ -603,396 +620,6 @@ class SabaiBookingBoard {
         } catch (error) {
             console.error('Error deleting booking:', error);
             alert('ไม่สามารถลบการจองได้ กรุณาลองใหม่อีกครั้ง');
-        }
-    }
-
-    // Settings Modal Methods
-
-    // Open settings modal
-    openSettingsModal() {
-        console.log('Opening settings modal...');
-        this.renderTherapistList();
-        document.getElementById('settingsModal').classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-        console.log('Settings modal opened');
-    }
-
-    // Close settings modal
-    closeSettingsModal() {
-        document.getElementById('settingsModal').classList.add('hidden');
-        document.body.style.overflow = '';
-    }
-
-    // Handle add therapist form submission
-    async handleAddTherapist(e) {
-        e.preventDefault();
-        
-        const name = document.getElementById('therapistName').value.trim();
-        const color = document.getElementById('therapistColor').value;
-        
-        if (!name) {
-            alert('กรุณากรอกชื่อหมอนวด');
-            return;
-        }
-        
-        try {
-            // Get next therapist ID (T001, T002, etc.)
-            const nextTherapistId = await this.getNextTherapistId();
-            
-            // Get next display order
-            const nextOrder = this.therapists.length > 0 
-                ? Math.max(...this.therapists.map(t => t.displayOrder)) + 1 
-                : 1;
-            
-            const therapist = {
-                name: name,
-                status: 'active',
-                displayOrder: nextOrder,
-                color: color,
-                createdAt: firebase.firestore.Timestamp.now()
-            };
-            
-            await db.collection('therapists').doc(nextTherapistId).set(therapist);
-            
-            // Reload therapists and update display
-            await this.loadTherapists();
-            this.renderCalendar();
-            this.renderTherapistList();
-            
-            // Clear form
-            document.getElementById('therapistName').value = '';
-            document.getElementById('therapistColor').value = '#4c9fff';
-            
-            console.log('Added new therapist with ID:', nextTherapistId, therapist);
-            
-        } catch (error) {
-            console.error('Error adding therapist:', error);
-            alert('ไม่สามารถเพิ่มหมอนวดได้ กรุณาลองใหม่อีกครั้ง');
-        }
-    }
-
-    // Get next therapist ID in format T001, T002, T003, etc.
-    async getNextTherapistId() {
-        try {
-            // Get all therapist documents to check existing IDs
-            const snapshot = await db.collection('therapists').get();
-            
-            const existingIds = snapshot.docs
-                .map(doc => doc.id)
-                .filter(id => /^T\d{3}$/.test(id)) // Filter IDs that match T### pattern
-                .map(id => parseInt(id.substring(1))) // Extract the number part
-                .sort((a, b) => a - b); // Sort numerically
-            
-            // Find the next available number
-            let nextNumber = 1;
-            for (const num of existingIds) {
-                if (num === nextNumber) {
-                    nextNumber++;
-                } else {
-                    break;
-                }
-            }
-            
-            // Format as T### (T001, T002, etc.)
-            return `T${nextNumber.toString().padStart(3, '0')}`;
-            
-        } catch (error) {
-            console.error('Error getting next therapist ID:', error);
-            // Fallback to timestamp-based ID if there's an error
-            const timestamp = Date.now().toString().slice(-3);
-            return `T${timestamp}`;
-        }
-    }
-
-    // Render therapist list in settings modal
-    renderTherapistList() {
-        const container = document.getElementById('therapistList');
-        container.innerHTML = '';
-        
-        if (this.therapists.length === 0) {
-            container.innerHTML = '<p style="text-align: center; color: #666;">ไม่มีหมอนวดในระบบ</p>';
-            return;
-        }
-        
-        this.therapists.forEach((therapist, index) => {
-            const item = this.createTherapistItem(therapist, index);
-            container.appendChild(item);
-        });
-    }
-
-    // Create individual therapist item
-    createTherapistItem(therapist, index) {
-        const item = document.createElement('div');
-        item.className = 'therapist-item';
-        item.dataset.therapistId = therapist.id;
-        item.dataset.order = therapist.displayOrder;
-        
-        item.innerHTML = `
-            <div class="drag-handle">⋮⋮</div>
-            <div class="therapist-color" style="background-color: ${therapist.color || '#4c9fff'}"></div>
-            <div class="therapist-details">
-                <div class="therapist-name">${therapist.name}</div>
-                <div class="therapist-order">ลำดับที่ ${therapist.displayOrder}</div>
-            </div>
-            <div class="therapist-controls">
-                <button class="toggle-visibility ${therapist.status === 'active' ? 'active' : ''}" 
-                        data-therapist-id="${therapist.id}" 
-                        title="${therapist.status === 'active' ? 'ซ่อนหมอนวด' : 'แสดงหมอนวด'}">
-                </button>
-                <button class="edit-therapist" data-therapist-id="${therapist.id}">แก้ไข</button>
-                <button class="delete-therapist" data-therapist-id="${therapist.id}">ลบ</button>
-            </div>
-        `;
-        
-        // Add event listeners
-        item.querySelector('.toggle-visibility').addEventListener('click', (e) => {
-            this.toggleTherapistVisibility(therapist.id);
-        });
-        
-        item.querySelector('.edit-therapist').addEventListener('click', (e) => {
-            this.editTherapist(therapist.id);
-        });
-        
-        item.querySelector('.delete-therapist').addEventListener('click', (e) => {
-            this.deleteTherapist(therapist.id);
-        });
-        
-        // Add drag and drop functionality
-        this.addDragAndDropToItem(item);
-        
-        return item;
-    }
-
-    // Toggle therapist visibility
-    async toggleTherapistVisibility(therapistId) {
-        try {
-            const therapist = this.therapists.find(t => t.id === therapistId);
-            if (!therapist) return;
-            
-            const newStatus = therapist.status === 'active' ? 'inactive' : 'active';
-            
-            await db.collection('therapists').doc(therapistId).update({
-                status: newStatus
-            });
-            
-            // Reload and update display
-            await this.loadTherapists();
-            this.renderCalendar();
-            this.renderTherapistList();
-            
-            console.log('Updated therapist status:', therapistId, newStatus);
-            
-        } catch (error) {
-            console.error('Error updating therapist status:', error);
-            alert('ไม่สามารถอัพเดทสถานะหมอนวดได้');
-        }
-    }
-
-    // Edit therapist
-    editTherapist(therapistId) {
-        const therapist = this.therapists.find(t => t.id === therapistId);
-        if (!therapist) return;
-        
-        const newName = prompt('ชื่อหมอนวดใหม่:', therapist.name);
-        if (newName && newName.trim() !== therapist.name) {
-            this.updateTherapistName(therapistId, newName.trim());
-        }
-    }
-
-    // Update therapist name
-    async updateTherapistName(therapistId, newName) {
-        try {
-            await db.collection('therapists').doc(therapistId).update({
-                name: newName
-            });
-            
-            // Reload and update display
-            await this.loadTherapists();
-            this.renderCalendar();
-            this.renderTherapistList();
-            
-            console.log('Updated therapist name:', therapistId, newName);
-            
-        } catch (error) {
-            console.error('Error updating therapist name:', error);
-            alert('ไม่สามารถอัพเดทชื่อหมอนวดได้');
-        }
-    }
-
-    // Delete therapist
-    async deleteTherapist(therapistId) {
-        const therapist = this.therapists.find(t => t.id === therapistId);
-        if (!therapist) return;
-        
-        if (!confirm(`คุณต้องการลบหมอนวด "${therapist.name}" หรือไม่?\n\nคำเตือน: การจองทั้งหมดของหมอนวดนี้จะถูกลบด้วย`)) {
-            return;
-        }
-        
-        try {
-            // Delete all bookings for this therapist
-            const bookingsSnapshot = await db.collection('bookings')
-                .where('therapistId', '==', therapistId)
-                .get();
-            
-            const deletePromises = bookingsSnapshot.docs.map(doc => doc.ref.delete());
-            await Promise.all(deletePromises);
-            
-            // Delete therapist
-            await db.collection('therapists').doc(therapistId).delete();
-            
-            // Reload and update display
-            await this.loadTherapists();
-            await this.loadBookingsForDate();
-            this.renderCalendar();
-            this.renderTherapistList();
-            
-            console.log('Deleted therapist and all bookings:', therapistId);
-            
-        } catch (error) {
-            console.error('Error deleting therapist:', error);
-            alert('ไม่สามารถลบหมอนวดได้ กรุณาลองใหม่อีกครั้ง');
-        }
-    }
-
-    // Add drag and drop functionality to therapist item
-    addDragAndDropToItem(item) {
-        const dragHandle = item.querySelector('.drag-handle');
-        let isDragging = false;
-        let startY = 0;
-        let currentY = 0;
-        const self = this; // Store reference to class instance
-        
-        // Mouse events
-        dragHandle.addEventListener('mousedown', startDrag);
-        document.addEventListener('mousemove', onDrag);
-        document.addEventListener('mouseup', endDrag);
-        
-        // Touch events
-        dragHandle.addEventListener('touchstart', startDragTouch, { passive: false });
-        document.addEventListener('touchmove', onDragTouch, { passive: false });
-        document.addEventListener('touchend', endDragTouch);
-        
-        function startDrag(e) {
-            isDragging = true;
-            startY = e.clientY;
-            currentY = e.clientY;
-            item.classList.add('dragging');
-            e.preventDefault();
-        }
-        
-        function startDragTouch(e) {
-            isDragging = true;
-            startY = e.touches[0].clientY;
-            currentY = e.touches[0].clientY;
-            item.classList.add('dragging');
-            e.preventDefault();
-        }
-        
-        function onDrag(e) {
-            if (!isDragging) return;
-            e.preventDefault();
-            
-            currentY = e.clientY;
-            updateDragPosition();
-        }
-        
-        function onDragTouch(e) {
-            if (!isDragging) return;
-            e.preventDefault();
-            
-            currentY = e.touches[0].clientY;
-            updateDragPosition();
-        }
-        
-        function updateDragPosition() {
-            const deltaY = currentY - startY;
-            item.style.transform = `translateY(${deltaY}px)`;
-            item.style.zIndex = '1000';
-            
-            // Find the closest item to insert after
-            const container = item.parentNode;
-            const afterElement = getDragAfterElement(container, currentY);
-            
-            if (afterElement == null) {
-                container.appendChild(item);
-            } else {
-                container.insertBefore(item, afterElement);
-            }
-        }
-        
-        function endDrag(e) {
-            if (!isDragging) return;
-            
-            isDragging = false;
-            item.classList.remove('dragging');
-            item.style.transform = '';
-            item.style.zIndex = '';
-            
-            // Update display order in database
-            setTimeout(() => {
-                self.updateTherapistOrders();
-            }, 100);
-        }
-        
-        function endDragTouch(e) {
-            if (!isDragging) return;
-            
-            isDragging = false;
-            item.classList.remove('dragging');
-            item.style.transform = '';
-            item.style.zIndex = '';
-            
-            // Update display order in database
-            setTimeout(() => {
-                self.updateTherapistOrders();
-            }, 100);
-        }
-        
-        function getDragAfterElement(container, y) {
-            const draggableElements = [...container.querySelectorAll('.therapist-item:not(.dragging)')];
-            
-            return draggableElements.reduce((closest, child) => {
-                const box = child.getBoundingClientRect();
-                const offset = y - box.top - box.height / 2;
-                
-                if (offset < 0 && offset > closest.offset) {
-                    return { offset: offset, element: child };
-                } else {
-                    return closest;
-                }
-            }, { offset: Number.NEGATIVE_INFINITY }).element;
-        }
-    }
-
-    // Update therapist display orders based on current DOM order
-    async updateTherapistOrders() {
-        try {
-            const items = document.querySelectorAll('.therapist-item');
-            const updates = [];
-            
-            items.forEach((item, index) => {
-                const therapistId = item.dataset.therapistId;
-                const newOrder = index + 1;
-                
-                updates.push(
-                    db.collection('therapists').doc(therapistId).update({
-                        displayOrder: newOrder
-                    })
-                );
-            });
-            
-            await Promise.all(updates);
-            
-            // Reload and update display
-            await this.loadTherapists();
-            this.renderCalendar();
-            this.renderTherapistList();
-            
-            console.log('Updated therapist display orders');
-            
-        } catch (error) {
-            console.error('Error updating therapist orders:', error);
-            alert('ไม่สามารถจัดเรียงลำดับหมอนวดได้');
         }
     }
 }

@@ -303,9 +303,19 @@ class SabaiBookingBoard {
                 const info = document.createElement('div');
                 info.className = 'booking-info';
                 
-                const duration = this.calculateDuration(booking.startTime, booking.endTime);
+                // Use duration from booking data if available, otherwise calculate
+                const duration = booking.duration || this.calculateDuration(booking.startTime, booking.endTime);
+                const serviceName = this.getServiceName(booking.serviceId);
+                
+                let priceDisplay = '';
+                if (booking.price) {
+                    priceDisplay = `<div style="font-size: 11px; opacity: 0.7; color: #28a745;">${booking.price} บาท</div>`;
+                }
+                
                 info.innerHTML = `
                     <div>${duration} นาที</div>
+                    ${serviceName ? `<div style="font-size: 11px; opacity: 0.8;">${serviceName}</div>` : ''}
+                    ${priceDisplay}
                     ${booking.note ? `<div style="font-size: 12px; opacity: 0.9;">${booking.note}</div>` : ''}
                 `;
                 
@@ -344,6 +354,13 @@ class SabaiBookingBoard {
         return date;
     }
 
+    // Get service name by serviceId
+    getServiceName(serviceId) {
+        if (!serviceId) return null;
+        const service = this.services.find(s => s.id === serviceId);
+        return service ? service.name : null;
+    }
+
     // Check if this is the first slot of a booking (for display purposes)
     isFirstSlotOfBooking(booking, timeSlot) {
         const slotTime = this.parseTimeSlot(timeSlot);
@@ -369,11 +386,13 @@ class SabaiBookingBoard {
         // Populate form
         this.populateTherapistOptions();
         this.populateTimeOptions();
+        this.populateServiceOptions();
         
         // Set default values
         document.getElementById('modalTherapist').value = therapist.id;
         document.getElementById('modalStartTime').value = timeSlot;
         document.getElementById('modalDuration').value = '60';
+        document.getElementById('modalService').value = '';
         document.getElementById('modalNote').value = '';
         
         this.showModal();
@@ -389,14 +408,16 @@ class SabaiBookingBoard {
         // Populate form
         this.populateTherapistOptions();
         this.populateTimeOptions();
+        this.populateServiceOptions();
         
         // Set booking values
         const startTime = new Date(booking.startTime.seconds * 1000);
-        const duration = this.calculateDuration(booking.startTime, booking.endTime);
+        const duration = booking.duration || this.calculateDuration(booking.startTime, booking.endTime);
         
         document.getElementById('modalTherapist').value = booking.therapistId;
         document.getElementById('modalStartTime').value = this.formatTimeFromDate(startTime);
         document.getElementById('modalDuration').value = duration.toString();
+        document.getElementById('modalService').value = booking.serviceId || '';
         document.getElementById('modalNote').value = booking.note || '';
         
         this.showModal();
@@ -434,6 +455,22 @@ class SabaiBookingBoard {
             const option = document.createElement('option');
             option.value = timeSlot;
             option.textContent = timeSlot;
+            select.appendChild(option);
+        });
+    }
+
+    // Populate service options in modal
+    populateServiceOptions() {
+        const select = document.getElementById('modalService');
+        select.innerHTML = '<option value="">ไม่ระบุบริการ</option>';
+        
+        // Get only active services for booking options
+        const activeServices = this.services.filter(s => s.status === 'active');
+        
+        activeServices.forEach(service => {
+            const option = document.createElement('option');
+            option.value = service.id;
+            option.textContent = service.name;
             select.appendChild(option);
         });
     }
@@ -492,17 +529,32 @@ class SabaiBookingBoard {
         const therapistId = document.getElementById('modalTherapist').value;
         const startTimeStr = document.getElementById('modalStartTime').value;
         const duration = parseInt(document.getElementById('modalDuration').value);
+        const serviceId = document.getElementById('modalService').value || null;
         const note = document.getElementById('modalNote').value.trim();
         
         const startTime = this.parseTimeSlot(startTimeStr);
         const endTime = new Date(startTime);
         endTime.setMinutes(endTime.getMinutes() + duration);
         
+        // Calculate price from service and duration
+        let price = 0;
+        if (serviceId) {
+            const service = this.services.find(s => s.id === serviceId);
+            if (service && service.durations) {
+                const durationOption = service.durations.find(d => d.duration === duration);
+                if (durationOption) {
+                    price = durationOption.price;
+                }
+            }
+        }
+        
         return {
             therapistId,
             startTime,
             endTime,
             duration,
+            serviceId,
+            price,
             note,
             dateKey: this.formatDateKey(this.currentDate)
         };
@@ -579,9 +631,17 @@ class SabaiBookingBoard {
             startTime: firebase.firestore.Timestamp.fromDate(data.startTime),
             endTime: firebase.firestore.Timestamp.fromDate(data.endTime),
             dateKey: data.dateKey,
+            duration: data.duration,
+            price: data.price,
+            serviceId: data.serviceId,
             note: data.note,
             createdAt: firebase.firestore.Timestamp.now()
         };
+        
+        // Remove serviceId if it's null or empty
+        if (!booking.serviceId) {
+            delete booking.serviceId;
+        }
         
         await db.collection('bookings').doc(bookingId).set(booking);
         console.log('Created new booking with ID:', bookingId, booking);
@@ -594,8 +654,16 @@ class SabaiBookingBoard {
             startTime: firebase.firestore.Timestamp.fromDate(data.startTime),
             endTime: firebase.firestore.Timestamp.fromDate(data.endTime),
             dateKey: data.dateKey,
+            duration: data.duration,
+            price: data.price,
+            serviceId: data.serviceId,
             note: data.note
         };
+        
+        // Remove serviceId if it's null or empty
+        if (!booking.serviceId) {
+            delete booking.serviceId;
+        }
         
         await db.collection('bookings').doc(this.selectedBooking.id).update(booking);
         console.log('Updated booking:', booking);

@@ -244,32 +244,47 @@ html, body {
     cursor: pointer;
     transition: background-color 0.2s ease;
     -webkit-tap-highlight-color: rgba(76, 159, 255, 0.1);
+    /* Default background will be set by JavaScript */
 }
 
 .booking-slot:hover {
-    background-color: #f8f9ff;
+    /* Hover effect will be handled by JavaScript to maintain color consistency */
 }
 
 .booking-slot.booked {
-    background: linear-gradient(135deg, #4c9fff 0%, #6366f1 100%);
     color: white;
     cursor: pointer;
+    /* Background color will be set by JavaScript based on booking ID */
 }
 
 .booking-slot.booked:hover {
-    background: linear-gradient(135deg, #357abd 0%, #4f46e5 100%);
+    /* Hover effect handled by JavaScript */
 }
 
 .booking-slot .booking-info {
-    padding: 8px 12px;
-    font-size: 14px;
+    padding: 6px 8px;
+    font-size: 12px;
     font-weight: 500;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
     text-align: center;
     word-wrap: break-word;
+    overflow: visible;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    line-height: 1.2;
+    position: relative;
+}
+
+.booking-slot .booking-info div {
+    word-break: break-word;
+    margin-bottom: 1px;
+    max-width: 100%;
+}
+
+.booking-slot .booking-info .price {
+    color: #28a745;
+    font-weight: 600;
 }
 
 /* Modal Styles */
@@ -463,8 +478,14 @@ textarea.form-input {
     }
 
     .booking-slot .booking-info {
-        font-size: 12px;
-        padding: 6px 8px;
+        font-size: 10px;
+        padding: 4px 6px;
+        line-height: 1.1;
+    }
+    
+    .booking-slot .booking-info div {
+        margin-bottom: 1px;
+        font-size: inherit;
     }
 }
 
@@ -674,11 +695,16 @@ textarea.form-input {
 
 /* Mobile optimization for settings modal */
 @media (max-width: 768px) {
-    .settings-modal-content {
+    .modal-overlay {
+        padding: 10px;
+    }
+    
+    .modal-content, .settings-modal-content {
         max-width: 95%;
         width: 95%;
         max-height: 90%;
-        margin: 20px;
+        margin: 0;
+        border-radius: 12px;
     }
     
     .modal-body {
@@ -706,6 +732,59 @@ textarea.form-input {
     .tab-btn {
         padding: 12px 15px;
         font-size: 14px;
+    }
+}
+
+/* Mobile optimization for booking modal */
+@media (max-width: 480px) {
+    .modal-overlay {
+        padding: 5px;
+    }
+    
+    .modal-content {
+        max-width: 98%;
+        width: 98%;
+        max-height: 95%;
+        margin: 0;
+        border-radius: 8px;
+    }
+    
+    .modal-header {
+        padding: 15px;
+    }
+    
+    .modal-title {
+        font-size: 18px;
+    }
+    
+    .modal-body {
+        padding: 15px;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-label {
+        font-size: 14px;
+        margin-bottom: 6px;
+    }
+    
+    .form-input, .form-select {
+        font-size: 16px; /* Prevent zoom on iOS */
+        padding: 12px;
+        min-height: 44px;
+    }
+    
+    .modal-actions {
+        padding: 15px;
+        gap: 10px;
+    }
+    
+    .btn {
+        font-size: 14px;
+        padding: 12px 20px;
+        min-height: 44px;
     }
 }
 
@@ -929,5 +1008,146 @@ textarea.form-input {
     
     .main-content {
         padding: 15px 20px;
+    }
+}
+
+/* iPhone and small mobile optimization */
+@media (max-width: 480px) {
+    .app-container {
+        height: 100vh;
+        overflow: hidden;
+    }
+    
+    .header {
+        padding: 15px;
+    }
+    
+    .app-title {
+        font-size: 18px;
+        margin-bottom: 8px;
+    }
+    
+    .header-top {
+        margin-bottom: 10px;
+    }
+    
+    .settings-btn {
+        padding: 8px 12px;
+        font-size: 14px;
+        min-height: 40px;
+    }
+    
+    .date-nav {
+        gap: 10px;
+    }
+    
+    .nav-btn {
+        padding: 8px 12px;
+        font-size: 14px;
+        min-height: 40px;
+        min-width: 80px;
+    }
+    
+    .main-content {
+        padding: 10px;
+    }
+    
+    .therapist-headers {
+        grid-template-columns: 60px repeat(auto-fit, minmax(90px, 1fr));
+    }
+    
+    .calendar-grid {
+        grid-template-columns: 60px repeat(auto-fit, minmax(90px, 1fr));
+    }
+
+    .time-header, .therapist-header {
+        padding: 12px 4px;
+        font-size: 12px;
+    }
+    
+    .time-cell {
+        font-size: 11px;
+        padding: 8px 4px;
+        min-height: 40px;
+    }
+
+    .therapist-header {
+        font-size: 13px;
+        padding: 12px 6px;
+    }
+
+    .booking-slot {
+        min-height: 40px;
+    }
+    
+    .booking-slot .booking-info {
+        font-size: 9px;
+        padding: 3px 4px;
+        line-height: 1.0;
+    }
+    
+    .booking-slot .booking-info div {
+        margin-bottom: 0;
+        font-size: inherit;
+    }
+    
+    /* Ensure horizontal scrolling if needed */
+    .calendar-scroll {
+        overflow-x: auto;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .calendar-grid {
+        min-width: 100%;
+        width: max-content;
+    }
+    
+    .therapist-headers {
+        min-width: 100%;
+        width: max-content;
+    }
+}
+
+/* Extra small screens (iPhone SE, small Android) */
+@media (max-width: 375px) {
+    .therapist-headers {
+        grid-template-columns: 50px repeat(auto-fit, minmax(80px, 1fr));
+    }
+    
+    .calendar-grid {
+        grid-template-columns: 50px repeat(auto-fit, minmax(80px, 1fr));
+    }
+    
+    .time-header, .therapist-header {
+        padding: 10px 2px;
+        font-size: 11px;
+    }
+    
+    .time-cell {
+        font-size: 10px;
+        padding: 6px 2px;
+    }
+    
+    .booking-slot .booking-info {
+        font-size: 8px;
+        padding: 2px 3px;
+        line-height: 1.0;
+    }
+    
+    .booking-slot .booking-info div {
+        margin-bottom: 0;
+        font-size: inherit;
+    }
+    
+    .nav-btn {
+        padding: 6px 10px;
+        font-size: 13px;
+        min-width: 70px;
+    }
+    
+    .settings-btn {
+        padding: 6px 10px;
+        font-size: 13px;
     }
 }

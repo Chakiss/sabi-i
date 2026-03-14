@@ -270,33 +270,70 @@ class SabaiBookingBoard {
         container.style.gridTemplateColumns = `80px repeat(${activeTherapists.length}, 1fr)`;
 
         // Create grid cells
-        this.timeSlots.forEach(timeSlot => {
-            // Add time cell
+        this.timeSlots.forEach((timeSlot, timeIndex) => {
+            // Add time cell with time range
             const timeCell = document.createElement('div');
             timeCell.className = 'time-cell';
-            timeCell.textContent = timeSlot;
+            timeCell.textContent = this.getTimeRange(timeSlot);
             container.appendChild(timeCell);
 
             // Add booking slots for each active therapist
-            activeTherapists.forEach(therapist => {
-                const slot = this.createBookingSlot(therapist, timeSlot);
+            activeTherapists.forEach((therapist, therapistIndex) => {
+                const slot = this.createBookingSlot(therapist, timeSlot, therapistIndex, timeIndex);
                 container.appendChild(slot);
             });
         });
     }
 
+    // Get time range for display (e.g., "10:00 - 10:30")
+    getTimeRange(startTime) {
+        const [hours, minutes] = startTime.split(':').map(Number);
+        const endMinutes = minutes + CONFIG.SLOT_DURATION;
+        const endHours = hours + Math.floor(endMinutes / 60);
+        const adjustedEndMinutes = endMinutes % 60;
+        
+        const endTime = `${endHours.toString().padStart(2, '0')}:${adjustedEndMinutes.toString().padStart(2, '0')}`;
+        return `${startTime} - ${endTime}`;
+    }
+
+    // Generate unique color for each booking based on booking ID
+    getBookingColor(bookingId) {
+        let hash = 0;
+        for (let i = 0; i < bookingId.length; i++) {
+            const char = bookingId.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32-bit integer
+        }
+        
+        // Only 2 tones: blue (210°) and purple (270°)
+        const tones = [210, 270];
+        return tones[Math.abs(hash) % 2];
+    }
+
     // Create individual booking slot
-    createBookingSlot(therapist, timeSlot) {
+    createBookingSlot(therapist, timeSlot, therapistIndex = 0, timeIndex = 0) {
         const slot = document.createElement('div');
         slot.className = 'booking-slot';
         slot.dataset.therapistId = therapist.id;
         slot.dataset.timeSlot = timeSlot;
 
-        // Check if this slot is booked
+        // Check if this slot is booked first
         const booking = this.findBookingForSlot(therapist.id, timeSlot);
         
         if (booking) {
             slot.classList.add('booked');
+            // Alternate color for each booking (not by position)
+            const bookingColorHue = this.getBookingColor(booking.id);
+            const bookingColor = `hsl(${bookingColorHue}, 50%, 60%)`;
+            slot.style.backgroundColor = bookingColor;
+            
+            // Add hover effect with darker shade
+            slot.addEventListener('mouseenter', () => {
+                slot.style.backgroundColor = `hsl(${bookingColorHue}, 60%, 50%)`;
+            });
+            slot.addEventListener('mouseleave', () => {
+                slot.style.backgroundColor = bookingColor;
+            });
             
             // Only show booking info on the first slot of the booking
             if (this.isFirstSlotOfBooking(booking, timeSlot)) {
@@ -309,22 +346,38 @@ class SabaiBookingBoard {
                 
                 let priceDisplay = '';
                 if (booking.price) {
-                    priceDisplay = `<div style="font-size: 11px; opacity: 0.7; color: #28a745;">${booking.price} บาท</div>`;
+                    priceDisplay = `<div class="price" style="color: white">${booking.price}฿</div>`;
                 }
                 
                 info.innerHTML = `
-                    <div>${duration} นาที</div>
-                    ${serviceName ? `<div style="font-size: 11px; opacity: 0.8;">${serviceName}</div>` : ''}
+                    <div>${duration} นาที.</div>
+                    ${serviceName ? `<div>${serviceName}</div>` : ''}
                     ${priceDisplay}
-                    ${booking.note ? `<div style="font-size: 12px; opacity: 0.9;">${booking.note}</div>` : ''}
+                    ${booking.note ? `<div>${booking.note}</div>` : ''}
                 `;
                 
                 slot.appendChild(info);
             }
+            // All slots in the same booking will have the same color automatically
             
             // Add click handler for editing
             slot.addEventListener('click', () => this.openEditBookingModal(booking));
         } else {
+            // Empty slot styling with column and alternating row colors
+            const hue = (therapistIndex * 51) % 360; // Different hue for each therapist column
+            const isEvenRow = timeIndex % 2 === 0;
+            const lightness = isEvenRow ? 95 : 90; // Alternate row colors
+            const backgroundColor = `hsl(${hue}, 30%, ${lightness}%)`;
+            slot.style.backgroundColor = backgroundColor;
+            
+            // Add hover effect for empty slots
+            slot.addEventListener('mouseenter', () => {
+                slot.style.backgroundColor = `hsl(${hue}, 40%, 85%)`;
+            });
+            slot.addEventListener('mouseleave', () => {
+                slot.style.backgroundColor = backgroundColor;
+            });
+            
             // Add click handler for new booking
             slot.addEventListener('click', () => this.openNewBookingModal(therapist, timeSlot));
         }
@@ -342,6 +395,9 @@ class SabaiBookingBoard {
             const startTime = new Date(booking.startTime.seconds * 1000);
             const endTime = new Date(booking.endTime.seconds * 1000);
             
+            // Check if slot falls within booking time range (inclusive start, exclusive end)
+            // Add small buffer for time comparison precision
+            const slotEnd = new Date(slotTime.getTime() + (CONFIG.SLOT_DURATION * 60 * 1000));
             return slotTime >= startTime && slotTime < endTime;
         });
     }
@@ -354,19 +410,21 @@ class SabaiBookingBoard {
         return date;
     }
 
-    // Get service name by serviceId
-    getServiceName(serviceId) {
-        if (!serviceId) return null;
-        const service = this.services.find(s => s.id === serviceId);
-        return service ? service.name : null;
-    }
-
     // Check if this is the first slot of a booking (for display purposes)
     isFirstSlotOfBooking(booking, timeSlot) {
         const slotTime = this.parseTimeSlot(timeSlot);
         const startTime = new Date(booking.startTime.seconds * 1000);
         
-        return Math.abs(slotTime - startTime) < 60000; // Within 1 minute
+        // Check if slot time matches start time within slot duration tolerance
+        const timeDiff = Math.abs(slotTime.getTime() - startTime.getTime());
+        return timeDiff < (CONFIG.SLOT_DURATION * 60 * 1000); // Within slot duration
+    }
+
+    // Get service name by serviceId
+    getServiceName(serviceId) {
+        if (!serviceId) return null;
+        const service = this.services.find(s => s.id === serviceId);
+        return service ? service.name : null;
     }
 
     // Calculate booking duration in minutes

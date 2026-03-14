@@ -43,6 +43,9 @@ class SabaiBookingBoard {
             e.stopPropagation();
             window.location.href = 'settings.html';
         });
+        
+        // Capture button - screenshot calendar
+        document.getElementById('captureBtn').addEventListener('click', () => this.captureCalendar());
         // Settings related event listeners removed - now handled in settings.js
 
         // Service management event listeners removed - now handled in settings.js
@@ -343,6 +346,7 @@ class SabaiBookingBoard {
                 // Use duration from booking data if available, otherwise calculate
                 const duration = booking.duration || this.calculateDuration(booking.startTime, booking.endTime);
                 const serviceName = this.getServiceName(booking.serviceId);
+                const paymentMethodText = this.getPaymentMethodText(booking.paymentMethod);
                 
                 let priceDisplay = '';
                 if (booking.price) {
@@ -353,7 +357,8 @@ class SabaiBookingBoard {
                     <div>${duration} นาที.</div>
                     ${serviceName ? `<div>${serviceName}</div>` : ''}
                     ${priceDisplay}
-                    ${booking.note ? `<div>${booking.note}</div>` : ''}
+                    ${paymentMethodText ? `<div style="font-size: 11px;">${paymentMethodText}</div>` : ''}
+                    ${booking.note ? `<div style="font-size: 10px; opacity: 0.9;">${booking.note}</div>` : ''}
                 `;
                 
                 slot.appendChild(info);
@@ -427,6 +432,120 @@ class SabaiBookingBoard {
         return service ? service.name : null;
     }
 
+    // Get payment method text in Thai
+    getPaymentMethodText(paymentMethod) {
+        if (!paymentMethod) return null;
+        const paymentMethods = {
+            'transfer': '💳 โอน',
+            'cash': '💵 สด'
+        };
+        return paymentMethods[paymentMethod] || null;
+    }
+
+    // Capture calendar as image and download
+    async captureCalendar() {
+        try {
+            // Show loading state
+            const captureBtn = document.getElementById('captureBtn');
+            const originalText = captureBtn.textContent;
+            captureBtn.textContent = '📸 กำลังบันทึก...';
+            captureBtn.disabled = true;
+
+            // Get the actual calendar grid (not the scrollable container)
+            const calendarGrid = document.getElementById('calendarGrid');
+            const therapistHeaders = document.getElementById('therapistHeaders');
+            
+            // Create a temporary container with all calendar content
+            const tempContainer = document.createElement('div');
+            tempContainer.style.position = 'fixed';
+            tempContainer.style.top = '-9999px';
+            tempContainer.style.left = '-9999px';
+            tempContainer.style.background = '#ffffff';
+            tempContainer.style.padding = '20px';
+            tempContainer.style.fontFamily = getComputedStyle(document.body).fontFamily;
+            tempContainer.style.width = 'auto';
+            tempContainer.style.height = 'auto';
+            
+            // Clone the date display (title first)
+            const dateDisplay = document.getElementById('selectedDate');
+            const titleDiv = document.createElement('div');
+            titleDiv.innerHTML = `<h2 style="text-align: center; margin: 0 0 20px 0; color: #1d1d1f; font-size: 24px; order: 1;">สบาย Saba-i Booking Board - ${dateDisplay.textContent}</h2>`;
+            
+            // Clone headers (should be second)
+            const headersClone = therapistHeaders.cloneNode(true);
+            headersClone.style.display = 'grid';
+            headersClone.style.gridTemplateColumns = therapistHeaders.style.gridTemplateColumns;
+            headersClone.style.gap = '0';
+            headersClone.style.margin = '0';
+            headersClone.style.marginBottom = '0';
+            headersClone.style.borderBottom = '2px solid #e0e0e0';
+            headersClone.style.order = '2';
+            
+            // Clone grid (should be third)
+            const gridClone = calendarGrid.cloneNode(true);
+            gridClone.style.display = 'grid';
+            gridClone.style.gridTemplateColumns = calendarGrid.style.gridTemplateColumns;
+            gridClone.style.gap = '0';
+            gridClone.style.margin = '0';
+            gridClone.style.order = '3';
+            
+            // Append in correct order
+            tempContainer.appendChild(titleDiv);
+            tempContainer.appendChild(headersClone);
+            tempContainer.appendChild(gridClone);
+            
+            // Add to document
+            document.body.appendChild(tempContainer);
+            
+            // Wait for layout
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Configure html2canvas options
+            const options = {
+                backgroundColor: '#ffffff',
+                scale: 2,
+                useCORS: true,
+                allowTaint: false,
+                scrollX: 0,
+                scrollY: 0,
+                width: tempContainer.scrollWidth + 40,
+                height: tempContainer.scrollHeight + 40
+            };
+
+            // Create canvas
+            const canvas = await html2canvas(tempContainer, options);
+            
+            // Remove temp container
+            document.body.removeChild(tempContainer);
+            
+            // Create download link
+            const link = document.createElement('a');
+            const dateStr = this.formatDateKey(this.currentDate);
+            link.download = `saba-i-calendar-${dateStr}.png`;
+            link.href = canvas.toDataURL('image/png', 1.0);
+            
+            // Trigger download
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Reset button
+            captureBtn.textContent = originalText;
+            captureBtn.disabled = false;
+            
+            console.log('Calendar captured successfully');
+            
+        } catch (error) {
+            console.error('Error capturing calendar:', error);
+            alert('ไม่สามารถบันทึกตารางได้ กรุณาลองใหม่อีกครั้ง');
+            
+            // Reset button on error
+            const captureBtn = document.getElementById('captureBtn');
+            captureBtn.textContent = '📷 บันทึกตาราง';
+            captureBtn.disabled = false;
+        }
+    }
+
     // Calculate booking duration in minutes
     calculateDuration(startTime, endTime) {
         const start = new Date(startTime.seconds * 1000);
@@ -451,6 +570,7 @@ class SabaiBookingBoard {
         document.getElementById('modalStartTime').value = timeSlot;
         document.getElementById('modalDuration').value = '60';
         document.getElementById('modalService').value = '';
+        document.getElementById('modalPayment').value = '';
         document.getElementById('modalNote').value = '';
         
         this.showModal();
@@ -476,6 +596,7 @@ class SabaiBookingBoard {
         document.getElementById('modalStartTime').value = this.formatTimeFromDate(startTime);
         document.getElementById('modalDuration').value = duration.toString();
         document.getElementById('modalService').value = booking.serviceId || '';
+        document.getElementById('modalPayment').value = booking.paymentMethod || '';
         document.getElementById('modalNote').value = booking.note || '';
         
         this.showModal();
@@ -588,6 +709,7 @@ class SabaiBookingBoard {
         const startTimeStr = document.getElementById('modalStartTime').value;
         const duration = parseInt(document.getElementById('modalDuration').value);
         const serviceId = document.getElementById('modalService').value || null;
+        const paymentMethod = document.getElementById('modalPayment').value || null;
         const note = document.getElementById('modalNote').value.trim();
         
         const startTime = this.parseTimeSlot(startTimeStr);
@@ -612,6 +734,7 @@ class SabaiBookingBoard {
             endTime,
             duration,
             serviceId,
+            paymentMethod,
             price,
             note,
             dateKey: this.formatDateKey(this.currentDate)
@@ -692,6 +815,7 @@ class SabaiBookingBoard {
             duration: data.duration,
             price: data.price,
             serviceId: data.serviceId,
+            paymentMethod: data.paymentMethod,
             note: data.note,
             createdAt: firebase.firestore.Timestamp.now()
         };
@@ -699,6 +823,11 @@ class SabaiBookingBoard {
         // Remove serviceId if it's null or empty
         if (!booking.serviceId) {
             delete booking.serviceId;
+        }
+        
+        // Remove paymentMethod if it's null or empty
+        if (!booking.paymentMethod) {
+            delete booking.paymentMethod;
         }
         
         await db.collection('bookings').doc(bookingId).set(booking);
@@ -715,12 +844,18 @@ class SabaiBookingBoard {
             duration: data.duration,
             price: data.price,
             serviceId: data.serviceId,
+            paymentMethod: data.paymentMethod,
             note: data.note
         };
         
         // Remove serviceId if it's null or empty
         if (!booking.serviceId) {
             delete booking.serviceId;
+        }
+        
+        // Remove paymentMethod if it's null or empty
+        if (!booking.paymentMethod) {
+            delete booking.paymentMethod;
         }
         
         await db.collection('bookings').doc(this.selectedBooking.id).update(booking);

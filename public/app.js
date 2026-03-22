@@ -73,7 +73,27 @@ class SabaiBookingBoard {
         this.bindEvents();
         this.loadInitialData();
         
+        // Add cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            this.cleanup();
+        });
+        
         console.log('🎉 SabaiBookingBoard initialization complete');
+    }
+    
+    // Cleanup method to prevent memory leaks
+    cleanup() {
+        console.log('🧹 App cleanup started...');
+        
+        if (this.calendarRenderer) {
+            this.calendarRenderer.cleanup();
+        }
+        
+        if (this.dataService) {
+            this.dataService.cleanup();
+        }
+        
+        console.log('✅ App cleanup completed');
     }
 
     // Initialize time slots based on shop hours
@@ -122,33 +142,51 @@ class SabaiBookingBoard {
         }
     }
 
-    // Load initial data
+    // Load initial data with real-time listeners
     async loadInitialData() {
         try {
-            console.log('📊 Starting to load initial data...');
+            console.log('📊 Starting to load initial data with real-time listeners...');
             this.showLoading();
             
-            console.log('🔄 Loading therapists, bookings, and services...');
+            console.log('🔄 Setting up real-time listeners for therapists and services...');
             
-            await Promise.all([
-                this.loadTherapists(),
-                this.loadBookings(),
-                this.loadServices()
-            ]);
+            // Setup real-time listeners
+            this.setupRealTimeListeners();
             
-            console.log('✅ All data loaded successfully');
-            console.log('👨‍⚕️ Therapists:', this.therapists.length);
-            console.log('📅 Bookings:', this.bookings.length); 
-            console.log('🛠️ Services:', this.services.length);
+            // Load services (static for now as they don't change often)
+            await this.loadServices();
             
-            this.renderCalendar();
-            this.hideLoading();
-            
-            console.log('🎨 Calendar rendered successfully');
+            console.log('✅ Real-time listeners set up successfully');
             
         } catch (error) {
-            console.error('❌ Error loading initial data:', error);
-            this.showError('ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง');
+            console.error('❌ Error setting up real-time listeners:', error);
+            this.showError('ไม่สามารถเชื่อมต่อระบบแบบ Real-time ได้ กรุณาลองใหม่อีกครั้ง');
+        }
+    }
+    
+    // Setup all real-time listeners
+    setupRealTimeListeners() {
+        // Setup therapist real-time listener
+        this.dataService.setupTherapistsRealTimeListener((therapists) => {
+            console.log('📡 Received real-time therapist update');
+            this.therapists = therapists;
+            this.renderCalendarIfReady();
+        });
+        
+        // Setup booking real-time listener for current date
+        this.dataService.setupBookingsRealTimeListener(this.currentDate, (bookings) => {
+            console.log('📡 Received real-time booking update');
+            this.bookings = bookings;
+            this.renderCalendarIfReady();
+        });
+    }
+    
+    // Render calendar only if all data is ready
+    renderCalendarIfReady() {
+        if (this.therapists && this.therapists.length > 0) {
+            console.log('🎨 Rendering calendar with real-time data...');
+            this.renderCalendar();
+            this.hideLoading();
         }
     }
 
@@ -189,15 +227,20 @@ class SabaiBookingBoard {
         }
     }
 
-    // Date navigation
+    // Date navigation with real-time listener
     changeDate(delta) {
         this.currentDate.setDate(this.currentDate.getDate() + delta);
-        this.loadBookings().then(() => {
+        console.log('📅 Date changed to:', this.currentDate);
+        
+        // Setup new real-time listener for the new date
+        this.dataService.setupBookingsRealTimeListener(this.currentDate, (bookings) => {
+            console.log('📡 Received booking update for new date');
+            this.bookings = bookings;
             this.renderCalendar();
-        }).catch(error => {
-            console.error('Error loading bookings for new date:', error);
-            this.showError('ไม่สามารถโหลดข้อมูลสำหรับวันที่ใหม่ได้');
         });
+        
+        // Render immediately with current data (may be empty for new date)
+        this.renderCalendar();
     }
 
     // Render calendar using calendarRenderer

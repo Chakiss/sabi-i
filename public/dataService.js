@@ -2,6 +2,102 @@
 class SabaiDataService {
     constructor() {
         this.db = window.db;
+        this.bookingsListener = null;
+        this.therapistsListener = null;
+        this.currentDateKey = null;
+    }
+
+    // Real-time booking operations
+    setupBookingsRealTimeListener(date, callback) {
+        try {
+            const dateKey = SabaiUtils.formatDateKey(date);
+            
+            // Clean up existing listener if date changed
+            if (this.bookingsListener && this.currentDateKey !== dateKey) {
+                console.log('🔄 Date changed, cleaning up old booking listener...');
+                this.bookingsListener();
+                this.bookingsListener = null;
+            }
+            
+            // Only create new listener if we don't have one for this date
+            if (!this.bookingsListener || this.currentDateKey !== dateKey) {
+                console.log('🔥 Setting up real-time booking listener for:', dateKey);
+                this.currentDateKey = dateKey;
+                
+                this.bookingsListener = this.db.collection('bookings')
+                    .where('dateKey', '==', dateKey)
+                    .onSnapshot((snapshot) => {
+                        const bookings = snapshot.docs.map(doc => ({
+                            id: doc.id,
+                            ...doc.data()
+                        }));
+                        
+                        console.log('📡 Real-time booking update for', dateKey, ':', bookings.length, 'bookings');
+                        
+                        // Call the callback with updated data
+                        if (callback) {
+                            callback(bookings);
+                        }
+                    }, (error) => {
+                        console.error('❌ Real-time booking listener error:', error);
+                    });
+            }
+            
+        } catch (error) {
+            console.error('Error setting up bookings real-time listener:', error);
+            throw error;
+        }
+    }
+    
+    // Real-time therapist operations  
+    setupTherapistsRealTimeListener(callback) {
+        try {
+            // Only create listener if we don't have one
+            if (!this.therapistsListener) {
+                console.log('🔥 Setting up real-time therapist listener...');
+                
+                this.therapistsListener = this.db.collection('therapists')
+                    .orderBy('displayOrder')
+                    .limit(CONFIG.MAX_THERAPISTS)
+                    .onSnapshot((snapshot) => {
+                        const therapists = snapshot.docs.map(doc => ({
+                            id: doc.id,
+                            ...doc.data()
+                        }));
+                        
+                        console.log('📡 Real-time therapist update:', therapists.length, 'therapists');
+                        
+                        // Call the callback with updated data
+                        if (callback) {
+                            callback(therapists);
+                        }
+                    }, (error) => {
+                        console.error('❌ Real-time therapist listener error:', error);
+                    });
+            }
+            
+        } catch (error) {
+            console.error('Error setting up therapists real-time listener:', error);
+            throw error;
+        }
+    }
+    
+    // Cleanup all listeners
+    cleanup() {
+        console.log('🧹 Cleaning up all real-time listeners...');
+        
+        if (this.bookingsListener) {
+            this.bookingsListener();
+            this.bookingsListener = null;
+        }
+        
+        if (this.therapistsListener) {
+            this.therapistsListener();
+            this.therapistsListener = null;
+        }
+        
+        this.currentDateKey = null;
+        console.log('✅ All listeners cleaned up');
     }
 
     // Therapist operations
@@ -59,6 +155,8 @@ class SabaiDataService {
                 dateKey: data.dateKey,
                 duration: data.duration,
                 price: data.price,
+                discount: data.discount || 0,
+                therapistFee: data.therapistFee,
                 serviceId: data.serviceId,
                 paymentMethod: data.paymentMethod,
                 note: data.note,
@@ -87,6 +185,8 @@ class SabaiDataService {
                 dateKey: data.dateKey,
                 duration: data.duration,
                 price: data.price,
+                discount: data.discount || 0,
+                therapistFee: data.therapistFee,
                 serviceId: data.serviceId,
                 paymentMethod: data.paymentMethod,
                 note: data.note

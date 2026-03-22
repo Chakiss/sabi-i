@@ -52,14 +52,15 @@ class SabaiBookingManager {
         document.getElementById('startTime').addEventListener('change', () => {
             this.updateEndTimeBasedOnDuration();
         });
-
-        // Price field change handler - disable auto-calculation when user manually enters price
-        document.getElementById('price').addEventListener('input', () => {
-            const form = document.getElementById('bookingForm');
-            if (form.price.value) {
-                form.price.dataset.autoCalculated = 'false';
-                console.log('💰 User manually entered price, disabling auto-calculation');
-            }
+        
+        // Discount change handler
+        document.getElementById('discount').addEventListener('change', () => {
+            this.calculateFinalPrice();
+        });
+        
+        // Therapist fee change handler
+        document.getElementById('therapistFee').addEventListener('input', () => {
+            this.calculateFinalPrice();
         });
     }
 
@@ -200,7 +201,8 @@ class SabaiBookingManager {
         
         // Clear other fields
         form.serviceId.value = '';
-        form.price.value = '';
+        form.discount.value = '0';
+        form.therapistFee.value = '';
         form.paymentMethod.value = '';
         form.note.value = '';
         
@@ -262,7 +264,8 @@ class SabaiBookingManager {
         // Set other form values
         form.duration.value = booking.duration || '60';
         form.serviceId.value = booking.serviceId || '';
-        form.price.value = booking.price || '';
+        form.discount.value = booking.discount || '0';
+        form.therapistFee.value = booking.therapistFee || '';
         form.paymentMethod.value = booking.paymentMethod || '';
         form.note.value = booking.note || '';
         
@@ -352,9 +355,7 @@ class SabaiBookingManager {
             try {
                 await this.dataService.deleteBooking(this.editingBooking.id);
                 this.closeBookingModal();
-                await this.app.loadBookings();
-                this.app.renderCalendar();
-                console.log('Booking deleted successfully');
+                console.log('✅ Booking deleted - real-time listener will update UI automatically');
                 
             } catch (error) {
                 console.error('Error deleting booking:', error);
@@ -377,6 +378,9 @@ class SabaiBookingManager {
             return date;
         };
         
+        // Get the calculated price based on service and duration
+        const calculatedPrice = this.getCalculatedPrice();
+        
         return {
             therapistId: form.therapistId.value,
             dateKey: SabaiUtils.formatDateKey(currentDate),
@@ -384,7 +388,9 @@ class SabaiBookingManager {
             endTime: createDateTime(form.endTime.value),
             duration: parseInt(form.duration.value),
             serviceId: form.serviceId.value,
-            price: form.price.value ? parseFloat(form.price.value) : null,
+            price: calculatedPrice,
+            discount: parseFloat(form.discount.value) || 0,
+            therapistFee: form.therapistFee.value ? parseFloat(form.therapistFee.value) : null,
             paymentMethod: form.paymentMethod.value,
             note: form.note.value,
             timestamp: new Date()
@@ -420,21 +426,13 @@ class SabaiBookingManager {
     // Create new booking
     async createBooking(bookingData) {
         const bookingId = await this.dataService.createBooking(bookingData);
-        console.log('Booking created with ID:', bookingId);
-        
-        // Reload data and render
-        await this.app.loadBookings();
-        this.app.renderCalendar();
+        console.log('✅ Booking created with ID:', bookingId, '- real-time listener will update UI automatically');
     }
 
     // Update existing booking
     async updateBooking(bookingData) {
         await this.dataService.updateBooking(this.editingBooking.id, bookingData);
-        console.log('Booking updated successfully');
-        
-        // Reload data and render
-        await this.app.loadBookings();
-        this.app.renderCalendar();
+        console.log('✅ Booking updated - real-time listener will update UI automatically');
     }
 
     // Show error message
@@ -548,37 +546,57 @@ class SabaiBookingManager {
             console.log('🧹 Main page error message cleared');
         }
     }
-    // Update price based on selected service and duration
-    updatePriceBasedOnService() {
+    // Get calculated price based on service and duration
+    getCalculatedPrice() {
         const form = document.getElementById('bookingForm');
         const serviceId = form.serviceId.value;
         const duration = parseInt(form.duration.value);
         
-        console.log('💰 Updating price for service:', serviceId, 'duration:', duration);
-        
-        // Only auto-fill if price field is empty or contains previously calculated value
-        if (!form.price.value || form.price.dataset.autoCalculated === 'true') {
-            if (serviceId && duration && this.app && this.app.services) {
-                const service = this.app.services.find(s => s.id === serviceId);
-                if (service && service.durations) {
-                    const durationOption = service.durations.find(d => d.duration === duration);
-                    if (durationOption && durationOption.price) {
-                        form.price.value = durationOption.price;
-                        form.price.dataset.autoCalculated = 'true';
-                        console.log('💰 Auto-calculated price:', durationOption.price, '฿');
-                        return;
-                    }
+        if (serviceId && duration && this.app && this.app.services) {
+            const service = this.app.services.find(s => s.id === serviceId);
+            if (service && service.durations) {
+                const durationOption = service.durations.find(d => d.duration === duration);
+                if (durationOption && durationOption.price) {
+                    return durationOption.price;
                 }
-            }
-            
-            // Clear auto-calculated price if no service/duration match
-            if (form.price.dataset.autoCalculated === 'true') {
-                form.price.value = '';
-                form.price.dataset.autoCalculated = 'false';
-                console.log('💰 Cleared auto-calculated price');
             }
         }
         
+        return null; // No price available
+    }
+    
+    // Calculate final price with discount
+    calculateFinalPrice() {
+        const basePrice = this.getCalculatedPrice() || 0;
+        const form = document.getElementById('bookingForm');
+        const discountPercent = parseFloat(form.discount.value) || 0;
+        
+        if (basePrice > 0) {
+            const discountAmount = (basePrice * discountPercent) / 100;
+            const finalPrice = basePrice - discountAmount;
+            
+            console.log(`💰 Price calculation: Base: ${basePrice}฿, Discount: ${discountPercent}% (-${discountAmount}฿), Final: ${finalPrice}฿`);
+            return finalPrice;
+        }
+        
+        return 0;
+    }
+    
+    // Update price based on selected service and duration (now automatic only)
+    updatePriceBasedOnService() {
+        const serviceId = document.getElementById('serviceId').value;
+        const duration = parseInt(document.getElementById('duration').value);
+        
+        console.log('💰 Auto-calculating price for service:', serviceId, 'duration:', duration);
+        
+        const calculatedPrice = this.getCalculatedPrice();
+        if (calculatedPrice) {
+            console.log('💰 Auto-calculated price:', calculatedPrice, '฿');
+        } else {
+            console.log('💰 No price available for this service/duration combination');
+        }
+        
+        this.calculateFinalPrice();
         console.log('💰 Price update complete');
     }
     // Filter bookings by date

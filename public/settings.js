@@ -3,6 +3,7 @@ class SabaiSettingsManager {
         this.therapists = [];
         this.services = [];
         this.isLoading = false;
+        this.currentEditingServiceId = null;
         
         this.bindEvents();
         this.loadInitialData();
@@ -27,6 +28,12 @@ class SabaiSettingsManager {
         document.getElementById('addServiceForm').addEventListener('submit', (e) => this.handleAddService(e));
         document.getElementById('addDuration').addEventListener('click', () => this.addDurationRow());
         document.getElementById('initializeServices').addEventListener('click', () => this.initializeDefaultServices());
+
+        // Edit service modal
+        document.getElementById('closeEditServiceModal').addEventListener('click', () => this.closeEditServiceModal());
+        document.getElementById('cancelEditService').addEventListener('click', () => this.closeEditServiceModal());
+        document.getElementById('editServiceForm').addEventListener('submit', (e) => this.handleEditServiceSubmit(e));
+        document.getElementById('addEditDuration').addEventListener('click', () => this.addEditDurationRow());
 
         // Add event listener for remove duration button
         document.addEventListener('click', (e) => {
@@ -620,6 +627,33 @@ class SabaiSettingsManager {
         container.insertBefore(durationRow, addButton);
     }
 
+    // Add duration row for editing (with default values)
+    addEditDurationRow(duration = null, price = null) {
+        const container = document.getElementById('editServiceDurations');
+        
+        const durationRow = document.createElement('div');
+        durationRow.className = 'duration-row';
+        durationRow.innerHTML = `
+            <select class="duration-select">
+                <option value="30" ${duration === 30 ? 'selected' : ''}>30 นาที</option>
+                <option value="60" ${duration === 60 ? 'selected' : ''}>60 นาที</option>
+                <option value="90" ${duration === 90 ? 'selected' : ''}>90 นาที</option>
+                <option value="120" ${duration === 120 ? 'selected' : ''}>120 นาที</option>
+                <option value="150" ${duration === 150 ? 'selected' : ''}>150 นาที</option>
+                <option value="180" ${duration === 180 ? 'selected' : ''}>180 นาที</option>
+            </select>
+            <input type="number" class="price-input" placeholder="ราคา (บาท)" min="0" value="${price || ''}">
+            <button type="button" class="btn-remove-duration">×</button>
+        `;
+        
+        // Add remove listener
+        durationRow.querySelector('.btn-remove-duration').addEventListener('click', () => {
+            durationRow.remove();
+        });
+        
+        container.appendChild(durationRow);
+    }
+
     // Handle add service form submission
     async handleAddService(e) {
         e.preventDefault();
@@ -753,32 +787,85 @@ class SabaiSettingsManager {
         }
     }
 
-    // Edit service
+    // Edit service - Open edit modal
     editService(serviceId) {
+        this.currentEditingServiceId = serviceId;
         const service = this.services.find(s => s.id === serviceId);
         if (!service) return;
         
-        const newName = prompt('ชื่อบริการใหม่:', service.name);
-        if (newName && newName.trim() !== service.name) {
-            this.updateServiceName(serviceId, newName.trim());
-        }
+        // Populate modal with service data
+        document.getElementById('editServiceName').value = service.name;
+        document.getElementById('editServiceCategory').value = service.category;
+        
+        // Clear and populate duration rows
+        const durationsContainer = document.getElementById('editServiceDurations');
+        durationsContainer.innerHTML = '';
+        
+        service.durations.forEach(duration => {
+            this.addEditDurationRow(duration.duration, duration.price);
+        });
+        
+        // Show modal
+        document.getElementById('editServiceModal').style.display = 'flex';
     }
-
-    // Update service name
-    async updateServiceName(serviceId, newName) {
-        try {
-            await db.collection('services').doc(serviceId).update({
-                name: newName
-            });
+    
+    // Close edit service modal
+    closeEditServiceModal() {
+        document.getElementById('editServiceModal').style.display = 'none';
+        this.currentEditingServiceId = null;
+    }
+    
+    // Handle edit service form submission
+    async handleEditServiceSubmit(e) {
+        e.preventDefault();
+        
+        const name = document.getElementById('editServiceName').value.trim();
+        const category = document.getElementById('editServiceCategory').value;
+        
+        if (!name || !category) {
+            alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+            return;
+        }
+        
+        // Collect duration and price data
+        const durationRows = document.querySelectorAll('#editServiceDurations .duration-row');
+        const durations = [];
+        
+        for (const row of durationRows) {
+            const duration = parseInt(row.querySelector('.duration-select').value);
+            const price = parseInt(row.querySelector('.price-input').value);
             
+            if (price && price > 0) {
+                durations.push({ duration, price });
+            }
+        }
+        
+        if (durations.length === 0) {
+            alert('กรุณาเพิ่มอย่างน้อยหนึ่งระยะเวลาพร้อมราคา');
+            return;
+        }
+        
+        try {
+            const updatedService = {
+                name: name,
+                category: category,
+                durations: durations.sort((a, b) => a.duration - b.duration)
+            };
+            
+            await db.collection('services').doc(this.currentEditingServiceId).update(updatedService);
+            
+            // Reload services and update display
             await this.loadServices();
             this.renderServiceList();
             
-            console.log('Updated service name:', serviceId, newName);
+            // Close modal
+            this.closeEditServiceModal();
+            
+            console.log('Updated service:', this.currentEditingServiceId, updatedService);
             
         } catch (error) {
-            console.error('Error updating service name:', error);
-            alert('ไม่สามารถอัพเดทชื่อบริการได้');
+            console.error('Error updating service:', error);
+            alert('ไม่สามารถอัพเดทบริการได้ กรุณาลองใหม่อีกครั้ง');
         }
     }
 

@@ -1,16 +1,79 @@
+// Main Application Class - Clean Refactored Version
 class SabaiBookingBoard {
     constructor() {
+        console.log('🚀 SabaiBookingBoard constructor started...');
+        
+        // Core state
         this.currentDate = new Date();
         this.therapists = [];
         this.bookings = [];
         this.timeSlots = [];
-        this.selectedBooking = null;
-        this.isLoading = false;
         this.services = [];
+        this.isLoading = false;
         
+        console.log('📅 Initial date:', this.currentDate);
+        
+        // Check if required dependencies are loaded
+        if (typeof SabaiDataService === 'undefined') {
+            console.error('❌ SabaiDataService not found! Make sure dataService.js is loaded.');
+            this.showError('ไม่สามารถโหลด Data Service ได้');
+            return;
+        }
+        
+        if (typeof SabaiCalendarRenderer === 'undefined') {
+            console.error('❌ SabaiCalendarRenderer not found! Make sure calendarRenderer.js is loaded.');
+            this.showError('ไม่สามารถโหลด Calendar Renderer ได้');
+            return;
+        }
+        
+        if (typeof SabaiBookingManager === 'undefined') {
+            console.error('❌ SabaiBookingManager not found! Make sure bookingManager.js is loaded.');
+            this.showError('ไม่สามารถโหลด Booking Manager ได้');
+            return;
+        }
+        
+        if (typeof SabaiUtils === 'undefined') {
+            console.error('❌ SabaiUtils not found! Make sure utils.js is loaded.');
+            this.showError('ไม่สามารถโหลด Utils ได้');
+            return;
+        }
+        
+        if (typeof CONFIG === 'undefined') {
+            console.error('❌ CONFIG not found! Make sure config.js is loaded.');
+            this.showError('ไม่สามารถโหลด Config ได้');
+            return;
+        }
+        
+        if (typeof db === 'undefined') {
+            console.error('❌ Firebase database not found! Make sure config.js is loaded and Firebase is initialized.');
+            this.showError('ไม่สามารถโหลด Firebase Database ได้');
+            return;
+        }
+        
+        console.log('✅ All required modules found');
+        
+        // Initialize modules
+        try {
+            this.dataService = new SabaiDataService();
+            console.log('✅ DataService initialized');
+            
+            this.calendarRenderer = new SabaiCalendarRenderer(this.dataService, this);
+            console.log('✅ CalendarRenderer initialized');
+            
+            this.bookingManager = new SabaiBookingManager(this.dataService, this.calendarRenderer, this);
+            console.log('✅ BookingManager initialized');
+        } catch (error) {
+            console.error('❌ Failed to initialize modules:', error);
+            this.showError('ไม่สามารถเริ่มต้นระบบได้: ' + error.message);
+            return;
+        }
+        
+        // Initialize application
         this.initializeTimeSlots();
         this.bindEvents();
         this.loadInitialData();
+        
+        console.log('🎉 SabaiBookingBoard initialization complete');
     }
 
     // Initialize time slots based on shop hours
@@ -36,7 +99,7 @@ class SabaiBookingBoard {
         document.getElementById('prevDay').addEventListener('click', () => this.changeDate(-1));
         document.getElementById('nextDay').addEventListener('click', () => this.changeDate(1));
 
-        // Settings button - navigate to settings page
+        // Settings navigation
         document.getElementById('settingsBtn').addEventListener('click', (e) => {
             console.log('Settings button clicked - navigating to settings page');
             e.preventDefault();
@@ -44,849 +107,153 @@ class SabaiBookingBoard {
             window.location.href = 'settings.html';
         });
         
-        // Capture button - screenshot calendar
-        document.getElementById('captureBtn').addEventListener('click', () => this.captureCalendar());
-        // Settings related event listeners removed - now handled in settings.js
-
-        // Service management event listeners removed - now handled in settings.js
-
-        // Modal events
-        document.getElementById('closeModal').addEventListener('click', () => this.closeModal());
-        document.getElementById('cancelBooking').addEventListener('click', () => this.closeModal());
-        document.getElementById('deleteBooking').addEventListener('click', () => this.deleteBooking());
-        document.getElementById('bookingForm').addEventListener('submit', (e) => this.handleBookingSubmit(e));
-
-        // Close booking modal on backdrop click
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal-backdrop') && 
-                e.target.closest('#bookingModal')) {
-                this.closeModal();
-            }
+        // Calendar capture
+        document.getElementById('captureBtn').addEventListener('click', () => {
+            this.calendarRenderer.captureCalendar(this.currentDate);
         });
-        
-        // Settings modal backdrop listener removed - now handled in settings.js
 
-        // Retry button
-        document.getElementById('retryButton').addEventListener('click', () => this.loadInitialData());
+        // Initialize booking modal handlers
+        this.bookingManager.initializeBookingModal();
 
-        // Prevent form submission on enter in textarea
-        document.getElementById('modalNote').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-            }
-        });
+        // Error retry button
+        const retryButton = document.getElementById('retryButton');
+        if (retryButton) {
+            retryButton.addEventListener('click', () => this.loadInitialData());
+        }
     }
 
     // Load initial data
     async loadInitialData() {
         try {
+            console.log('📊 Starting to load initial data...');
             this.showLoading();
+            
+            console.log('🔄 Loading therapists, bookings, and services...');
             
             await Promise.all([
                 this.loadTherapists(),
-                this.loadBookingsForDate(),
+                this.loadBookings(),
                 this.loadServices()
             ]);
+            
+            console.log('✅ All data loaded successfully');
+            console.log('👨‍⚕️ Therapists:', this.therapists.length);
+            console.log('📅 Bookings:', this.bookings.length); 
+            console.log('🛠️ Services:', this.services.length);
             
             this.renderCalendar();
             this.hideLoading();
             
+            console.log('🎨 Calendar rendered successfully');
+            
         } catch (error) {
-            console.error('Error loading initial data:', error);
+            console.error('❌ Error loading initial data:', error);
             this.showError('ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง');
         }
     }
 
-    // Load therapists from Firestore
+    // Load data methods - now using dataService
     async loadTherapists() {
         try {
-            const snapshot = await db.collection('therapists')
-                .orderBy('displayOrder')
-                .limit(CONFIG.MAX_THERAPISTS)
-                .get();
-                
-            this.therapists = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-            
-            console.log('Loaded therapists:', this.therapists);
-            
+            console.log('👨‍⚕️ Loading therapists...');
+            this.therapists = await this.dataService.getTherapists();
+            console.log('✅ Therapists loaded:', this.therapists.length, 'items');
+            console.log('👨‍⚕️ Therapists data:', this.therapists);
         } catch (error) {
-            console.error('Error loading therapists:', error);
+            console.error('❌ Error loading therapists:', error);
             throw error;
         }
     }
 
-    // Load bookings for current date
-    async loadBookingsForDate() {
+    async loadBookings() {
         try {
-            const dateKey = this.formatDateKey(this.currentDate);
-            
-            const snapshot = await db.collection('bookings')
-                .where('dateKey', '==', dateKey)
-                .get();
-                
-            this.bookings = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-            
-            console.log('Loaded bookings for', dateKey, ':', this.bookings);
-            
+            console.log('📅 Loading bookings for date:', this.currentDate);
+            this.bookings = await this.dataService.getBookingsByDate(this.currentDate);
+            console.log('✅ Bookings loaded:', this.bookings.length, 'items');
+            console.log('📅 Bookings data:', this.bookings);
         } catch (error) {
-            console.error('Error loading bookings:', error);
+            console.error('❌ Error loading bookings:', error);
             throw error;
         }
     }
 
-    // Load services from Firestore
     async loadServices() {
         try {
-            const snapshot = await db.collection('services')
-                .orderBy('displayOrder')
-                .get();
-                
-            this.services = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-            
-            console.log('Loaded services:', this.services);
-            
+            console.log('🛠️ Loading services...');
+            this.services = await this.dataService.getServices();
+            console.log('✅ Services loaded:', this.services.length, 'items');
+            console.log('🛠️ Services data:', this.services);
         } catch (error) {
-            console.error('Error loading services:', error);
+            console.error('❌ Error loading services:', error);
             // Don't throw error to prevent blocking app initialization
         }
     }
 
-    // Format date for Firestore key
-    formatDateKey(date) {
-        const year = date.getFullYear();
-        const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const day = date.getDate().toString().padStart(2, '0');
-        return `${year}-${month}-${day}`;
+    // Date navigation
+    changeDate(delta) {
+        this.currentDate.setDate(this.currentDate.getDate() + delta);
+        this.loadBookings().then(() => {
+            this.renderCalendar();
+        }).catch(error => {
+            console.error('Error loading bookings for new date:', error);
+            this.showError('ไม่สามารถโหลดข้อมูลสำหรับวันที่ใหม่ได้');
+        });
     }
 
-    // Format date for display
-    formatDisplayDate(date) {
-        const options = { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric'
-        };
-        return date.toLocaleDateString('th-TH', options);
+    // Render calendar using calendarRenderer
+    renderCalendar() {
+        this.calendarRenderer.renderCalendar(
+            this.therapists, 
+            this.bookings, 
+            this.services, 
+            this.timeSlots, 
+            this.currentDate
+        );
     }
 
-    // Show loading state
+    // Public methods for opening booking modals - used by calendarRenderer event handlers
+    openNewBookingModal(therapist, timeSlot) {
+        this.bookingManager.openNewBookingModal(therapist, timeSlot);
+    }
+
+    openEditBookingModal(booking) {
+        this.bookingManager.openEditBookingModal(booking);
+    }
+
+    // UI state management
     showLoading() {
         this.isLoading = true;
-        document.getElementById('loadingSpinner').classList.remove('hidden');
-        document.getElementById('calendarContainer').classList.add('hidden');
-        document.getElementById('errorMessage').classList.add('hidden');
+        const loading = document.getElementById('loadingSpinner');
+        const calendar = document.getElementById('calendarContainer');
+        const error = document.getElementById('errorMessage');
+        
+        if (loading) loading.classList.remove('hidden');
+        if (calendar) calendar.classList.add('hidden');
+        if (error) error.classList.add('hidden');
     }
 
-    // Hide loading state
     hideLoading() {
         this.isLoading = false;
-        document.getElementById('loadingSpinner').classList.add('hidden');
-        document.getElementById('calendarContainer').classList.remove('hidden');
+        const loading = document.getElementById('loadingSpinner');
+        const calendar = document.getElementById('calendarContainer');
+        
+        if (loading) loading.classList.add('hidden');
+        if (calendar) calendar.classList.remove('hidden');
     }
 
-    // Show error message
     showError(message) {
         this.isLoading = false;
-        document.getElementById('loadingSpinner').classList.add('hidden');
-        document.getElementById('calendarContainer').classList.add('hidden');
-        document.getElementById('errorMessage').classList.remove('hidden');
-        document.querySelector('.error-text').textContent = message;
-    }
-
-    // Change date and reload data
-    async changeDate(direction) {
-        if (this.isLoading) return;
+        const loading = document.getElementById('loadingSpinner');
+        const calendar = document.getElementById('calendarContainer');
+        const error = document.getElementById('errorMessage');
+        const errorText = document.querySelector('.error-text');
         
-        const newDate = new Date(this.currentDate);
-        newDate.setDate(newDate.getDate() + direction);
-        this.currentDate = newDate;
-        
-        try {
-            this.showLoading();
-            await this.loadBookingsForDate();
-            this.renderCalendar();
-            this.hideLoading();
-        } catch (error) {
-            console.error('Error changing date:', error);
-            this.showError('ไม่สามารถโหลดข้อมูลวันที่ใหม่ได้');
-        }
-    }
-
-    // Render the calendar grid
-    renderCalendar() {
-        this.renderDateDisplay();
-        this.renderTherapistHeaders();
-        this.renderCalendarGrid();
-    }
-
-    // Render current date display
-    renderDateDisplay() {
-        const dateElement = document.getElementById('selectedDate');
-        dateElement.textContent = this.formatDisplayDate(this.currentDate);
-    }
-
-    // Render therapist headers
-    renderTherapistHeaders() {
-        const container = document.getElementById('therapistHeaders');
-        
-        // Clear existing headers except time header
-        while (container.children.length > 1) {
-            container.removeChild(container.lastChild);
-        }
-
-        // Get only active therapists for display
-        const activeTherapists = this.therapists.filter(t => t.status === 'active');
-
-        // Add therapist headers
-        activeTherapists.forEach(therapist => {
-            const header = document.createElement('div');
-            header.className = 'therapist-header';
-            header.textContent = therapist.name;
-            container.appendChild(header);
-        });
-
-        // Update grid layout
-        const columnCount = activeTherapists.length + 1; // +1 for time column
-        container.style.gridTemplateColumns = `80px repeat(${activeTherapists.length}, 1fr)`;
-    }
-
-    // Render calendar grid with time slots and bookings
-    renderCalendarGrid() {
-        const container = document.getElementById('calendarGrid');
-        container.innerHTML = '';
-        
-        // Get only active therapists for display
-        const activeTherapists = this.therapists.filter(t => t.status === 'active');
-        
-        // Set grid layout
-        const columnCount = activeTherapists.length + 1;
-        container.style.gridTemplateColumns = `80px repeat(${activeTherapists.length}, 1fr)`;
-
-        // Create grid cells
-        this.timeSlots.forEach((timeSlot, timeIndex) => {
-            // Add time cell with time range
-            const timeCell = document.createElement('div');
-            timeCell.className = 'time-cell';
-            timeCell.textContent = this.getTimeRange(timeSlot);
-            container.appendChild(timeCell);
-
-            // Add booking slots for each active therapist
-            activeTherapists.forEach((therapist, therapistIndex) => {
-                const slot = this.createBookingSlot(therapist, timeSlot, therapistIndex, timeIndex);
-                container.appendChild(slot);
-            });
-        });
-    }
-
-    // Get time range for display (e.g., "10:00 - 10:30")
-    getTimeRange(startTime) {
-        const [hours, minutes] = startTime.split(':').map(Number);
-        const endMinutes = minutes + CONFIG.SLOT_DURATION;
-        const endHours = hours + Math.floor(endMinutes / 60);
-        const adjustedEndMinutes = endMinutes % 60;
-        
-        const endTime = `${endHours.toString().padStart(2, '0')}:${adjustedEndMinutes.toString().padStart(2, '0')}`;
-        return `${startTime} - ${endTime}`;
-    }
-
-    // Generate unique color for each booking based on booking ID
-    getBookingColor(bookingId) {
-        let hash = 0;
-        for (let i = 0; i < bookingId.length; i++) {
-            const char = bookingId.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash; // Convert to 32-bit integer
-        }
-        
-        // Only 2 tones: blue (210°) and purple (270°)
-        const tones = [210, 270];
-        return tones[Math.abs(hash) % 2];
-    }
-
-    // Create individual booking slot
-    createBookingSlot(therapist, timeSlot, therapistIndex = 0, timeIndex = 0) {
-        const slot = document.createElement('div');
-        slot.className = 'booking-slot';
-        slot.dataset.therapistId = therapist.id;
-        slot.dataset.timeSlot = timeSlot;
-
-        // Check if this slot is booked first
-        const booking = this.findBookingForSlot(therapist.id, timeSlot);
-        
-        if (booking) {
-            slot.classList.add('booked');
-            // Alternate color for each booking (not by position)
-            const bookingColorHue = this.getBookingColor(booking.id);
-            const bookingColor = `hsl(${bookingColorHue}, 50%, 60%)`;
-            slot.style.backgroundColor = bookingColor;
-            
-            // Add hover effect with darker shade
-            slot.addEventListener('mouseenter', () => {
-                slot.style.backgroundColor = `hsl(${bookingColorHue}, 60%, 50%)`;
-            });
-            slot.addEventListener('mouseleave', () => {
-                slot.style.backgroundColor = bookingColor;
-            });
-            
-            // Only show booking info on the first slot of the booking
-            if (this.isFirstSlotOfBooking(booking, timeSlot)) {
-                const info = document.createElement('div');
-                info.className = 'booking-info';
-                
-                // Use duration from booking data if available, otherwise calculate
-                const duration = booking.duration || this.calculateDuration(booking.startTime, booking.endTime);
-                const serviceName = this.getServiceName(booking.serviceId);
-                const paymentMethodText = this.getPaymentMethodText(booking.paymentMethod);
-                
-                let priceDisplay = '';
-                if (booking.price) {
-                    priceDisplay = `<div class="price" style="color: white">${booking.price}฿</div>`;
-                }
-                
-                info.innerHTML = `
-                    <div>${duration} นาที.</div>
-                    ${serviceName ? `<div>${serviceName}</div>` : ''}
-                    ${priceDisplay}
-                    ${paymentMethodText ? `<div style="font-size: 11px;">${paymentMethodText}</div>` : ''}
-                    ${booking.note ? `<div style="font-size: 10px; opacity: 0.9;">${booking.note}</div>` : ''}
-                `;
-                
-                slot.appendChild(info);
-            }
-            // All slots in the same booking will have the same color automatically
-            
-            // Add click handler for editing
-            slot.addEventListener('click', () => this.openEditBookingModal(booking));
-        } else {
-            // Empty slot styling with column and alternating row colors
-            const hue = (therapistIndex * 51) % 360; // Different hue for each therapist column
-            const isEvenRow = timeIndex % 2 === 0;
-            const lightness = isEvenRow ? 95 : 90; // Alternate row colors
-            const backgroundColor = `hsl(${hue}, 30%, ${lightness}%)`;
-            slot.style.backgroundColor = backgroundColor;
-            
-            // Add hover effect for empty slots
-            slot.addEventListener('mouseenter', () => {
-                slot.style.backgroundColor = `hsl(${hue}, 40%, 85%)`;
-            });
-            slot.addEventListener('mouseleave', () => {
-                slot.style.backgroundColor = backgroundColor;
-            });
-            
-            // Add click handler for new booking
-            slot.addEventListener('click', () => this.openNewBookingModal(therapist, timeSlot));
-        }
-
-        return slot;
-    }
-
-    // Find booking that occupies a specific slot
-    findBookingForSlot(therapistId, timeSlot) {
-        const slotTime = this.parseTimeSlot(timeSlot);
-        
-        return this.bookings.find(booking => {
-            if (booking.therapistId !== therapistId) return false;
-            
-            const startTime = new Date(booking.startTime.seconds * 1000);
-            const endTime = new Date(booking.endTime.seconds * 1000);
-            
-            // Check if slot falls within booking time range (inclusive start, exclusive end)
-            // Add small buffer for time comparison precision
-            const slotEnd = new Date(slotTime.getTime() + (CONFIG.SLOT_DURATION * 60 * 1000));
-            return slotTime >= startTime && slotTime < endTime;
-        });
-    }
-
-    // Parse time slot string to Date object
-    parseTimeSlot(timeSlot) {
-        const [hours, minutes] = timeSlot.split(':').map(Number);
-        const date = new Date(this.currentDate);
-        date.setHours(hours, minutes, 0, 0);
-        return date;
-    }
-
-    // Check if this is the first slot of a booking (for display purposes)
-    isFirstSlotOfBooking(booking, timeSlot) {
-        const slotTime = this.parseTimeSlot(timeSlot);
-        const startTime = new Date(booking.startTime.seconds * 1000);
-        
-        // Check if slot time matches start time within slot duration tolerance
-        const timeDiff = Math.abs(slotTime.getTime() - startTime.getTime());
-        return timeDiff < (CONFIG.SLOT_DURATION * 60 * 1000); // Within slot duration
-    }
-
-    // Get service name by serviceId
-    getServiceName(serviceId) {
-        if (!serviceId) return null;
-        const service = this.services.find(s => s.id === serviceId);
-        return service ? service.name : null;
-    }
-
-    // Get payment method text in Thai
-    getPaymentMethodText(paymentMethod) {
-        if (!paymentMethod) return null;
-        const paymentMethods = {
-            'transfer': '💳 โอน',
-            'cash': '💵 สด'
-        };
-        return paymentMethods[paymentMethod] || null;
-    }
-
-    // Capture calendar as image and download
-    async captureCalendar() {
-        try {
-            // Show loading state
-            const captureBtn = document.getElementById('captureBtn');
-            const originalText = captureBtn.textContent;
-            captureBtn.textContent = '📸 กำลังบันทึก...';
-            captureBtn.disabled = true;
-
-            // Get the actual calendar grid (not the scrollable container)
-            const calendarGrid = document.getElementById('calendarGrid');
-            const therapistHeaders = document.getElementById('therapistHeaders');
-            
-            // Create a temporary container with all calendar content
-            const tempContainer = document.createElement('div');
-            tempContainer.style.position = 'fixed';
-            tempContainer.style.top = '-9999px';
-            tempContainer.style.left = '-9999px';
-            tempContainer.style.background = '#ffffff';
-            tempContainer.style.padding = '20px';
-            tempContainer.style.fontFamily = getComputedStyle(document.body).fontFamily;
-            tempContainer.style.width = 'auto';
-            tempContainer.style.height = 'auto';
-            
-            // Clone the date display (title first)
-            const dateDisplay = document.getElementById('selectedDate');
-            const titleDiv = document.createElement('div');
-            titleDiv.innerHTML = `<h2 style="text-align: center; margin: 0 0 20px 0; color: #1d1d1f; font-size: 24px; order: 1;">สบาย Saba-i Booking Board - ${dateDisplay.textContent}</h2>`;
-            
-            // Clone headers (should be second)
-            const headersClone = therapistHeaders.cloneNode(true);
-            headersClone.style.display = 'grid';
-            headersClone.style.gridTemplateColumns = therapistHeaders.style.gridTemplateColumns;
-            headersClone.style.gap = '0';
-            headersClone.style.margin = '0';
-            headersClone.style.marginBottom = '0';
-            headersClone.style.borderBottom = '2px solid #e0e0e0';
-            headersClone.style.order = '2';
-            
-            // Clone grid (should be third)
-            const gridClone = calendarGrid.cloneNode(true);
-            gridClone.style.display = 'grid';
-            gridClone.style.gridTemplateColumns = calendarGrid.style.gridTemplateColumns;
-            gridClone.style.gap = '0';
-            gridClone.style.margin = '0';
-            gridClone.style.order = '3';
-            
-            // Append in correct order
-            tempContainer.appendChild(titleDiv);
-            tempContainer.appendChild(headersClone);
-            tempContainer.appendChild(gridClone);
-            
-            // Add to document
-            document.body.appendChild(tempContainer);
-            
-            // Wait for layout
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            // Configure html2canvas options
-            const options = {
-                backgroundColor: '#ffffff',
-                scale: 2,
-                useCORS: true,
-                allowTaint: false,
-                scrollX: 0,
-                scrollY: 0,
-                width: tempContainer.scrollWidth + 40,
-                height: tempContainer.scrollHeight + 40
-            };
-
-            // Create canvas
-            const canvas = await html2canvas(tempContainer, options);
-            
-            // Remove temp container
-            document.body.removeChild(tempContainer);
-            
-            // Create download link
-            const link = document.createElement('a');
-            const dateStr = this.formatDateKey(this.currentDate);
-            link.download = `saba-i-calendar-${dateStr}.png`;
-            link.href = canvas.toDataURL('image/png', 1.0);
-            
-            // Trigger download
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            // Reset button
-            captureBtn.textContent = originalText;
-            captureBtn.disabled = false;
-            
-            console.log('Calendar captured successfully');
-            
-        } catch (error) {
-            console.error('Error capturing calendar:', error);
-            alert('ไม่สามารถบันทึกตารางได้ กรุณาลองใหม่อีกครั้ง');
-            
-            // Reset button on error
-            const captureBtn = document.getElementById('captureBtn');
-            captureBtn.textContent = '📷 บันทึกตาราง';
-            captureBtn.disabled = false;
-        }
-    }
-
-    // Calculate booking duration in minutes
-    calculateDuration(startTime, endTime) {
-        const start = new Date(startTime.seconds * 1000);
-        const end = new Date(endTime.seconds * 1000);
-        return Math.round((end - start) / (1000 * 60));
-    }
-
-    // Open modal for new booking
-    openNewBookingModal(therapist, timeSlot) {
-        this.selectedBooking = null;
-        
-        document.getElementById('modalTitle').textContent = 'จองเวลา';
-        document.getElementById('deleteBooking').classList.add('hidden');
-        
-        // Populate form
-        this.populateTherapistOptions();
-        this.populateTimeOptions();
-        this.populateServiceOptions();
-        
-        // Set default values
-        document.getElementById('modalTherapist').value = therapist.id;
-        document.getElementById('modalStartTime').value = timeSlot;
-        document.getElementById('modalDuration').value = '60';
-        document.getElementById('modalService').value = '';
-        document.getElementById('modalPayment').value = '';
-        document.getElementById('modalNote').value = '';
-        
-        this.showModal();
-    }
-
-    // Open modal for editing booking
-    openEditBookingModal(booking) {
-        this.selectedBooking = booking;
-        
-        document.getElementById('modalTitle').textContent = 'แก้ไขการจอง';
-        document.getElementById('deleteBooking').classList.remove('hidden');
-        
-        // Populate form
-        this.populateTherapistOptions();
-        this.populateTimeOptions();
-        this.populateServiceOptions();
-        
-        // Set booking values
-        const startTime = new Date(booking.startTime.seconds * 1000);
-        const duration = booking.duration || this.calculateDuration(booking.startTime, booking.endTime);
-        
-        document.getElementById('modalTherapist').value = booking.therapistId;
-        document.getElementById('modalStartTime').value = this.formatTimeFromDate(startTime);
-        document.getElementById('modalDuration').value = duration.toString();
-        document.getElementById('modalService').value = booking.serviceId || '';
-        document.getElementById('modalPayment').value = booking.paymentMethod || '';
-        document.getElementById('modalNote').value = booking.note || '';
-        
-        this.showModal();
-    }
-
-    // Format time from Date object to HH:MM string
-    formatTimeFromDate(date) {
-        const hours = date.getHours().toString().padStart(2, '0');
-        const minutes = date.getMinutes().toString().padStart(2, '0');
-        return `${hours}:${minutes}`;
-    }
-
-    // Populate therapist options in modal
-    populateTherapistOptions() {
-        const select = document.getElementById('modalTherapist');
-        select.innerHTML = '';
-        
-        // Get only active therapists for booking options
-        const activeTherapists = this.therapists.filter(t => t.status === 'active');
-        
-        activeTherapists.forEach(therapist => {
-            const option = document.createElement('option');
-            option.value = therapist.id;
-            option.textContent = therapist.name;
-            select.appendChild(option);
-        });
-    }
-
-    // Populate time options in modal
-    populateTimeOptions() {
-        const select = document.getElementById('modalStartTime');
-        select.innerHTML = '';
-        
-        this.timeSlots.forEach(timeSlot => {
-            const option = document.createElement('option');
-            option.value = timeSlot;
-            option.textContent = timeSlot;
-            select.appendChild(option);
-        });
-    }
-
-    // Populate service options in modal
-    populateServiceOptions() {
-        const select = document.getElementById('modalService');
-        select.innerHTML = '<option value="">ไม่ระบุบริการ</option>';
-        
-        // Get only active services for booking options
-        const activeServices = this.services.filter(s => s.status === 'active');
-        
-        activeServices.forEach(service => {
-            const option = document.createElement('option');
-            option.value = service.id;
-            option.textContent = service.name;
-            select.appendChild(option);
-        });
-    }
-
-    // Show modal
-    showModal() {
-        document.getElementById('bookingModal').classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-    }
-
-    // Close modal
-    closeModal() {
-        document.getElementById('bookingModal').classList.add('hidden');
-        document.body.style.overflow = '';
-        this.selectedBooking = null;
-    }
-
-    // Handle booking form submission
-    async handleBookingSubmit(e) {
-        e.preventDefault();
-        
-        const formData = this.getBookingFormData();
-        
-        try {
-            // Validate form data
-            if (!this.validateBookingData(formData)) {
-                return;
-            }
-            
-            // Check for conflicts
-            if (await this.checkBookingConflict(formData)) {
-                alert('เวลาที่เลือกมีการจองแล้ว กรุณาเลือกเวลาอื่น');
-                return;
-            }
-            
-            // Save or update booking
-            if (this.selectedBooking) {
-                await this.updateBooking(formData);
-            } else {
-                await this.createBooking(formData);
-            }
-            
-            // Reload and close
-            await this.loadBookingsForDate();
-            this.renderCalendar();
-            this.closeModal();
-            
-        } catch (error) {
-            console.error('Error saving booking:', error);
-            alert('ไม่สามารถบันทึกการจองได้ กรุณาลองใหม่อีกครั้ง');
-        }
-    }
-
-    // Get booking form data
-    getBookingFormData() {
-        const therapistId = document.getElementById('modalTherapist').value;
-        const startTimeStr = document.getElementById('modalStartTime').value;
-        const duration = parseInt(document.getElementById('modalDuration').value);
-        const serviceId = document.getElementById('modalService').value || null;
-        const paymentMethod = document.getElementById('modalPayment').value || null;
-        const note = document.getElementById('modalNote').value.trim();
-        
-        const startTime = this.parseTimeSlot(startTimeStr);
-        const endTime = new Date(startTime);
-        endTime.setMinutes(endTime.getMinutes() + duration);
-        
-        // Calculate price from service and duration
-        let price = 0;
-        if (serviceId) {
-            const service = this.services.find(s => s.id === serviceId);
-            if (service && service.durations) {
-                const durationOption = service.durations.find(d => d.duration === duration);
-                if (durationOption) {
-                    price = durationOption.price;
-                }
-            }
-        }
-        
-        return {
-            therapistId,
-            startTime,
-            endTime,
-            duration,
-            serviceId,
-            paymentMethod,
-            price,
-            note,
-            dateKey: this.formatDateKey(this.currentDate)
-        };
-    }
-
-    // Validate booking data
-    validateBookingData(data) {
-        if (!data.therapistId || !data.startTime || !data.endTime) {
-            alert('กรุณากรอกข้อมูลให้ครบถ้วน');
-            return false;
-        }
-        
-        if (data.endTime <= data.startTime) {
-            alert('เวลาสิ้นสุดต้องหลังจากเวลาเริ่มต้น');
-            return false;
-        }
-        
-        // Check if booking is within shop hours
-        const startHour = data.startTime.getHours();
-        const endHour = data.endTime.getHours();
-        const endMinutes = data.endTime.getMinutes();
-        
-        if (startHour < CONFIG.SHOP_START_HOUR || 
-            (endHour > CONFIG.SHOP_END_HOUR) || 
-            (endHour === CONFIG.SHOP_END_HOUR && endMinutes > 0)) {
-            alert(`การจองต้องอยู่ ในช่วงเวลา ${CONFIG.SHOP_START_HOUR}:00 - ${CONFIG.SHOP_END_HOUR}:00`);
-            return false;
-        }
-        
-        return true;
-    }
-
-    // Check for booking conflicts
-    async checkBookingConflict(newBooking) {
-        const conflictingBooking = this.bookings.find(booking => {
-            // Skip current booking when editing
-            if (this.selectedBooking && booking.id === this.selectedBooking.id) {
-                return false;
-            }
-            
-            if (booking.therapistId !== newBooking.therapistId) {
-                return false;
-            }
-            
-            const existingStart = new Date(booking.startTime.seconds * 1000);
-            const existingEnd = new Date(booking.endTime.seconds * 1000);
-            
-            // Check overlap: newStart < existingEnd AND newEnd > existingStart
-            return newBooking.startTime < existingEnd && newBooking.endTime > existingStart;
-        });
-        
-        return conflictingBooking !== undefined;
-    }
-
-    // Generate custom booking ID
-    generateBookingId() {
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = (now.getMonth() + 1).toString().padStart(2, '0');
-        const date = now.getDate().toString().padStart(2, '0');
-        const hours = now.getHours().toString().padStart(2, '0');
-        const minutes = now.getMinutes().toString().padStart(2, '0');
-        const seconds = now.getSeconds().toString().padStart(2, '0');
-        
-        return `B${year}${month}${date}${hours}${minutes}${seconds}`;
-    }
-
-    // Create new booking
-    async createBooking(data) {
-        const bookingId = this.generateBookingId();
-        
-        const booking = {
-            therapistId: data.therapistId,
-            startTime: firebase.firestore.Timestamp.fromDate(data.startTime),
-            endTime: firebase.firestore.Timestamp.fromDate(data.endTime),
-            dateKey: data.dateKey,
-            duration: data.duration,
-            price: data.price,
-            serviceId: data.serviceId,
-            paymentMethod: data.paymentMethod,
-            note: data.note,
-            createdAt: firebase.firestore.Timestamp.now()
-        };
-        
-        // Remove serviceId if it's null or empty
-        if (!booking.serviceId) {
-            delete booking.serviceId;
-        }
-        
-        // Remove paymentMethod if it's null or empty
-        if (!booking.paymentMethod) {
-            delete booking.paymentMethod;
-        }
-        
-        await db.collection('bookings').doc(bookingId).set(booking);
-        console.log('Created new booking with ID:', bookingId, booking);
-    }
-
-    // Update existing booking
-    async updateBooking(data) {
-        const booking = {
-            therapistId: data.therapistId,
-            startTime: firebase.firestore.Timestamp.fromDate(data.startTime),
-            endTime: firebase.firestore.Timestamp.fromDate(data.endTime),
-            dateKey: data.dateKey,
-            duration: data.duration,
-            price: data.price,
-            serviceId: data.serviceId,
-            paymentMethod: data.paymentMethod,
-            note: data.note
-        };
-        
-        // Remove serviceId if it's null or empty
-        if (!booking.serviceId) {
-            delete booking.serviceId;
-        }
-        
-        // Remove paymentMethod if it's null or empty
-        if (!booking.paymentMethod) {
-            delete booking.paymentMethod;
-        }
-        
-        await db.collection('bookings').doc(this.selectedBooking.id).update(booking);
-        console.log('Updated booking:', booking);
-    }
-
-    // Delete booking
-    async deleteBooking() {
-        if (!this.selectedBooking) return;
-        
-        if (!confirm('คุณต้องการลบการจองนี้หรือไม่?')) {
-            return;
-        }
-        
-        try {
-            await db.collection('bookings').doc(this.selectedBooking.id).delete();
-            console.log('Deleted booking:', this.selectedBooking.id);
-            
-            await this.loadBookingsForDate();
-            this.renderCalendar();
-            this.closeModal();
-            
-        } catch (error) {
-            console.error('Error deleting booking:', error);
-            alert('ไม่สามารถลบการจองได้ กรุณาลองใหม่อีกครั้ง');
-        }
+        if (loading) loading.classList.add('hidden');
+        if (calendar) calendar.classList.add('hidden');
+        if (error) error.classList.remove('hidden');
+        if (errorText) errorText.textContent = message;
     }
 }
 
-// Initialize app when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('Initializing Saba-i Booking Board...');
-    window.app = new SabaiBookingBoard();
-});
+// Export class for global access
+window.SabaiBookingBoard = SabaiBookingBoard;

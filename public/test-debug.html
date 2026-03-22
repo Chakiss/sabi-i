@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Test - Saba-i</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <h1>Debug Test - Saba-i</h1>
+    <div id="status">Testing...</div>
+    <div id="output"></div>
+
+    <script src="config.js"></script>
+    <script>
+        console.log('Firebase initialized:', firebase.apps.length > 0);
+        console.log('CONFIG:', CONFIG);
+        console.log('Database:', db);
+
+        async function testFirebase() {
+            const statusEl = document.getElementById('status');
+            const outputEl = document.getElementById('output');
+            
+            try {
+                statusEl.innerHTML = 'Testing Firebase connection...';
+                
+                // Test connection by getting therapists
+                const snapshot = await db.collection('therapists').limit(1).get();
+                console.log('Therapists test result:', snapshot);
+                
+                statusEl.innerHTML = '<span style="color: green;">✅ Firebase connection successful!</span>';
+                outputEl.innerHTML = `<p>Found ${snapshot.size} therapists in collection</p>`;
+                
+                // Test utils functions
+                if (typeof SabaiUtils !== 'undefined') {
+                    outputEl.innerHTML += '<p>✅ SabaiUtils loaded successfully</p>';
+                } else {
+                    outputEl.innerHTML += '<p>❌ SabaiUtils not loaded</p>';
+                }
+                
+            } catch (error) {
+                console.error('Firebase test error:', error);
+                statusEl.innerHTML = '<span style="color: red;">❌ Firebase connection failed</span>';
+                outputEl.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+
+        // Run test after page loads
+        document.addEventListener('DOMContentLoaded', testFirebase);
+    </script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modal Test - Saba-i</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { color: green; }
+        .error { color: red; }
+        .test-button { padding: 10px 20px; margin: 10px; background: #007cba; color: white; border: none; cursor: pointer; }
+        .test-slot { width: 100px; height: 50px; background: #f0f0f0; border: 1px solid #ccc; margin: 5px; display: inline-block; text-align: center; line-height: 50px; cursor: pointer; }
+        .test-slot:hover { background: #e0e0e0; }
+    </style>
+</head>
+<body>
+    <h1>Modal Click Test</h1>
+    
+    <div class="test-section">
+        <h3>1. App Initialization Test</h3>
+        <div id="init-status">Testing...</div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. Manual Modal Test</h3>
+        <button class="test-button" id="manual-modal-test">Open Modal Manually</button>
+        <div id="manual-test-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. Simulated Slot Click Test</h3>
+        <div class="test-slot" id="test-slot" data-therapist="test-therapist" data-timeslot="10:00">
+            Test Slot<br>Click Me
+        </div>
+        <div id="click-test-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>4. Console Logs</h3>
+        <div id="console-log" style="background: #f5f5f5; padding: 10px; max-height: 200px; overflow-y: scroll;"></div>
+    </div>
+
+    <!-- Booking Modal (copied from main app) -->
+    <div id="bookingModalOverlay" class="modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; min-width: 300px;">
+            <div style="margin-bottom: 15px;">
+                <h3 id="modalTitle">จองเวลา</h3>
+                <button type="button" id="cancelBooking" style="float: right; background: none; border: none; font-size: 20px; cursor: pointer;">×</button>
+            </div>
+            <div>
+                <p>Modal Test Successful!</p>
+                <p>เปิด Modal ได้แล้ว</p>
+                <button type="button" id="closeTestModal" style="padding: 8px 16px; background: #007cba; color: white; border: none; cursor: pointer;">ปิด</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load all scripts -->
+    <script src="config.js"></script>
+    <script src="utils.js"></script>
+    <script src="dataService.js"></script>
+    <script src="calendarRenderer.js"></script>
+    <script src="bookingManager.js"></script>
+    <script src="app.js"></script>
+    
+    <script>
+        // Override console.log to show in page
+        const originalLog = console.log;
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            const logDiv = document.getElementById('console-log');
+            logDiv.innerHTML += '<div>' + args.join(' ') + '</div>';
+            logDiv.scrollTop = logDiv.scrollHeight;
+        };
+        
+        function updateStatus(elementId, message, isSuccess = true) {
+            const el = document.getElementById(elementId);
+            el.innerHTML = `<span class="${isSuccess ? 'success' : 'error'}">${message}</span>`;
+        }
+        
+        async function testApp() {
+            try {
+                updateStatus('init-status', '✅ กำลังโหลดแอป...');
+                
+                // Wait for app to initialize
+                await new Promise(resolve => setTimeout(resolve, 3000));
+                
+                if (window.app) {
+                    updateStatus('init-status', '✅ แอปโหลดสำเร็จ!');
+                    
+                    // Test modal functions
+                    if (typeof window.app.openNewBookingModal === 'function') {
+                        console.log('✅ openNewBookingModal function exists');
+                    } else {
+                        console.log('❌ openNewBookingModal function not found');
+                    }
+                    
+                } else {
+                    updateStatus('init-status', '❌ แอปไม่ได้โหลด', false);
+                }
+            } catch (error) {
+                updateStatus('init-status', '❌ เกิดข้อผิดพลาด: ' + error.message, false);
+                console.error('App test error:', error);
+            }
+        }
+        
+        // Manual modal test
+        document.getElementById('manual-modal-test').addEventListener('click', function() {
+            console.log('🧪 Manual modal test clicked');
+            
+            if (window.app && window.app.openNewBookingModal) {
+                try {
+                    const mockTherapist = { id: 'test-1', name: 'Test Therapist' };
+                    const mockTimeSlot = '10:00';
+                    
+                    window.app.openNewBookingModal(mockTherapist, mockTimeSlot);
+                    updateStatus('manual-test-result', '✅ Modal เปิดสำเร็จ!');
+                    console.log('✅ Manual modal test successful');
+                } catch (error) {
+                    updateStatus('manual-test-result', '❌ ไม่สามารถเปิด modal ได้: ' + error.message, false);
+                    console.error('❌ Manual modal test failed:', error);
+                }
+            } else {
+                updateStatus('manual-test-result', '❌ ฟังก์ชัน openNewBookingModal ไม่พบ', false);
+            }
+        });
+        
+        // Simulated slot click test
+        document.getElementById('test-slot').addEventListener('click', function() {
+            console.log('🧪 Test slot clicked');
+            
+            updateStatus('click-test-result', '✅ คลิกโซลทำงาน!');
+            
+            if (window.app && window.app.openNewBookingModal) {
+                try {
+                    const mockTherapist = { id: 'slot-test', name: 'Slot Test Therapist' };
+                    const mockTimeSlot = '10:00';
+                    
+                    window.app.openNewBookingModal(mockTherapist, mockTimeSlot);
+                    console.log('✅ Slot click modal test successful');
+                } catch (error) {
+                    updateStatus('click-test-result', '❌ เกิดข้อผิดพลาดในการเปิด modal: ' + error.message, false);
+                    console.error('❌ Slot click test failed:', error);
+                }
+            } else {
+                updateStatus('click-test-result', '❌ ฟังก์ชัน openNewBookingModal ไม่พบ', false);
+            }
+        });
+        
+        // Modal close handlers
+        document.getElementById('cancelBooking').addEventListener('click', function() {
+            document.getElementById('bookingModalOverlay').style.display = 'none';
+        });
+        
+        document.getElementById('closeTestModal').addEventListener('click', function() {
+            document.getElementById('bookingModalOverlay').style.display = 'none';
+        });
+        
+        // Start test when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Starting modal tests...');
+            testApp();
+        });
+    </script>
+</body>
+</html>

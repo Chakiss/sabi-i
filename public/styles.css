@@ -203,32 +203,6 @@ html, body {
     overflow: hidden;
 }
 
-/* Therapist Headers */
-.therapist-headers {
-    display: grid;
-    grid-template-columns: 80px repeat(auto-fit, 1fr);
-    background: #f8f9fa;
-    border-bottom: 2px solid #e0e0e0;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-.time-header, .therapist-header {
-    padding: 20px 10px;
-    text-align: center;
-    font-weight: 600;
-    font-size: 18px;
-    border-right: 1px solid #e0e0e0;
-    color: #333;
-}
-
-.therapist-header {
-    background: linear-gradient(135deg, #4c9fff 0%, #6366f1 100%);
-    color: white;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
 /* Calendar Scroll Area */
 .calendar-scroll {
     flex: 1;
@@ -236,11 +210,42 @@ html, body {
     -webkit-overflow-scrolling: touch;
 }
 
-/* Calendar Grid */
-.calendar-grid {
+/* Calendar with Headers - Single Grid */
+.calendar-with-headers {
     display: grid;
-    grid-template-columns: 80px repeat(auto-fit, 1fr);
+    grid-template-columns: 80px repeat(auto-fit, minmax(120px, 1fr));
     min-height: 100%;
+}
+
+/* Header Row Styles (first row of grid) */
+.header-time-cell, .header-therapist-cell {
+    padding: 20px 10px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 18px;
+    border-right: 1px solid #e0e0e0;
+    border-bottom: 2px solid #e0e0e0;
+    background: #f8f9fa;
+    color: #333;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.header-therapist-cell {
+    background: linear-gradient(135deg, #4c9fff 0%, #6366f1 100%);
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Legacy support for old classes */
+.therapist-headers {
+    display: none; /* Hide old header container */
+}
+
+/* Calendar Grid - Remove since we're using .calendar-with-headers now */
+.calendar-grid {
+    display: none; /* Hide old grid container */
 }
 
 /* Time Cells */

@@ -45,49 +45,44 @@
 
             <!-- Calendar Grid -->
             <div id="calendarContainer" class="calendar-container">
-                <!-- Therapist Headers -->
-                <div id="therapistHeaders" class="therapist-headers">
-                    <div class="time-header">เวลา</div>
-                    <!-- Therapist headers will be inserted here by JavaScript -->
-                </div>
-
-                <!-- Scrollable Calendar Grid -->
+                <!-- Scrollable Calendar with Headers -->
                 <div class="calendar-scroll">
-                    <div id="calendarGrid" class="calendar-grid">
-                        <!-- Time rows and booking slots will be inserted here -->
+                    <div id="calendarWithHeaders" class="calendar-with-headers">
+                        <!-- Headers will be inserted as first row by JavaScript -->
                     </div>
                 </div>
             </div>
         </main>
 
         <!-- Booking Modal -->
-        <div id="bookingModal" class="modal hidden">
-            <div class="modal-backdrop"></div>
+        <div id="bookingModalOverlay" class="modal" style="display: none;">
             <div class="modal-content">
                 <div class="modal-header">
                     <h3 id="modalTitle">จองเวลา</h3>
-                    <button id="closeModal" class="close-btn">×</button>
+                    <button type="button" id="cancelBooking" class="close-btn">×</button>
                 </div>
                 <form id="bookingForm" class="modal-body">
+                    <div id="errorMessage" class="error-message" style="display: none; color: red; margin-bottom: 10px;"></div>
+                    
                     <div class="form-group">
-                        <label for="modalTherapist">หมอนวด:</label>
-                        <select id="modalTherapist" class="form-input" required>
+                        <label for="therapistId">หมอนวด:</label>
+                        <select id="therapistId" name="therapistId" class="form-input" required>
                             <!-- Therapist options will be populated by JavaScript -->
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label for="modalStartTime">เริ่มเวลา:</label>
-                        <select id="modalStartTime" class="form-input" required>
+                        <label for="startTime">เริ่มเวลา:</label>
+                        <select id="startTime" name="startTime" class="form-input" required>
                             <!-- Time options will be populated by JavaScript -->
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label for="modalDuration">ระยะเวลา:</label>
-                        <select id="modalDuration" class="form-input" required>
+                        <label for="duration">ระยะเวลา:</label>
+                        <select id="duration" name="duration" class="form-input" required>
                             <option value="30">30 นาที</option>
-                            <option value="60">1 ชั่วโมง</option>
+                            <option value="60" selected>1 ชั่วโมง</option>
                             <option value="90">1.5 ชั่วโมง</option>
                             <option value="120">2 ชั่วโมง</option>
                             <option value="180">3 ชั่วโมง</option>
@@ -95,16 +90,26 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="modalService">บริการ (ถ้ามี):</label>
-                        <select id="modalService" class="form-input">
+                        <label for="endTime">สิ้นสุดเวลา:</label>
+                        <input id="endTime" name="endTime" class="form-input" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="serviceId">บริการ (ถ้ามี):</label>
+                        <select id="serviceId" name="serviceId" class="form-input">
                             <option value="">ไม่ระบุบริการ</option>
                             <!-- Service options will be populated by JavaScript -->
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label for="modalPayment">ช่องทางชำระเงิน (ถ้ามี):</label>
-                        <select id="modalPayment" class="form-input">
+                        <label for="price">ราคา (ถ้ามี):</label>
+                        <input id="price" name="price" type="number" class="form-input" min="0" step="50" placeholder="กรอกราคา">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="paymentMethod">ช่องทางชำระเงิน (ถ้ามี):</label>
+                        <select id="paymentMethod" name="paymentMethod" class="form-input">
                             <option value="">ไม่ระบุ</option>
                             <option value="transfer">โอน</option>
                             <option value="cash">สด</option>
@@ -112,14 +117,14 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="modalNote">หมายเหตุ (ถ้ามี):</label>
-                        <textarea id="modalNote" class="form-input" rows="3"></textarea>
+                        <label for="note">หมายเหตุ (ถ้ามี):</label>
+                        <textarea id="note" name="note" class="form-input" rows="3"></textarea>
                     </div>
 
                     <div class="modal-footer">
                         <button type="button" id="cancelBooking" class="btn btn-secondary">ยกเลิก</button>
-                        <button type="button" id="deleteBooking" class="btn btn-danger hidden">ลบ</button>
-                        <button type="submit" class="btn btn-primary">บันทึก</button>
+                        <button type="button" id="deleteBooking" class="btn btn-danger" style="display: none;">ลบ</button>
+                        <button type="submit" id="saveBooking" class="btn btn-primary">บันทึก</button>
                     </div>
                 </form>
             </div>
@@ -127,7 +132,80 @@
     </div>
 
     <!-- JavaScript -->
+    <script>
+        // Global error handler for debugging
+        window.addEventListener('error', function(e) {
+            console.error('🚨 Global JavaScript Error:', e.error);
+            console.error('🔍 Error details:', {
+                message: e.message,
+                filename: e.filename,
+                line: e.lineno,
+                column: e.colno
+            });
+            
+            // Show user-friendly error message
+            const errorEl = document.getElementById('errorMessage');
+            const errorText = document.querySelector('.error-text');
+            if (errorEl && errorText) {
+                errorText.textContent = 'เกิดข้อผิดพลาดในการโหลดแอป: ' + e.message;
+                errorEl.classList.remove('hidden');
+            }
+        });
+        
+        // Check if all required scripts are loaded before initializing app
+        function checkDependencies() {
+            const missing = [];
+            
+            if (typeof firebase === 'undefined') missing.push('Firebase');
+            if (typeof CONFIG === 'undefined') missing.push('CONFIG');
+            if (typeof db === 'undefined') missing.push('Database');
+            if (typeof SabaiUtils === 'undefined') missing.push('SabaiUtils');
+            if (typeof SabaiDataService === 'undefined') missing.push('SabaiDataService');
+            if (typeof SabaiCalendarRenderer === 'undefined') missing.push('SabaiCalendarRenderer');
+            if (typeof SabaiBookingManager === 'undefined') missing.push('SabaiBookingManager');
+            
+            if (missing.length > 0) {
+                const error = `Missing dependencies: ${missing.join(', ')}`;
+                console.error('❌ Dependency check failed:', error);
+                
+                const errorEl = document.getElementById('errorMessage');
+                const errorText = document.querySelector('.error-text');
+                if (errorEl && errorText) {
+                    errorText.textContent = 'ไม่สามารถโหลดไฟล์ที่จำเป็นได้: ' + missing.join(', ');
+                    errorEl.classList.remove('hidden');
+                }
+                return false;
+            }
+            
+            console.log('✅ All dependencies loaded successfully');
+            return true;
+        }
+        
+        // Wait for DOM and check dependencies
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🌟 DOM Content Loaded - Starting Saba-i Booking Board...');
+            
+            if (checkDependencies()) {
+                try {
+                    window.app = new SabaiBookingBoard();
+                } catch (error) {
+                    console.error('❌ Failed to initialize SabaiBookingBoard:', error);
+                    
+                    const errorEl = document.getElementById('errorMessage');
+                    const errorText = document.querySelector('.error-text');
+                    if (errorEl && errorText) {
+                        errorText.textContent = 'ไม่สามารถเริ่มต้นแอปพลิเคชันได้: ' + error.message;
+                        errorEl.classList.remove('hidden');
+                    }
+                }
+            }
+        });
+    </script>
     <script src="config.js"></script>
+    <script src="utils.js"></script>
+    <script src="dataService.js"></script>
+    <script src="calendarRenderer.js"></script>
+    <script src="bookingManager.js"></script>
     <script src="app.js"></script>
     <script src="init-sample-data.js"></script>
 </body>

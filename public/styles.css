@@ -85,9 +85,9 @@ html, body {
 
 @media (max-width: 768px) {
     .header {
-        padding: 8px 12px;
-        max-height: 10vh; /* จำกัดความสูงไม่เกิน 10% ของจอ */
-        min-height: 60px; /* ความสูงขั้นต่ำ */
+        padding: 12px 16px;
+        max-height: 12vh; /* เพิ่มความสูงสูงสุด */
+        min-height: 80px; /* เพิ่มความสูงขั้นต่ำ */
         overflow: hidden; /* ป้องกันเนื้อหาล้น */
         display: flex;
         align-items: center;
@@ -108,7 +108,7 @@ html, body {
     }
     
     .header-controls {
-        gap: 4px; /* ลด gap */
+        gap: 8px; /* เพิ่ม gap สำหรับ header ที่สูงขึ้น */
         flex-shrink: 0;
         display: flex;
         align-items: center;
@@ -116,10 +116,10 @@ html, body {
     }
     
     .date-nav {
-        padding: 1px; /* ลด padding มากขึ้น */
-        gap: 2px; /* ลด gap มากขึ้น */
+        padding: 4px; /* เพิ่ม padding */
+        gap: 6px; /* เพิ่ม gap */
         background: rgba(255, 255, 255, 0.1);
-        border-radius: 4px; /* ลด radius */
+        border-radius: 6px; /* เพิ่ม radius */
         display: flex;
         align-items: center;
         flex-shrink: 1;
@@ -129,9 +129,9 @@ html, body {
     }
     
     .current-date {
-        font-size: 11px; /* ลด font size */
-        min-width: 70px; /* ลดความกว้างมากขึ้น */
-        padding: 1px 2px; /* ลด padding มากขึ้น */
+        font-size: 14px; /* เพิ่ม font size */
+        min-width: 90px; /* เพิ่มความกว้าง */
+        padding: 4px 6px; /* เพิ่ม padding */
         line-height: 1.2;
         overflow: hidden;
         white-space: nowrap;
@@ -141,13 +141,13 @@ html, body {
     }
     
     .nav-btn {
-        min-height: 24px; /* ลดขนาดมากขึ้น */
-        min-width: 24px;
-        max-height: 24px;
-        max-width: 24px;
-        padding: 1px; /* ลด padding มากขึ้น */
-        font-size: 11px; /* ลด font size */
-        border-radius: 4px; /* ลด radius */
+        min-height: 40px; /* เพิ่มขนาดสำหรับ header ที่สูงขึ้น */
+        min-width: 40px;
+        max-height: 40px;
+        max-width: 40px;
+        padding: 6px; /* เพิ่ม padding */
+        font-size: 16px; /* เพิ่ม font size */
+        border-radius: 8px;
         border-width: 1px;
         display: flex;
         align-items: center;
@@ -164,11 +164,13 @@ html, body {
     }
     
     .settings-btn, .capture-btn {
-        padding: 2px 4px; /* ลด padding มากขึ้น */
-        font-size: 11px; /* ลด font size */
-        min-height: 24px; /* ลดขนาดมากขึ้น */
-        max-height: 24px;
-        border-radius: 4px; /* ลด radius */
+        padding: 6px; /* เพิ่ม padding */
+        font-size: 16px; /* เพิ่ม font size */
+        min-height: 40px; /* เพิ่มขนาดสำหรับ header ที่สูงขึ้น */
+        min-width: 40px;
+        max-height: 40px;
+        max-width: 40px;
+        border-radius: 8px;
         border-width: 1px;
         display: flex;
         align-items: center;
@@ -182,16 +184,16 @@ html, body {
 /* สำหรับจอที่เล็กมาก */
 @media (max-width: 480px) {
     .header {
-        padding: 2px 4px; /* ลด padding header มากขึ้น */
-        max-height: 8vh;
-        min-height: 40px; /* ลดความสูงขั้นต่ำ */
+        padding: 8px 12px; /* เพิ่ม padding header กลับมาให้เหมาะสม */
+        max-height: 10vh;
+        min-height: 80px; /* เพิ่มความสูงขั้นต่ำเป็น 80px */
         overflow: hidden;
         display: flex;
         align-items: center;
     }
     
     .header-compact {
-        gap: 1px; /* ลด gap ให้เล็กที่สุด */
+        gap: 6px; /* เพิ่ม gap ให้เหมาะสมกับ header ที่สูงขึ้น */
         justify-content: center; /* จัดกลาง เนื่องจากไม่มี app-title */
         align-items: center;
         height: 100%;
@@ -201,7 +203,7 @@ html, body {
     }
     
     .header-controls {
-        gap: 1px; /* ลด gap ให้เล็กที่สุด */
+        gap: 6px; /* เพิ่ม gap ให้เหมาะสมกับ header ที่สูงขึ้น */
         flex-shrink: 0;
         display: flex;
         align-items: center;
@@ -209,10 +211,10 @@ html, body {
     }
     
     .header-compact .date-nav {
-        padding: 0px !important; /* ไม่มี padding */
-        gap: 0px !important; /* ไม่มี gap */
+        padding: 4px !important; /* เพิ่ม padding */
+        gap: 4px !important; /* เพิ่ม gap */
         background: rgba(255, 255, 255, 0.1) !important;
-        border-radius: 2px !important; /* ลด radius */
+        border-radius: 6px !important; /* เพิ่ม radius */
         display: flex;
         align-items: center;
         flex-shrink: 1; /* อนุญาตให้หด */
@@ -227,17 +229,17 @@ html, body {
     }
     
     .header-compact .current-date {
-        font-size: 8px !important; /* เพิ่ม font size เล็กน้อย */
-        min-width: 50px !important; /* เพิ่มความกว้าง */
+        font-size: 12px !important; /* เพิ่ม font size ให้อ่านง่าย */
+        min-width: 80px !important; /* เพิ่มความกว้าง */
         max-width: 100% !important; /* ให้ขยายได้เต็มที่ */
-        padding: 0px !important; /* ไม่มี padding */
+        padding: 4px !important; /* เพิ่ม padding */
         overflow: hidden;
         white-space: nowrap;  
         text-overflow: ellipsis;
         order: 2; /* อยู่กลางระหว่างปุ่ม < และ > */
         text-align: center; /* จัดข้อความกลาง */
         flex: 1 !important; /* ขยายเต็มพื้นที่กลาง */
-        margin: 0 2px !important; /* เพิ่ม margin เล็กน้อย */
+        margin: 0 4px !important; /* เพิ่ม margin */
     }
     
     .nav-btn:first-child {
@@ -250,13 +252,13 @@ html, body {
     
     
     .header-compact .nav-btn, .header-compact .settings-btn, .header-compact .capture-btn {
-        min-height: 16px !important; /* ลดขนาดให้เล็กที่สุด */
-        max-height: 16px !important;
-        min-width: 16px !important; /* ลดความกว้างให้เล็กที่สุด */
-        max-width: 16px !important;
-        font-size: 7px !important; /* ลด font size ให้เล็กที่สุด */
-        padding: 0px !important; /* ไม่มี padding */
-        border-radius: 2px !important;
+        min-height: 36px !important; /* เพิ่มขนาดให้เหมาะสมกับ header ที่สูงขึ้น */
+        max-height: 36px !important;
+        min-width: 36px !important;
+        max-width: 36px !important;
+        font-size: 16px !important; /* เพิ่ม font size ให้อ่านง่าย */
+        padding: 4px !important; /* เพิ่ม padding */
+        border-radius: 6px !important;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -273,12 +275,12 @@ html, body {
     }
     
     .header-compact .settings-btn, .header-compact .capture-btn {
-        min-width: 14px !important; /* ลดความกว้างให้เล็กที่สุด */
-        max-width: 14px !important;
-        padding: 0px !important; /* ไม่มี padding */
+        min-width: 36px !important; /* เท่ากับความสูง */
+        max-width: 36px !important;
+        padding: 4px !important; /* เพิ่ม padding */
         white-space: nowrap;
-        font-size: 7px !important;
-        border-radius: 2px !important;
+        font-size: 16px !important;
+        border-radius: 6px !important;
         order: 4; /* ให้อยู่หลัง date-nav */
         margin: 0 !important; /* ไม่มี margin */
     }
@@ -289,18 +291,24 @@ html, body {
     color: white;
     border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: 10px;
-    padding: 8px 12px;
-    font-size: 16px;
+    padding: 8px;
+    font-size: 18px;
     font-weight: 600;
     cursor: pointer;
     user-select: none;
     transition: all 0.2s ease;
     min-height: 40px;
+    min-width: 40px;
+    max-height: 40px;
+    max-width: 40px;
     touch-action: manipulation;
     -webkit-tap-highlight-color: rgba(255, 255, 255, 0.3);
     z-index: 10; /* เพิ่ม z-index */
     position: relative; /* เพิ่ม position */
     flex-shrink: 0; /* ป้องกันการหด */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .settings-btn:hover, .settings-btn:active,
@@ -325,17 +333,22 @@ html, body {
     background: rgba(255, 255, 255, 0.2);
     color: white;
     border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 6px; /* ลด radius */
-    padding: 4px 6px; /* ลด padding */
-    font-size: 12px; /* ลด font size */
+    border-radius: 8px;
+    padding: 8px;
+    font-size: 18px;
     font-weight: 600;
     cursor: pointer;
     user-select: none;
     transition: all 0.2s ease;
-    min-height: 24px; /* ลดขนาด */
-    min-width: 24px; /* ลดขนาด */
+    min-height: 40px;
+    min-width: 40px;
+    max-height: 40px;
+    max-width: 40px;
     touch-action: manipulation;
     -webkit-tap-highlight-color: rgba(255, 255, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .nav-btn:hover, .nav-btn:active {

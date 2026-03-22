@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Summary Report - สบาย Saba-i</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Additional styles for reports page */
+        .reports-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .reports-header {
+            background: linear-gradient(135deg, #4c9fff 0%, #2196f3 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .reports-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .date-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .date-filter-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 25px;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .date-filter-btn:hover,
+        .date-filter-btn.active {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .custom-date-range {
+            display: none;
+            margin-top: 15px;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .custom-date-range.show {
+            display: flex;
+        }
+
+        .custom-date-range input {
+            padding: 8px 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-weight: 500;
+        }
+
+        .custom-date-range input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .reports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .report-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .report-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .report-card h3 {
+            color: #2196f3;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .report-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #4c9fff;
+            margin-bottom: 10px;
+        }
+
+        .report-subtitle {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .data-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .loading-state {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            color: #666;
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4c9fff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-right: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .no-data {
+            text-align: center;
+            color: #999;
+            font-style: italic;
+            padding: 30px;
+        }
+
+        .percentage-bar {
+            background: #e9ecef;
+            border-radius: 10px;
+            height: 8px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .percentage-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4c9fff, #2196f3);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        @media (max-width: 768px) {
+            .reports-container {
+                padding: 15px;
+            }
+
+            .reports-header {
+                padding: 20px;
+            }
+
+            .reports-header h1 {
+                font-size: 2rem;
+            }
+
+            .date-filters {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .date-filter-btn {
+                width: 200px;
+                text-align: center;
+            }
+
+            .reports-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .report-value {
+                font-size: 2rem;
+            }
+
+            .custom-date-range {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="reports-container">
+        <!-- Header with filters -->
+        <div class="reports-header">
+            <h1>📊 สรุปรายงาน</h1>
+            <p id="reportPeriodText">รายงานวันนี้</p>
+            
+            <div class="date-filters">
+                <button class="date-filter-btn active" data-period="today">วันนี้</button>
+                <button class="date-filter-btn" data-period="7days">7 วันที่แล้ว</button>
+                <button class="date-filter-btn" data-period="30days">30 วันที่แล้ว</button>
+                <button class="date-filter-btn" data-period="thisweek">สัปดาห์นี้</button>
+                <button class="date-filter-btn" data-period="thismonth">เดือนนี้</button>
+                <button class="date-filter-btn" data-period="custom">กำหนดเอง</button>
+            </div>
+
+            <div class="custom-date-range" id="customDateRange">
+                <label style="color: white;">จาก:</label>
+                <input type="date" id="fromDate" />
+                <label style="color: white;">ถึง:</label>
+                <input type="date" id="toDate" />
+                <button class="date-filter-btn" onclick="applyCustomDate()">นำไปใช้</button>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="loading-state">
+            <div class="loading-spinner"></div>
+            <span>กำลังโหลดข้อมูล...</span>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="reports-grid" id="reportsGrid" style="display: none;">
+            <!-- Total Revenue Card -->
+            <div class="report-card">
+                <h3>💰 ยอดขายรวม</h3>
+                <div class="report-value" id="totalRevenue">0 ฿</div>
+                <div class="report-subtitle">รายได้ทั้งหมด</div>
+            </div>
+
+            <!-- Total Therapist Fee Card -->
+            <div class="report-card">
+                <h3>👋 ค่ามือรวม</h3>
+                <div class="report-value" id="totalTherapistFee">0 ฿</div>
+                <div class="report-subtitle">ค่ามือหมอทั้งหมด</div>
+            </div>
+
+            <!-- Total Bookings Card -->
+            <div class="report-card">
+                <h3>📅 การจองทั้งหมด</h3>
+                <div class="report-value" id="totalBookings">0</div>
+                <div class="report-subtitle">จำนวนการจองทั้งหมด</div>
+            </div>
+
+            <!-- Average Transaction Card -->
+            <div class="report-card">
+                <h3>📈 ยอดขายเฉลี่ย</h3>
+                <div class="report-value" id="avgTransaction">0 ฿</div>
+                <div class="report-subtitle">ยอดขายเฉลี่ยต่อรายการ</div>
+            </div>
+        </div>
+
+        <!-- Detailed Reports -->
+        <div class="reports-grid" id="detailedReports" style="display: none;">
+            <!-- Revenue by Therapist -->
+            <div class="report-card">
+                <h3>👩‍⚕️ ยอดขายตามหมอ</h3>
+                <div class="chart-container">
+                    <canvas id="revenueByTherapistChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Therapist Fee by Therapist -->
+            <div class="report-card">
+                <h3>💵 ค่ามือตามหมอ</h3>
+                <div class="chart-container">
+                    <canvas id="feeByTherapistChart"></canvas>
+                </div>
+                <div id="feeByTherapistTable" style="margin-top: 20px;"></div>
+            </div>
+
+            <!-- Bookings by Therapist -->
+            <div class="report-card">
+                <h3>📊 จำนวนการจองตามหมอ</h3>
+                <div id="bookingsByTherapistTable"></div>
+            </div>
+
+            <!-- Popular Services -->
+            <div class="report-card">
+                <h3>🔥 บริการยอดนิยม</h3>
+                <div id="popularServicesTable"></div>
+            </div>
+
+            <!-- Peak Hours -->
+            <div class="report-card">
+                <h3>⏰ ช่วงเวลาที่คนมากที่สุด</h3>
+                <div class="chart-container">
+                    <canvas id="peakHoursChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Day of Week Analysis -->
+            <div class="report-card">
+                <h3>📅 การจองตามวันในสัปดาห์</h3>
+                <div class="chart-container">
+                    <canvas id="dayOfWeekChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Therapist Services Breakdown -->
+            <div class="report-card">
+                <h3>🎯 หมอกับบริการที่ได้มากที่สุด</h3>
+                <div id="therapistServicesTable"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include the same dependencies -->
+    <script src="config.js"></script>
+    <script src="utils.js"></script>
+    <script src="dataService.js"></script>
+    <script src="reports.js"></script>
+
+    <script>
+        // Initialize reports when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🌟 Reports page loaded');
+            
+            // Check dependencies
+            if (typeof CONFIG === 'undefined' || typeof SabaiDataService === 'undefined') {
+                console.error('❌ Required dependencies not loaded');
+                return;
+            }
+            
+            try {
+                window.reportsApp = new SabaiReports();
+            } catch (error) {
+                console.error('❌ Failed to initialize Reports:', error);
+            }
+        });
+    </script>
+</body>
+</html>

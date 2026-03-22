@@ -565,6 +565,25 @@ class SabaiBookingManager {
         return null; // No price available
     }
     
+    // Get calculated therapist fee based on service and duration
+    getCalculatedTherapistFee() {
+        const form = document.getElementById('bookingForm');
+        const serviceId = form.serviceId.value;
+        const duration = parseInt(form.duration.value);
+        
+        if (serviceId && duration && this.app && this.app.services) {
+            const service = this.app.services.find(s => s.id === serviceId);
+            if (service && service.durations) {
+                const durationOption = service.durations.find(d => d.duration === duration);
+                if (durationOption && durationOption.therapistFee) {
+                    return durationOption.therapistFee;
+                }
+            }
+        }
+        
+        return null; // No therapist fee available
+    }
+    
     // Calculate final price with discount
     calculateFinalPrice() {
         const basePrice = this.getCalculatedPrice() || 0;
@@ -587,8 +606,9 @@ class SabaiBookingManager {
         const serviceId = document.getElementById('serviceId').value;
         const duration = parseInt(document.getElementById('duration').value);
         
-        console.log('💰 Auto-calculating price for service:', serviceId, 'duration:', duration);
+        console.log('💰 Auto-calculating price and therapist fee for service:', serviceId, 'duration:', duration);
         
+        // Auto-calculate price
         const calculatedPrice = this.getCalculatedPrice();
         if (calculatedPrice) {
             console.log('💰 Auto-calculated price:', calculatedPrice, '฿');
@@ -596,8 +616,19 @@ class SabaiBookingManager {
             console.log('💰 No price available for this service/duration combination');
         }
         
+        // Auto-populate therapist fee
+        const calculatedTherapistFee = this.getCalculatedTherapistFee();
+        const therapistFeeField = document.getElementById('therapistFee');
+        if (calculatedTherapistFee) {
+            therapistFeeField.value = calculatedTherapistFee;
+            console.log('💵 Auto-calculated therapist fee:', calculatedTherapistFee, '฿');
+        } else {
+            therapistFeeField.value = '';
+            console.log('💵 No therapist fee available for this service/duration combination');
+        }
+        
         this.calculateFinalPrice();
-        console.log('💰 Price update complete');
+        console.log('💰 Price and therapist fee update complete');
     }
     // Filter bookings by date
     filterBookingsByDate(bookings, date) {

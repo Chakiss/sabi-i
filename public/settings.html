@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>จัดการระบบ - สบาย Saba-i Booking Board</title>
+    <title>จัดการระบบ - Saba-i Booking Board</title>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -71,7 +71,10 @@
                     <!-- Service List Section -->
                     <div class="settings-section">
                         <h4>รายการบริการ</h4>
-                        <button id="initializeServices" class="btn btn-secondary" style="margin-bottom: 15px;">สร้างข้อมูลบริการเริ่มต้น</button>
+                        <div style="margin-bottom: 15px;">
+                            <button id="initializeServices" class="btn btn-secondary" style="margin-right: 10px;">สร้างข้อมูลบริการเริ่มต้น</button>
+                            <button id="migratePatchTherapistFees" class="btn btn-primary">เติมค่ามือในการจองเก่า</button>
+                        </div>
                         <div id="serviceList" class="service-list">
                             <!-- Service items will be populated by JavaScript -->
                         </div>
@@ -94,7 +97,7 @@
                                 <button type="submit" class="btn btn-primary">เพิ่ม</button>
                             </div>
                             <div id="serviceDurations" class="duration-inputs">
-                                <h5>ระยะเวลาและราคา</h5>
+                                <h5>ระยะเวลา ราคา และค่ามือ</h5>
                                 <div class="duration-row">
                                     <select class="duration-select">
                                         <option value="30">30 นาที</option>
@@ -103,6 +106,7 @@
                                         <option value="120">120 นาที</option>
                                     </select>
                                     <input type="number" class="price-input" placeholder="ราคา (บาท)" min="0">
+                                    <input type="number" class="therapist-fee-input" placeholder="ค่ามือ (บาท)" min="0">
                                     <button type="button" class="btn-remove-duration">×</button>
                                 </div>
                                 <button type="button" id="addDuration" class="btn btn-secondary">+ เพิ่มระยะเวลา</button>

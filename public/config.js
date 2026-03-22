@@ -19,7 +19,7 @@ const db = firebase.firestore();
 const CONFIG = {
     // Shop Hours (24-hour format)
     SHOP_START_HOUR: 10,
-    SHOP_END_HOUR: 22,
+    SHOP_END_HOUR: 22, // เปลี่ยนกลับเป็น 22
     
     // Time slot duration in minutes
     SLOT_DURATION: 30,

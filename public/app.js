@@ -102,15 +102,19 @@ class SabaiBookingBoard {
         const start = CONFIG.SHOP_START_HOUR;
         const end = CONFIG.SHOP_END_HOUR;
         
+        console.log('🕐 App: Initializing time slots:', { start, end });
+        
         for (let hour = start; hour <= end; hour++) {
             for (let minute = 0; minute < 60; minute += CONFIG.SLOT_DURATION) {
-                // Don't add slot at closing time
-                if (hour === end && minute > 0) break;
-                
                 const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
                 this.timeSlots.push(timeString);
+                console.log('➕ App: Added time slot:', timeString);
             }
         }
+        
+        console.log('✅ App: Final time slots:', this.timeSlots);
+        console.log('⏰ App: Last slot:', this.timeSlots[this.timeSlots.length - 1]);
+        console.log('📊 App: Total slots:', this.timeSlots.length);
     }
 
     // Bind event listeners

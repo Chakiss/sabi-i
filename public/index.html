@@ -18,17 +18,19 @@
     <div id="app" class="app-container">
         <!-- Header -->
         <header class="header">
-            <div class="header-top">
-                <h1 class="app-title">Saba-i Booking Board 
-                    <span id="liveIndicator" class="live-indicator">🔴 LIVE</span>
-                </h1>
-                <button id="settingsBtn" class="settings-btn">⚙️ จัดการ</button>
-            </div>
-            <div class="date-nav">
-                <button id="prevDay" class="nav-btn">‹ ก่อนหน้า</button>
-                <span id="selectedDate" class="current-date">Loading...</span>
-                <button id="nextDay" class="nav-btn">ถัดไป ›</button>
-                <button id="captureBtn" class="capture-btn">📷 บันทึกตาราง</button>
+            <div class="header-compact">
+                <h1 class="app-title">Saba-i Booking Board</h1>
+                
+                <div class="header-controls">
+                    <div class="date-nav">
+                        <button id="prevDay" class="nav-btn">‹</button>
+                        <span id="selectedDate" class="current-date">Loading...</span>
+                        <button id="nextDay" class="nav-btn">›</button>
+                    </div>
+                    
+                    <button id="captureBtn" class="capture-btn">📷</button>
+                    <button id="settingsBtn" class="settings-btn">⚙️</button>
+                </div>
             </div>
         </header>
 

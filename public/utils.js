@@ -30,14 +30,19 @@ class SabaiUtils {
         const start = CONFIG.SHOP_START_HOUR;
         const end = CONFIG.SHOP_END_HOUR;
         
+        console.log('🕐 Initializing time slots:', { start, end });
+        
         for (let hour = start; hour <= end; hour++) {
             for (let minute = 0; minute < 60; minute += CONFIG.SLOT_DURATION) {
-                if (hour === end && minute > 0) break;
-                
                 const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
                 timeSlots.push(timeString);
+                console.log('➕ Added time slot:', timeString);
             }
         }
+        
+        console.log('✅ Final time slots:', timeSlots);
+        console.log('⏰ Last slot:', timeSlots[timeSlots.length - 1]);
+        
         return timeSlots;
     }
 

@@ -28,6 +28,7 @@ class SabaiSettingsManager {
         document.getElementById('addServiceForm').addEventListener('submit', (e) => this.handleAddService(e));
         document.getElementById('addDuration').addEventListener('click', () => this.addDurationRow());
         document.getElementById('initializeServices').addEventListener('click', () => this.initializeDefaultServices());
+        document.getElementById('migratePatchTherapistFees').addEventListener('click', () => this.migratePatchTherapistFees());
 
         // Edit service modal
         document.getElementById('closeEditServiceModal').addEventListener('click', () => this.closeEditServiceModal());
@@ -550,6 +551,7 @@ class SabaiSettingsManager {
             <div class="price-option">
                 <div class="duration">${duration.duration} นาที</div>
                 <div class="price">${duration.price} บาท</div>
+                <div class="therapist-fee">ค่ามือ: ${duration.therapistFee || 0} บาท</div>
             </div>
         `).join('');
         
@@ -616,6 +618,7 @@ class SabaiSettingsManager {
                 <option value="120">120 นาที</option>
             </select>
             <input type="number" class="price-input" placeholder="ราคา (บาท)" min="0">
+            <input type="number" class="therapist-fee-input" placeholder="ค่ามือ (บาท)" min="0">
             <button type="button" class="btn-remove-duration">×</button>
         `;
         
@@ -628,7 +631,7 @@ class SabaiSettingsManager {
     }
 
     // Add duration row for editing (with default values)
-    addEditDurationRow(duration = null, price = null) {
+    addEditDurationRow(duration = null, price = null, therapistFee = null) {
         const container = document.getElementById('editServiceDurations');
         
         const durationRow = document.createElement('div');
@@ -643,6 +646,7 @@ class SabaiSettingsManager {
                 <option value="180" ${duration === 180 ? 'selected' : ''}>180 นาที</option>
             </select>
             <input type="number" class="price-input" placeholder="ราคา (บาท)" min="0" value="${price || ''}">
+            <input type="number" class="therapist-fee-input" placeholder="ค่ามือ (บาท)" min="0" value="${therapistFee || ''}">
             <button type="button" class="btn-remove-duration">×</button>
         `;
         
@@ -666,21 +670,22 @@ class SabaiSettingsManager {
             return;
         }
 
-        // Collect duration and price data
+        // Collect duration, price, and therapist fee data
         const durationRows = document.querySelectorAll('.duration-row');
         const durations = [];
         
         for (const row of durationRows) {
             const duration = parseInt(row.querySelector('.duration-select').value);
             const price = parseInt(row.querySelector('.price-input').value);
+            const therapistFee = parseInt(row.querySelector('.therapist-fee-input').value);
             
-            if (duration && price > 0) {
-                durations.push({ duration, price });
+            if (duration && price > 0 && therapistFee >= 0) {
+                durations.push({ duration, price, therapistFee });
             }
         }
         
         if (durations.length === 0) {
-            alert('กรุณาเพิ่มระยะเวลาและราคาอย่างน้อย 1 รายการ');
+            alert('กรุณาเพิ่มระยะเวลา ราคา และค่ามืออย่างน้อย 1 รายการ');
             return;
         }
         
@@ -802,7 +807,7 @@ class SabaiSettingsManager {
         durationsContainer.innerHTML = '';
         
         service.durations.forEach(duration => {
-            this.addEditDurationRow(duration.duration, duration.price);
+            this.addEditDurationRow(duration.duration, duration.price, duration.therapistFee);
         });
         
         // Show modal
@@ -827,21 +832,22 @@ class SabaiSettingsManager {
             return;
         }
         
-        // Collect duration and price data
+        // Collect duration, price, and therapist fee data
         const durationRows = document.querySelectorAll('#editServiceDurations .duration-row');
         const durations = [];
         
         for (const row of durationRows) {
             const duration = parseInt(row.querySelector('.duration-select').value);
             const price = parseInt(row.querySelector('.price-input').value);
+            const therapistFee = parseInt(row.querySelector('.therapist-fee-input').value);
             
-            if (price && price > 0) {
-                durations.push({ duration, price });
+            if (price && price > 0 && therapistFee >= 0) {
+                durations.push({ duration, price, therapistFee });
             }
         }
         
         if (durations.length === 0) {
-            alert('กรุณาเพิ่มอย่างน้อยหนึ่งระยะเวลาพร้อมราคา');
+            alert('กรุณาเพิ่มอย่างน้อยหนึ่งระยะเวลาพร้อมราคาและค่ามือ');
             return;
         }
         
@@ -901,144 +907,121 @@ class SabaiSettingsManager {
         const defaultServices = [
             {
                 id: 'S001',
-                name: 'นวดเท้า (Foot Massage)',
+                name: 'นวดไทย / นวดเท้า (Thai Traditional / Foot Massage)',
                 category: 'traditional',
                 durations: [
-                    { duration: 30, price: 200 },
-                    { duration: 60, price: 300 },
-                    { duration: 90, price: 450 },
-                    { duration: 120, price: 600 }
+                    { duration: 30, price: 290, therapistFee: 60 },
+                    { duration: 60, price: 390, therapistFee: 120 },
+                    { duration: 90, price: 590, therapistFee: 180 },
+                    { duration: 120, price: 790, therapistFee: 240 }
                 ],
                 status: 'active',
                 displayOrder: 1
             },
             {
                 id: 'S002',
-                name: 'นวดไทย (Traditional Thai Massage)',
-                category: 'traditional',
+                name: 'นวดรีดเส้น (Deep Tissue Massage)',
+                category: 'therapeutic',
                 durations: [
-                    { duration: 30, price: 200 },
-                    { duration: 60, price: 300 },
-                    { duration: 90, price: 450 },
-                    { duration: 120, price: 600 }
+                    { duration: 30, price: 390, therapistFee: 90 },
+                    { duration: 60, price: 490, therapistFee: 180 },
+                    { duration: 90, price: 690, therapistFee: 270 },
+                    { duration: 120, price: 890, therapistFee: 360 }
                 ],
                 status: 'active',
                 displayOrder: 2
             },
             {
                 id: 'S003',
-                name: 'นวดรีดเส้น (Deep Tissue Massage)',
+                name: 'นวดคอ บ่า ไหล่ (Neck Shoulder Massage)',
                 category: 'therapeutic',
                 durations: [
-                    { duration: 60, price: 450 },
-                    { duration: 90, price: 670 },
-                    { duration: 120, price: 890 }
+                    { duration: 30, price: 390, therapistFee: 90 },
+                    { duration: 60, price: 490, therapistFee: 180 },
+                    { duration: 90, price: 690, therapistFee: 270 },
+                    { duration: 120, price: 890, therapistFee: 360 }
                 ],
                 status: 'active',
                 displayOrder: 3
             },
             {
                 id: 'S004',
-                name: 'นวดรีดเส้น คอ บ่า ไหล่ (Office Syndrome Relief)',
+                name: 'นวดสปอร์ต (Sports Massage)',
                 category: 'therapeutic',
                 durations: [
-                    { duration: 60, price: 450 },
-                    { duration: 90, price: 670 },
-                    { duration: 120, price: 890 }
+                    { duration: 60, price: 490, therapistFee: 200 },
+                    { duration: 90, price: 690, therapistFee: 300 },
+                    { duration: 120, price: 890, therapistFee: 400 }
                 ],
                 status: 'active',
                 displayOrder: 4
             },
             {
                 id: 'S005',
-                name: 'นวดสปอร์ต (Sports Massage)',
-                category: 'therapeutic',
+                name: 'นวดอโรม่า (Aroma Massage)',
+                category: 'aroma',
                 durations: [
-                    { duration: 60, price: 490 },
-                    { duration: 90, price: 690 },
-                    { duration: 120, price: 890 }
+                    { duration: 60, price: 490, therapistFee: 200 },
+                    { duration: 90, price: 690, therapistFee: 300 },
+                    { duration: 120, price: 890, therapistFee: 400 }
                 ],
                 status: 'active',
                 displayOrder: 5
             },
             {
                 id: 'S006',
-                name: 'นวดไทย + ประคบสมุนไพร (Thai Massage + Herbal Compress)',
+                name: 'นวดอโรม่า + รีดเส้น (Aroma + Deep Tissue)',
                 category: 'combination',
                 durations: [
-                    { duration: 60, price: 590 },
-                    { duration: 90, price: 790 },
-                    { duration: 120, price: 990 }
+                    { duration: 90, price: 790, therapistFee: 300 },
+                    { duration: 120, price: 990, therapistFee: 400 }
                 ],
                 status: 'active',
                 displayOrder: 6
             },
             {
                 id: 'S007',
-                name: 'นวดอโรม่า (Aroma Massage)',
-                category: 'aroma',
+                name: 'นวดอโรม่า + ประคบสมุนไพร (Aroma + Herbal Compress)',
+                category: 'combination',
                 durations: [
-                    { duration: 60, price: 490 },
-                    { duration: 90, price: 690 },
-                    { duration: 120, price: 890 }
+                    { duration: 90, price: 890, therapistFee: 300 },
+                    { duration: 120, price: 1090, therapistFee: 400 }
                 ],
                 status: 'active',
                 displayOrder: 7
             },
             {
                 id: 'S008',
-                name: 'นวดอโรมาพรีเมียม (Aroma Premium)',
-                category: 'aroma',
+                name: 'นวดไทย + ประคบสมุนไพร (Thai Massage + Herbal Compress)',
+                category: 'combination',
                 durations: [
-                    { duration: 60, price: 590 },
-                    { duration: 90, price: 790 },
-                    { duration: 120, price: 990 }
+                    { duration: 60, price: 590, therapistFee: 200 },
+                    { duration: 90, price: 790, therapistFee: 300 },
+                    { duration: 120, price: 990, therapistFee: 400 }
                 ],
                 status: 'active',
                 displayOrder: 8
             },
             {
                 id: 'S009',
-                name: 'นวดอโรม่า + รีดเส้น (Aroma + Deep Tissue)',
-                category: 'combination',
+                name: 'ขัดผิว (Body Scrub)',
+                category: 'spa',
                 durations: [
-                    { duration: 90, price: 790 },
-                    { duration: 120, price: 990 }
+                    { duration: 60, price: 490, therapistFee: 200 }
                 ],
                 status: 'active',
                 displayOrder: 9
             },
             {
                 id: 'S010',
-                name: 'นวดอโรม่า + ประคบสมุนไพร (Aroma + Herbal Compress)',
-                category: 'combination',
-                durations: [
-                    { duration: 90, price: 890 },
-                    { duration: 120, price: 1090 }
-                ],
-                status: 'active',
-                displayOrder: 10
-            },
-            {
-                id: 'S011',
-                name: 'ขัดผิว (Body Scrub: Rice Milk / Charcoal / Gold)',
-                category: 'spa',
-                durations: [
-                    { duration: 60, price: 490 }
-                ],
-                status: 'active',
-                displayOrder: 11
-            },
-            {
-                id: 'S012',
                 name: 'ขัดผิว + อโรมา (Scrub + Aroma Massage)',
                 category: 'combination',
                 durations: [
-                    { duration: 90, price: 890 },
-                    { duration: 120, price: 1090 }
+                    { duration: 90, price: 890, therapistFee: 300 },
+                    { duration: 120, price: 1090, therapistFee: 400 }
                 ],
                 status: 'active',
-                displayOrder: 12
+                displayOrder: 10
             }
         ];
 
@@ -1065,6 +1048,91 @@ class SabaiSettingsManager {
             console.error('Error initializing default services:', error);
             alert('ไม่สามารถสร้างข้อมูลบริการเริ่มต้นได้ กรุณาลองใหม่อีกครั้ง');
         }
+    }
+
+    // Migrate old bookings to add therapist fees
+    async migratePatchTherapistFees() {
+        if (!confirm('คุณต้องการเติมค่ามือในการจองเก่าหรือไม่?\n\nระบบจะอัพเดทการจองที่ยังไม่มีค่ามือให้โดยอัตโนมัติ')) {
+            return;
+        }
+
+        try {
+            // Load services first if not loaded
+            if (!this.services || this.services.length === 0) {
+                await this.loadServices();
+            }
+
+            // Get all bookings without therapistFee but have serviceId
+            const bookingsSnapshot = await db.collection('bookings').get();
+            const bookingsToUpdate = [];
+
+            bookingsSnapshot.docs.forEach(doc => {
+                const booking = { id: doc.id, ...doc.data() };
+                
+                // Check if booking needs migration
+                if ((!booking.therapistFee || booking.therapistFee === 0) && booking.serviceId) {
+                    const service = this.services.find(s => s.id === booking.serviceId);
+                    
+                    if (service && service.durations) {
+                        // Calculate duration if not stored
+                        const duration = booking.duration || this.calculateDuration(booking.startTime, booking.endTime);
+                        const durationOption = service.durations.find(d => d.duration === duration);
+                        
+                        if (durationOption && durationOption.therapistFee !== undefined) {
+                            bookingsToUpdate.push({
+                                id: booking.id,
+                                therapistFee: durationOption.therapistFee,
+                                serviceName: service.name,
+                                duration: duration
+                            });
+                        }
+                    }
+                }
+            });
+
+            if (bookingsToUpdate.length === 0) {
+                alert('ไม่พบการจองที่ต้องการอัพเดท ทุกการจองมีค่ามือครบถ้วนแล้ว');
+                return;
+            }
+
+            // Batch update bookings
+            const batch = db.batch();
+            
+            bookingsToUpdate.forEach(update => {
+                const bookingRef = db.collection('bookings').doc(update.id);
+                batch.update(bookingRef, {
+                    therapistFee: update.therapistFee
+                });
+            });
+
+            await batch.commit();
+
+            // Show results
+            const updateSummary = bookingsToUpdate.map(update => 
+                `- ${update.serviceName} ${update.duration}นาที: ${update.therapistFee}฿`
+            ).join('\n');
+
+            alert(`อัพเดทค่ามือเรียบร้อยแล้ว!\n\nอัพเดท ${bookingsToUpdate.length} การจอง:\n\n${updateSummary}`);
+            
+            console.log('Migration completed:', bookingsToUpdate.length, 'bookings updated');
+
+        } catch (error) {
+            console.error('Error migrating therapist fees:', error);
+            alert('เกิดข้อผิดพลาดในการอัพเดทค่ามือ กรุณาลองใหม่อีกครั้ง');
+        }
+    }
+
+    // Helper function to calculate duration from start and end times
+    calculateDuration(startTime, endTime) {
+        if (!startTime || !endTime) return 60; // default fallback
+        
+        const [startHour, startMinute] = startTime.split(':').map(Number);
+        const [endHour, endMinute] = endTime.split(':').map(Number);
+        
+        const startTotalMinutes = startHour * 60 + startMinute;
+        const endTotalMinutes = endHour * 60 + endMinute;
+        
+        return endTotalMinutes - startTotalMinutes;
     }
 }
 

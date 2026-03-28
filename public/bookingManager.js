@@ -397,36 +397,70 @@ class SabaiBookingManager {
         };
     }
 
-    // Check for booking conflicts
+    // Check for booking conflicts - comprehensive check
     async checkBookingConflict(bookingData, excludeBookingId = null) {
-        const bookings = this.app.bookings;
-        console.log('🗓️ Current bookings:', bookings?.length || 0, 'bookings loaded');
+        console.log('🔍 Starting comprehensive conflict check...');
         
-        if (!bookings || bookings.length === 0) {
-            console.log('✅ No existing bookings, no conflicts possible');
-            return false;
+        // 1. เช็คจาก memory cache ก่อน (รวดเร็ว)
+        const bookings = this.app.bookings;
+        if (bookings && bookings.length > 0) {
+            const newBooking = {
+                therapistId: bookingData.therapistId,
+                startTime: bookingData.startTime,
+                endTime: bookingData.endTime
+            };
+            
+            const cacheConflict = this.dataService.checkBookingConflict(
+                bookings,
+                newBooking,
+                excludeBookingId
+            );
+            
+            if (cacheConflict) {
+                console.log('❌ Conflict detected in memory cache');
+                return true;
+            }
         }
         
-        // Create newBooking object with therapistId and Date objects for comparison
-        const newBooking = {
-            therapistId: bookingData.therapistId,
-            startTime: bookingData.startTime,
-            endTime: bookingData.endTime
-        };
+        // 2. เช็คจาก Firestore โดยตรง (แม่นยำ)
+        try {
+            const firestoreBooking = {
+                therapistId: bookingData.therapistId,
+                dateKey: bookingData.dateKey,
+                startTime: bookingData.startTime,
+                endTime: bookingData.endTime
+            };
+            
+            const firestoreConflict = await this.dataService.checkBookingConflictFromFirestore(
+                firestoreBooking,
+                excludeBookingId
+            );
+            
+            if (firestoreConflict) {
+                console.log('❌ Conflict detected in Firestore');
+                return true;
+            }
+            
+        } catch (error) {
+            console.error('⚠️ Firestore conflict check failed, using cache result:', error);
+            // หาก Firestore check ล้มเหลว ให้ใช้ผลลัพธ์จาก cache
+        }
         
-        console.log('🆚 Checking new booking against existing bookings:', newBooking);
-        
-        return this.dataService.checkBookingConflict(
-            bookings,
-            newBooking,
-            excludeBookingId
-        );
+        console.log('✅ No conflicts found in both cache and Firestore');
+        return false;
     }
 
-    // Create new booking
+    // Create new booking safely
     async createBooking(bookingData) {
-        const bookingId = await this.dataService.createBooking(bookingData);
-        console.log('✅ Booking created with ID:', bookingId, '- real-time listener will update UI automatically');
+        try {
+            // ใช้ createBookingSafely แทน createBooking ปกติ
+            const bookingId = await this.dataService.createBookingSafely(bookingData);
+            console.log('✅ Safe booking created with ID:', bookingId, '- real-time listener will update UI automatically');
+            return bookingId;
+        } catch (error) {
+            console.error('❌ Error creating safe booking:', error);
+            throw error;
+        }
     }
 
     // Update existing booking

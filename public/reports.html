@@ -10,7 +10,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     
     <!-- Chart.js for data visualization -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     
     <link rel="stylesheet" href="styles.css">
     <style>
@@ -137,11 +137,15 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 15px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         .data-table th,
         .data-table td {
-            padding: 12px;
+            padding: 12px 15px;
             text-align: left;
             border-bottom: 1px solid #eee;
         }
@@ -150,10 +154,19 @@
             background: #f8f9fa;
             font-weight: 600;
             color: #333;
+            font-size: 14px;
+        }
+
+        .data-table td {
+            font-size: 14px;
         }
 
         .data-table tbody tr:hover {
             background: #f8f9fa;
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
         }
 
         .loading-state {
@@ -199,6 +212,42 @@
             background: linear-gradient(90deg, #4c9fff, #2196f3);
             border-radius: 10px;
             transition: width 0.5s ease;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .data-table th,
+        .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .data-table td {
+            font-size: 14px;
+        }
+        
+        .data-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
         }
 
         @media (max-width: 768px) {
@@ -353,6 +402,60 @@
                 <h3>🎯 หมอกับบริการที่ได้มากที่สุด</h3>
                 <div id="therapistServicesTable"></div>
             </div>
+
+            <!-- Therapist Utilization Rate -->
+            <div class="report-card">
+                <h3>⚡ อัตราการใช้งานหมอ</h3>
+                <div class="chart-container">
+                    <canvas id="therapistUtilizationChart"></canvas>
+                </div>
+                <div id="utilizationSummary" style="margin-top: 15px;"></div>
+            </div>
+
+            <!-- Peak Hour Staffing Analysis -->
+            <div class="report-card">
+                <h3>👥 การจัดพนักงานช่วงเวลาเร่งด่วน</h3>
+                <div class="chart-container">
+                    <canvas id="peakStaffingChart"></canvas>
+                </div>
+                <div id="staffingRecommendations" style="margin-top: 15px;"></div>
+            </div>
+
+            <!-- Service ROI Analysis -->
+            <div class="report-card">
+                <h3>💎 การวิเคราะห์ ROI บริการ</h3>
+                <div class="chart-container">
+                    <canvas id="serviceROIChart"></canvas>
+                </div>
+                <div id="roiTable" style="margin-top: 15px;"></div>
+            </div>
+
+            <!-- Demand Forecasting -->
+            <div class="report-card">
+                <h3>🔮 การคาดการณ์ความต้องการ</h3>
+                <div class="chart-container">
+                    <canvas id="demandForecastChart"></canvas>
+                </div>
+                <div id="forecastSummary" style="margin-top: 15px;"></div>
+            </div>
+
+            <!-- Seasonal Trends -->
+            <div class="report-card">
+                <h3>🌟 แนวโน้มตามฤดูกาล</h3>
+                <div class="chart-container">
+                    <canvas id="seasonalTrendsChart"></canvas>
+                </div>
+                <div id="seasonalInsights" style="margin-top: 15px;"></div>
+            </div>
+
+            <!-- Growth Projections -->
+            <div class="report-card">
+                <h3>📈 การคาดการณ์การเติบโต</h3>
+                <div class="chart-container">
+                    <canvas id="growthProjectionChart"></canvas>
+                </div>
+                <div id="growthMetrics" style="margin-top: 15px;"></div>
+            </div>
         </div>
     </div>
 
@@ -370,6 +473,11 @@
             // Check dependencies
             if (typeof CONFIG === 'undefined' || typeof SabaiDataService === 'undefined') {
                 console.error('❌ Required dependencies not loaded');
+                return;
+            }
+            
+            if (typeof SabaiReports === 'undefined') {
+                console.error('❌ SabaiReports class not loaded');
                 return;
             }
             

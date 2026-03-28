@@ -203,6 +203,22 @@ class SabaiReports {
         }
     }
 
+    destroyAllCharts() {
+        console.log('🗑️ Destroying existing charts...');
+        Object.keys(this.charts).forEach(chartName => {
+            if (this.charts[chartName] instanceof Chart) {
+                try {
+                    this.charts[chartName].destroy();
+                    console.log(`✅ Destroyed chart: ${chartName}`);
+                } catch (error) {
+                    console.warn(`⚠️ Error destroying chart ${chartName}:`, error);
+                }
+                this.charts[chartName] = null;
+            }
+        });
+        this.charts = {};
+    }
+
     async generateReport() {
         console.log('🔄 Generating report...');
         
@@ -213,6 +229,9 @@ class SabaiReports {
             // Load bookings for the selected period
             await this.loadBookingsForPeriod();
             
+            // Destroy all existing charts before creating new ones
+            this.destroyAllCharts();
+            
             // Generate all reports
             this.generateSummaryCards();
             this.generateRevenueByTherapist();
@@ -222,6 +241,12 @@ class SabaiReports {
             this.generatePeakHours();
             this.generateDayOfWeekAnalysis();
             this.generateTherapistServicesBreakdown();
+            this.generateTherapistUtilization();
+            this.generatePeakStaffingAnalysis();
+            this.generateServiceROIAnalysis();
+            this.generateDemandForecasting();
+            this.generateSeasonalTrends();
+            this.generateGrowthProjections();
             
             // Show results
             this.showLoading(false);
@@ -353,8 +378,9 @@ class SabaiReports {
         const ctx = document.getElementById('revenueByTherapistChart').getContext('2d');
         
         // Destroy existing chart if it exists
-        if (this.charts.revenueByTherapist) {
+        if (this.charts.revenueByTherapist instanceof Chart) {
             this.charts.revenueByTherapist.destroy();
+            this.charts.revenueByTherapist = null;
         }
         
         this.charts.revenueByTherapist = new Chart(ctx, {
@@ -364,11 +390,22 @@ class SabaiReports {
                 datasets: [{
                     data: Object.values(revenueByTherapist),
                     backgroundColor: [
-                        '#4c9fff', '#2196f3', '#03a9f4', '#00bcd4',
-                        '#009688', '#4caf50', '#8bc34a', '#cddc39',
-                        '#ffeb3b', '#ffc107', '#ff9800', '#ff5722'
+                        '#FF6B6B', // แดงอมชมพู
+                        '#4ECDC4', // เขียวอมฟ้า
+                        '#45B7D1', // น้ำเงินสด
+                        '#96CEB4', // เขียวอ่อน
+                        '#FECA57', // เหลืองสด
+                        '#FF9FF3', // ชมพูสด
+                        '#54A0FF', // ฟ้าสด
+                        '#5F27CD', // ม่วงเข้ม
+                        '#00D2D3', // เขียวมิ้นต์
+                        '#FF9F43', // ส้มสด
+                        '#EE5A6F', // แดงสด
+                        '#C44569'  // แดงม่วง
                     ],
-                    borderWidth: 0
+                    borderWidth: 0,
+                    hoverBorderWidth: 3,
+                    hoverBorderColor: '#fff'
                 }]
             },
             options: {
@@ -376,16 +413,42 @@ class SabaiReports {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        position: 'bottom'
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true,
+                            font: {
+                                size: 12,
+                                weight: '500'
+                            }
+                        }
                     },
                     tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        caretPadding: 10,
                         callbacks: {
                             label: function(context) {
                                 const value = context.parsed;
-                                return context.label + ': ' + value.toLocaleString() + ' ฿';
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return context.label + ': ' + value.toLocaleString() + ' ฿ (' + percentage + '%)';
                             }
                         }
                     }
+                },
+                animation: {
+                    animateRotate: true,
+                    animateScale: true,
+                    duration: 1000
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
                 }
             }
         });
@@ -409,8 +472,9 @@ class SabaiReports {
         const ctx = document.getElementById('feeByTherapistChart').getContext('2d');
         
         // Destroy existing chart if it exists
-        if (this.charts.feeByTherapist) {
+        if (this.charts.feeByTherapist instanceof Chart) {
             this.charts.feeByTherapist.destroy();
+            this.charts.feeByTherapist = null;
         }
         
         this.charts.feeByTherapist = new Chart(ctx, {
@@ -420,9 +484,28 @@ class SabaiReports {
                 datasets: [{
                     label: 'ค่ามือหมอ (฿)',
                     data: Object.values(feeByTherapist),
-                    backgroundColor: 'rgba(76, 159, 255, 0.8)',
-                    borderColor: 'rgba(76, 159, 255, 1)',
-                    borderWidth: 1
+                    backgroundColor: [
+                        '#FF6B6B', // แดงอมชมพู
+                        '#4ECDC4', // เขียวอมฟ้า
+                        '#45B7D1', // น้ำเงินสด
+                        '#96CEB4', // เขียวอ่อน
+                        '#FECA57', // เหลืองสด
+                        '#FF9FF3', // ชมพูสด
+                        '#54A0FF', // ฟ้าสด
+                        '#5F27CD', // ม่วงเข้ม
+                        '#00D2D3', // เขียวมิ้นต์
+                        '#FF9F43', // ส้มสด
+                        '#EE5A6F', // แดงสด
+                        '#C44569'  // แดงม่วง
+                    ],
+                    borderColor: [
+                        '#FF5252', '#26A69A', '#2196F3', '#66BB6A',
+                        '#FFA726', '#EC407A', '#42A5F5', '#7E57C2',
+                        '#26C6DA', '#FF7043', '#EF5350', '#AB47BC'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 6,
+                    borderSkipped: false
                 }]
             },
             options: {
@@ -431,9 +514,25 @@ class SabaiReports {
                 scales: {
                     y: {
                         beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        },
                         ticks: {
                             callback: function(value) {
                                 return value.toLocaleString() + ' ฿';
+                            },
+                            font: {
+                                weight: '500'
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                weight: '500'
                             }
                         }
                     }
@@ -443,12 +542,23 @@ class SabaiReports {
                         display: false
                     },
                     tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        caretPadding: 10,
                         callbacks: {
                             label: function(context) {
                                 return 'ค่ามือหมอ: ' + context.parsed.y.toLocaleString() + ' ฿';
                             }
                         }
                     }
+                },
+                animation: {
+                    duration: 1000,
+                    easing: 'easeOutBounce'
                 }
             }
         });
@@ -631,8 +741,9 @@ class SabaiReports {
         const ctx = document.getElementById('peakHoursChart').getContext('2d');
         
         // Destroy existing chart if it exists
-        if (this.charts.peakHours) {
+        if (this.charts.peakHours instanceof Chart) {
             this.charts.peakHours.destroy();
+            this.charts.peakHours = null;
         }
         
         this.charts.peakHours = new Chart(ctx, {
@@ -642,11 +753,18 @@ class SabaiReports {
                 datasets: [{
                     label: 'จำนวนการจอง',
                     data: Object.values(hourlyBookings),
-                    borderColor: '#4c9fff',
-                    backgroundColor: 'rgba(76, 159, 255, 0.1)',
-                    borderWidth: 3,
+                    borderColor: '#FF6B6B',
+                    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                    borderWidth: 4,
                     fill: true,
-                    tension: 0.4
+                    tension: 0.4,
+                    pointBackgroundColor: '#FF6B6B',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 3,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    pointHoverBackgroundColor: '#FF5252',
+                    pointHoverBorderColor: '#fff'
                 }]
             },
             options: {
@@ -655,14 +773,60 @@ class SabaiReports {
                 scales: {
                     y: {
                         beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        },
                         ticks: {
-                            stepSize: 1
+                            stepSize: 1,
+                            font: {
+                                weight: '500'
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            font: {
+                                weight: '500'
+                            }
                         }
                     }
                 },
                 plugins: {
                     legend: {
                         display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        caretPadding: 10,
+                        callbacks: {
+                            label: function(context) {
+                                const count = context.parsed.y;
+                                return `เวลา ${context.label}: ${count} การจอง`;
+                            },
+                            afterLabel: function(context) {
+                                const data = context.dataset.data;
+                                const max = Math.max(...data);
+                                if (context.parsed.y === max && max > 0) return `🚀 Peak Hour!`;
+                                return '';
+                            }
+                        }
+                    }
+                },
+                animation: {
+                    duration: 1500,
+                    easing: 'easeInOutQuart'
+                },
+                elements: {
+                    line: {
+                        capBezierPoints: false
                     }
                 }
             }
@@ -684,8 +848,9 @@ class SabaiReports {
         const ctx = document.getElementById('dayOfWeekChart').getContext('2d');
         
         // Destroy existing chart if it exists
-        if (this.charts.dayOfWeek) {
+        if (this.charts.dayOfWeek instanceof Chart) {
             this.charts.dayOfWeek.destroy();
+            this.charts.dayOfWeek = null;
         }
         
         this.charts.dayOfWeek = new Chart(ctx, {
@@ -696,13 +861,24 @@ class SabaiReports {
                     label: 'จำนวนการจอง',
                     data: dayBookings,
                     backgroundColor: dayNames.map((_, index) => {
+                        const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', '#FF9FF3', '#54A0FF'];
                         const max = Math.max(...dayBookings);
                         const min = Math.min(...dayBookings);
-                        if (dayBookings[index] === max) return '#4caf50';
-                        if (dayBookings[index] === min) return '#f44336';
-                        return 'rgba(76, 159, 255, 0.8)';
+                        if (dayBookings[index] === max && max > 0) return '#4CAF50'; // เขียวสำหรับค่าที่มากที่สุด
+                        if (dayBookings[index] === min && dayBookings.some(x => x > 0)) return '#F44336'; // แดงสำหรับค่าที่น้อยที่สุด
+                        return colors[index % colors.length];
                     }),
-                    borderWidth: 0
+                    borderColor: dayNames.map((_, index) => {
+                        const borders = ['#FF5252', '#26A69A', '#2196F3', '#66BB6A', '#FFA726', '#EC407A', '#42A5F5'];
+                        const max = Math.max(...dayBookings);
+                        const min = Math.min(...dayBookings);
+                        if (dayBookings[index] === max && max > 0) return '#388E3C';
+                        if (dayBookings[index] === min && dayBookings.some(x => x > 0)) return '#D32F2F';
+                        return borders[index % borders.length];
+                    }),
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    borderSkipped: false
                 }]
             },
             options: {
@@ -711,15 +887,54 @@ class SabaiReports {
                 scales: {
                     y: {
                         beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        },
                         ticks: {
-                            stepSize: 1
+                            stepSize: 1,
+                            font: {
+                                weight: '500'
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                weight: '500'
+                            }
                         }
                     }
                 },
                 plugins: {
                     legend: {
                         display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        caretPadding: 10,
+                        callbacks: {
+                            afterLabel: function(context) {
+                                const data = context.dataset.data;
+                                const max = Math.max(...data);
+                                const min = Math.min(...data.filter(x => x > 0));
+                                if (context.parsed.y === max && max > 0) return '🔥 วันที่คนมากที่สุด';
+                                if (context.parsed.y === min && data.some(x => x > 0)) return '📉 วันที่คนน้อยที่สุด';
+                                return '';
+                            }
+                        }
                     }
+                },
+                animation: {
+                    duration: 1200,
+                    easing: 'easeOutElastic'
                 }
             }
         });
@@ -869,6 +1084,763 @@ class SabaiReports {
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
+    }
+
+    generateTherapistUtilization() {
+        const therapistWorkHours = {};
+        const totalAvailableHours = 12; // 10 AM to 10 PM
+        
+        // Calculate actual working hours per therapist
+        this.bookings.forEach(booking => {
+            const therapistId = booking.therapistId;
+            const therapist = this.therapists.find(t => t.id === therapistId);
+            const therapistName = therapist ? therapist.name : 'ไม่ทราบ';
+            
+            if (!therapistWorkHours[therapistName]) {
+                therapistWorkHours[therapistName] = 0;
+            }
+            
+            const duration = booking.duration || 60;
+            therapistWorkHours[therapistName] += duration / 60; // Convert to hours
+        });
+        
+        // Calculate utilization rate for each therapist
+        const utilizationData = Object.entries(therapistWorkHours).map(([name, hours]) => {
+            const daysInPeriod = Math.ceil((this.currentEndDate - this.currentStartDate) / (1000 * 60 * 60 * 24));
+            const totalPossibleHours = totalAvailableHours * daysInPeriod;
+            const utilizationRate = (hours / totalPossibleHours) * 100;
+            
+            return {
+                name,
+                hours: hours.toFixed(1),
+                utilizationRate: Math.min(utilizationRate, 100).toFixed(1)
+            };
+        });
+        
+        utilizationData.sort((a, b) => parseFloat(b.utilizationRate) - parseFloat(a.utilizationRate));
+        
+        const ctx = document.getElementById('therapistUtilizationChart').getContext('2d');
+        
+        // Destroy existing chart properly
+        if (this.charts.therapistUtilization instanceof Chart) {
+            this.charts.therapistUtilization.destroy();
+            this.charts.therapistUtilization = null;
+        }
+        
+        this.charts.therapistUtilization = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: utilizationData.map(d => d.name),
+                datasets: [{
+                    label: 'อัตราการใช้งาน (%)',
+                    data: utilizationData.map(d => parseFloat(d.utilizationRate)),
+                    backgroundColor: utilizationData.map(d => {
+                        const rate = parseFloat(d.utilizationRate);
+                        if (rate >= 80) return '#4CAF50'; // Green for high utilization
+                        if (rate >= 60) return '#FF9800'; // Orange for medium
+                        return '#F44336'; // Red for low utilization
+                    }),
+                    borderColor: '#fff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const data = utilizationData[context.dataIndex];
+                                return `อัตราการใช้งาน: ${data.utilizationRate}% (${data.hours} ชั่วโมง)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Generate summary
+        let summaryHTML = `
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                <h4 style="margin-bottom: 10px; color: #333;">📊 สรุปอัตราการใช้งาน</h4>
+        `;
+        
+        utilizationData.forEach(data => {
+            const rate = parseFloat(data.utilizationRate);
+            const status = rate >= 80 ? '🟢 สูง' : rate >= 60 ? '🟠 ปานกลาง' : '🔴 ต่ำ';
+            summaryHTML += `<p><strong>${data.name}:</strong> ${data.utilizationRate}% ${status}</p>`;
+        });
+        
+        summaryHTML += '</div>';
+        document.getElementById('utilizationSummary').innerHTML = summaryHTML;
+    }
+
+    generatePeakStaffingAnalysis() {
+        const hourlyDemand = {};
+        const hourlyTherapists = {};
+        
+        // Initialize hours
+        for (let hour = 10; hour <= 22; hour++) {
+            hourlyDemand[hour] = 0;
+            hourlyTherapists[hour] = new Set();
+        }
+        
+        this.bookings.forEach(booking => {
+            if (booking.startTime && booking.startTime.seconds) {
+                const startDate = new Date(booking.startTime.seconds * 1000);
+                const hour = startDate.getHours();
+                
+                if (hourlyDemand[hour] !== undefined) {
+                    hourlyDemand[hour]++;
+                    hourlyTherapists[hour].add(booking.therapistId);
+                }
+            }
+        });
+        
+        const staffingData = Object.keys(hourlyDemand).map(hour => ({
+            hour: `${hour}:00`,
+            demand: hourlyDemand[hour],
+            therapists: hourlyTherapists[hour].size,
+            ratio: hourlyTherapists[hour].size > 0 ? 
+                   (hourlyDemand[hour] / hourlyTherapists[hour].size).toFixed(1) : 0
+        }));
+        
+        const ctx = document.getElementById('peakStaffingChart').getContext('2d');
+        
+        if (this.charts.peakStaffing instanceof Chart) {
+            this.charts.peakStaffing.destroy();
+            this.charts.peakStaffing = null;
+        }
+        
+        this.charts.peakStaffing = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: staffingData.map(d => d.hour),
+                datasets: [
+                    {
+                        label: 'ความต้องการ (การจอง)',
+                        data: staffingData.map(d => d.demand),
+                        borderColor: '#FF6B6B',
+                        backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'จำนวนหมอที่ทำงาน',
+                        data: staffingData.map(d => d.therapists),
+                        borderColor: '#4ECDC4',
+                        backgroundColor: 'rgba(78, 205, 196, 0.1)',
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'จำนวนการจอง'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'จำนวนหมอ'
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            afterBody: function(context) {
+                                const index = context[0].dataIndex;
+                                const ratio = staffingData[index].ratio;
+                                return `อัตราส่วน: ${ratio} การจอง/หมอ`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Generate recommendations
+        const peakHours = staffingData.filter(d => parseFloat(d.ratio) > 1.5);
+        let recommendationsHTML = `
+            <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; border-left: 4px solid #2196f3;">
+                <h4 style="margin-bottom: 10px; color: #1976d2;">💡 คำแนะนำการจัดพนักงาน</h4>
+        `;
+        
+        if (peakHours.length > 0) {
+            recommendationsHTML += '<p><strong>ช่วงเวลาที่ต้องเพิ่มหมอ:</strong></p><ul>';
+            peakHours.forEach(hour => {
+                recommendationsHTML += `<li>${hour.hour} - อัตราส่วน ${hour.ratio} การจอง/หมอ</li>`;
+            });
+            recommendationsHTML += '</ul>';
+        } else {
+            recommendationsHTML += '<p>✅ การจัดพนักงานเหมาะสมในช่วงเวลาทั้งหมด</p>';
+        }
+        
+        recommendationsHTML += '</div>';
+        document.getElementById('staffingRecommendations').innerHTML = recommendationsHTML;
+    }
+
+    generateServiceROIAnalysis() {
+        const serviceROI = {};
+        
+        this.bookings.forEach(booking => {
+            if (booking.serviceId && booking.price) {
+                const service = this.services.find(s => s.id === booking.serviceId);
+                const serviceName = service ? service.name : 'ไม่ระบุ';
+                
+                if (!serviceROI[serviceName]) {
+                    serviceROI[serviceName] = {
+                        revenue: 0,
+                        cost: 0,
+                        count: 0,
+                        duration: 0
+                    };
+                }
+                
+                const revenue = booking.price * (1 - (booking.discount || 0) / 100);
+                const therapistCost = booking.therapistFee || 0;
+                
+                serviceROI[serviceName].revenue += revenue;
+                serviceROI[serviceName].cost += therapistCost;
+                serviceROI[serviceName].count += 1;
+                serviceROI[serviceName].duration += booking.duration || 60;
+            }
+        });
+        
+        const roiData = Object.entries(serviceROI).map(([name, data]) => {
+            const profit = data.revenue - data.cost;
+            const roi = data.cost > 0 ? ((profit / data.cost) * 100) : 0;
+            const avgDuration = data.duration / data.count;
+            const revenuePerHour = (data.revenue / data.duration) * 60;
+            
+            return {
+                name,
+                revenue: data.revenue,
+                cost: data.cost,
+                profit,
+                roi: roi.toFixed(1),
+                count: data.count,
+                revenuePerHour: revenuePerHour.toFixed(0)
+            };
+        }).sort((a, b) => parseFloat(b.roi) - parseFloat(a.roi));
+        
+        const ctx = document.getElementById('serviceROIChart').getContext('2d');
+        
+        if (this.charts.serviceROI instanceof Chart) {
+            this.charts.serviceROI.destroy();
+            this.charts.serviceROI = null;
+        }
+        
+        this.charts.serviceROI = new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'บริการ',
+                    data: roiData.map(d => ({
+                        x: parseFloat(d.revenuePerHour),
+                        y: parseFloat(d.roi),
+                        service: d.name,
+                        count: d.count
+                    })),
+                    backgroundColor: roiData.map((_, index) => {
+                        const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', '#FF9FF3'];
+                        return colors[index % colors.length];
+                    }),
+                    pointRadius: roiData.map(d => Math.max(5, Math.min(15, d.count))),
+                    pointHoverRadius: roiData.map(d => Math.max(8, Math.min(20, d.count + 3)))
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'รายได้ต่อชั่วโมง (฿)'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'ROI (%)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: function(context) {
+                                return context[0].raw.service;
+                            },
+                            label: function(context) {
+                                const data = context.raw;
+                                return [
+                                    `รายได้/ชม: ${data.x} ฿`,
+                                    `ROI: ${data.y}%`,
+                                    `จำนวนครั้ง: ${data.count}`
+                                ];
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Generate ROI table
+        let tableHTML = `
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>บริการ</th>
+                        <th>ROI (%)</th>
+                        <th>รายได้/ชม</th>
+                        <th>กำไร</th>
+                        <th>จำนวนครั้ง</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        roiData.slice(0, 10).forEach(service => {
+            const roiClass = parseFloat(service.roi) >= 100 ? 'success' : 
+                           parseFloat(service.roi) >= 50 ? 'warning' : 'danger';
+            tableHTML += `
+                <tr>
+                    <td>${service.name}</td>
+                    <td style="color: ${parseFloat(service.roi) >= 100 ? 'green' : parseFloat(service.roi) >= 50 ? 'orange' : 'red'}">
+                        ${service.roi}%
+                    </td>
+                    <td>${service.revenuePerHour} ฿</td>
+                    <td>${service.profit.toLocaleString()} ฿</td>
+                    <td>${service.count}</td>
+                </tr>
+            `;
+        });
+        
+        tableHTML += '</tbody></table>';
+        document.getElementById('roiTable').innerHTML = tableHTML;
+    }
+
+    generateDemandForecasting() {
+        // Simple forecasting based on recent trends
+        const dailyBookings = {};
+        const dates = [];
+        
+        // Get last 30 days of data for forecasting
+        const today = new Date();
+        for (let i = 30; i >= 0; i--) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - i);
+            const dateKey = SabaiUtils.formatDateKey(date);
+            dailyBookings[dateKey] = 0;
+            dates.push(dateKey);
+        }
+        
+        // Count bookings per day
+        this.bookings.forEach(booking => {
+            if (booking.startTime && booking.startTime.seconds) {
+                const bookingDate = new Date(booking.startTime.seconds * 1000);
+                const dateKey = SabaiUtils.formatDateKey(bookingDate);
+                if (dailyBookings[dateKey] !== undefined) {
+                    dailyBookings[dateKey]++;
+                }
+            }
+        });
+        
+        // Calculate moving average for trend
+        const values = Object.values(dailyBookings);
+        const movingAverage = [];
+        const window = 7; // 7-day moving average
+        
+        for (let i = window - 1; i < values.length; i++) {
+            const sum = values.slice(i - window + 1, i + 1).reduce((a, b) => a + b, 0);
+            movingAverage.push(sum / window);
+        }
+        
+        // Simple linear projection for next 7 days
+        const recentTrend = movingAverage.slice(-7);
+        const avgGrowth = recentTrend.length > 1 ? 
+            (recentTrend[recentTrend.length - 1] - recentTrend[0]) / (recentTrend.length - 1) : 0;
+        
+        const forecast = [];
+        const lastValue = recentTrend[recentTrend.length - 1] || 0;
+        
+        for (let i = 1; i <= 7; i++) {
+            forecast.push(Math.max(0, lastValue + (avgGrowth * i)));
+        }
+        
+        const ctx = document.getElementById('demandForecastChart').getContext('2d');
+        
+        if (this.charts.demandForecast instanceof Chart) {
+            this.charts.demandForecast.destroy();
+            this.charts.demandForecast = null;
+        }
+        
+        const labels = [...dates.slice(-14), ...Array.from({length: 7}, (_, i) => {
+            const futureDate = new Date(today);
+            futureDate.setDate(futureDate.getDate() + i + 1);
+            return SabaiUtils.formatDateKey(futureDate);
+        })];
+        
+        this.charts.demandForecast = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels.map(date => {
+                    const d = new Date(date);
+                    return `${d.getDate()}/${d.getMonth() + 1}`;
+                }),
+                datasets: [
+                    {
+                        label: 'ข้อมูลจริง',
+                        data: [...Object.values(dailyBookings).slice(-14), ...Array(7).fill(null)],
+                        borderColor: '#4ECDC4',
+                        backgroundColor: 'rgba(78, 205, 196, 0.1)',
+                        borderWidth: 3
+                    },
+                    {
+                        label: 'คาดการณ์',
+                        data: [...Array(14).fill(null), ...forecast],
+                        borderColor: '#FF6B6B',
+                        backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                        borderDash: [5, 5],
+                        borderWidth: 3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'จำนวนการจอง'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Generate forecast summary
+        const avgForecast = forecast.reduce((a, b) => a + b, 0) / forecast.length;
+        const currentAvg = recentTrend.reduce((a, b) => a + b, 0) / recentTrend.length;
+        const growthRate = currentAvg > 0 ? ((avgForecast - currentAvg) / currentAvg * 100) : 0;
+        
+        let summaryHTML = `
+            <div style="background: #f3e5f5; padding: 15px; border-radius: 8px; border-left: 4px solid #9c27b0;">
+                <h4 style="margin-bottom: 10px; color: #7b1fa2;">🔮 การคาดการณ์ 7 วันข้างหน้า</h4>
+                <p><strong>การจองเฉลี่ยต่อวัน:</strong> ${avgForecast.toFixed(1)} ครั้ง</p>
+                <p><strong>แนวโน้มการเติบโต:</strong> ${growthRate >= 0 ? '+' : ''}${growthRate.toFixed(1)}%</p>
+                <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                    📊 การคาดการณ์อิงจากข้อมูล 7 วันล่าสุดและแนวโน้มการเติบโต
+                </p>
+            </div>
+        `;
+        
+        document.getElementById('forecastSummary').innerHTML = summaryHTML;
+    }
+
+    generateSeasonalTrends() {
+        // Analyze seasonal patterns by month
+        const monthlyData = {};
+        const monthNames = [
+            'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+            'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
+        ];
+        
+        // Initialize months
+        monthNames.forEach((month, index) => {
+            monthlyData[index] = {
+                bookings: 0,
+                revenue: 0,
+                avgTransaction: 0
+            };
+        });
+        
+        this.bookings.forEach(booking => {
+            if (booking.startTime && booking.startTime.seconds) {
+                const bookingDate = new Date(booking.startTime.seconds * 1000);
+                const month = bookingDate.getMonth();
+                
+                const revenue = (booking.price || 0) * (1 - (booking.discount || 0) / 100);
+                
+                monthlyData[month].bookings += 1;
+                monthlyData[month].revenue += revenue;
+            }
+        });
+        
+        // Calculate average transaction
+        Object.keys(monthlyData).forEach(month => {
+            const data = monthlyData[month];
+            data.avgTransaction = data.bookings > 0 ? data.revenue / data.bookings : 0;
+        });
+        
+        const ctx = document.getElementById('seasonalTrendsChart').getContext('2d');
+        
+        if (this.charts.seasonalTrends instanceof Chart) {
+            this.charts.seasonalTrends.destroy();
+            this.charts.seasonalTrends = null;
+        }
+        
+        this.charts.seasonalTrends = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: monthNames,
+                datasets: [
+                    {
+                        label: 'จำนวนการจอง',
+                        data: Object.values(monthlyData).map(d => d.bookings),
+                        borderColor: '#4ECDC4',
+                        backgroundColor: 'rgba(78, 205, 196, 0.1)',
+                        yAxisID: 'y',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'รายได้ (พัน฿)',
+                        data: Object.values(monthlyData).map(d => d.revenue / 1000),
+                        borderColor: '#FF6B6B',
+                        backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                        yAxisID: 'y1',
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'จำนวนการจอง'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'รายได้ (พัน฿)'
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    }
+                }
+            }
+        });
+        
+        // Find peak and low seasons
+        const sortedMonths = Object.entries(monthlyData)
+            .map(([index, data]) => ({month: monthNames[index], ...data, index: parseInt(index)}))
+            .sort((a, b) => b.bookings - a.bookings);
+        
+        const peakSeason = sortedMonths[0];
+        const lowSeason = sortedMonths[sortedMonths.length - 1];
+        
+        let insightsHTML = `
+            <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; border-left: 4px solid #4caf50;">
+                <h4 style="margin-bottom: 10px; color: #2e7d32;">🌟 ข้อมูลเชิงลึกตามฤดูกาล</h4>
+        `;
+        
+        if (peakSeason.bookings > 0) {
+            insightsHTML += `
+                <p><strong>🔥 ช่วงที่คนมากที่สุด:</strong> ${peakSeason.month} (${peakSeason.bookings} การจอง)</p>
+                <p><strong>📉 ช่วงที่คนน้อยที่สุด:</strong> ${lowSeason.month} (${lowSeason.bookings} การจอง)</p>
+            `;
+        } else {
+            insightsHTML += '<p>📊 ต้องการข้อมูลเพิ่มเติมเพื่อวิเคราะห์แนวโน้มตามฤดูกาล</p>';
+        }
+        
+        insightsHTML += '</div>';
+        document.getElementById('seasonalInsights').innerHTML = insightsHTML;
+    }
+
+    generateGrowthProjections() {
+        // Calculate growth metrics
+        const weeklyData = {};
+        
+        // Group bookings by week
+        this.bookings.forEach(booking => {
+            if (booking.startTime && booking.startTime.seconds) {
+                const bookingDate = new Date(booking.startTime.seconds * 1000);
+                const weekStart = new Date(bookingDate);
+                weekStart.setDate(bookingDate.getDate() - bookingDate.getDay());
+                const weekKey = SabaiUtils.formatDateKey(weekStart);
+                
+                if (!weeklyData[weekKey]) {
+                    weeklyData[weekKey] = {
+                        bookings: 0,
+                        revenue: 0
+                    };
+                }
+                
+                const revenue = (booking.price || 0) * (1 - (booking.discount || 0) / 100);
+                weeklyData[weekKey].bookings += 1;
+                weeklyData[weekKey].revenue += revenue;
+            }
+        });
+        
+        const weeks = Object.keys(weeklyData).sort();
+        const revenueData = weeks.map(week => weeklyData[week].revenue);
+        const bookingData = weeks.map(week => weeklyData[week].bookings);
+        
+        // Calculate growth rate
+        const recentWeeks = revenueData.slice(-4); // Last 4 weeks
+        let growthRate = 0;
+        
+        if (recentWeeks.length >= 2) {
+            const oldAvg = recentWeeks.slice(0, 2).reduce((a, b) => a + b, 0) / 2;
+            const newAvg = recentWeeks.slice(-2).reduce((a, b) => a + b, 0) / 2;
+            growthRate = oldAvg > 0 ? ((newAvg - oldAvg) / oldAvg) * 100 : 0;
+        }
+        
+        // Project future growth
+        const lastRevenue = revenueData[revenueData.length - 1] || 0;
+        const projectedRevenue = [];
+        
+        for (let i = 1; i <= 4; i++) {
+            const projection = lastRevenue * Math.pow(1 + (growthRate / 100), i);
+            projectedRevenue.push(Math.max(0, projection));
+        }
+        
+        const ctx = document.getElementById('growthProjectionChart').getContext('2d');
+        
+        if (this.charts.growthProjection instanceof Chart) {
+            this.charts.growthProjection.destroy();
+            this.charts.growthProjection = null;
+        }
+        
+        const allWeeks = [...weeks.slice(-8), 'สัปดาห์+1', 'สัปดาห์+2', 'สัปดาห์+3', 'สัปดาห์+4'];
+        
+        this.charts.growthProjection = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: allWeeks.map(week => {
+                    if (week.includes('+')) return week;
+                    const date = new Date(week);
+                    return `${date.getDate()}/${date.getMonth() + 1}`;
+                }),
+                datasets: [
+                    {
+                        label: 'รายได้จริง',
+                        data: [...revenueData.slice(-8), ...Array(4).fill(null)],
+                        backgroundColor: '#4ECDC4',
+                        borderColor: '#26A69A',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'รายได้คาดการณ์',
+                        data: [...Array(8).fill(null), ...projectedRevenue],
+                        backgroundColor: '#FFB74D',
+                        borderColor: '#FF9800',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'รายได้ (฿)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString() + ' ฿';
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.parsed.y.toLocaleString() + ' ฿';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Generate growth metrics
+        const currentMonthRevenue = recentWeeks.reduce((a, b) => a + b, 0);
+        const projectedMonthRevenue = projectedRevenue.reduce((a, b) => a + b, 0);
+        
+        let metricsHTML = `
+            <div style="background: #fff3e0; padding: 15px; border-radius: 8px; border-left: 4px solid #ff9800;">
+                <h4 style="margin-bottom: 10px; color: #e65100;">📈 เมตริกการเติบโต</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                    <div>
+                        <p><strong>อัตราการเติบโต:</strong></p>
+                        <p style="font-size: 1.2em; color: ${growthRate >= 0 ? 'green' : 'red'};">
+                            ${growthRate >= 0 ? '+' : ''}${growthRate.toFixed(1)}%
+                        </p>
+                    </div>
+                    <div>
+                        <p><strong>รายได้ปัจจุบัน (4 สัปดาห์):</strong></p>
+                        <p style="font-size: 1.2em; color: #333;">
+                            ${currentMonthRevenue.toLocaleString()} ฿
+                        </p>
+                    </div>
+                    <div>
+                        <p><strong>รายได้คาดการณ์ (4 สัปดาห์):</strong></p>
+                        <p style="font-size: 1.2em; color: #ff9800;">
+                            ${projectedMonthRevenue.toLocaleString()} ฿
+                        </p>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('growthMetrics').innerHTML = metricsHTML;
     }
 
     formatDisplayDate(date) {

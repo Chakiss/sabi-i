@@ -317,6 +317,145 @@ class SabaiDataService {
         
         return hasConflict;
     }
+
+    // Check booking conflict from Firestore directly
+    async checkBookingConflictFromFirestore(newBooking, excludeBookingId = null) {
+        try {
+            console.log('🔥 Checking booking conflict from Firestore for:', {
+                therapist: newBooking.therapistId,
+                dateKey: newBooking.dateKey,
+                startTime: newBooking.startTime,
+                endTime: newBooking.endTime,
+                excluding: excludeBookingId
+            });
+            
+            // Query Firestore โดยตรงเพื่อรับข้อมูลล่าสุด
+            const snapshot = await this.db.collection('bookings')
+                .where('dateKey', '==', newBooking.dateKey)
+                .where('therapistId', '==', newBooking.therapistId)
+                .get();
+            
+            const existingBookings = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            
+            console.log(`📊 Found ${existingBookings.length} existing bookings for therapist ${newBooking.therapistId} on ${newBooking.dateKey}`);
+            
+            // ตรวจสอบการซ้อนทับด้วยข้อมูลจาก Firestore
+            const conflictingBooking = existingBookings.find(booking => {
+                if (excludeBookingId && booking.id === excludeBookingId) {
+                    console.log('⏭️ Skipping own booking:', booking.id);
+                    return false;
+                }
+                
+                const existingStart = new Date(booking.startTime.seconds * 1000);
+                const existingEnd = new Date(booking.endTime.seconds * 1000);
+                
+                const hasOverlap = newBooking.startTime < existingEnd && newBooking.endTime > existingStart;
+                
+                if (hasOverlap) {
+                    console.log('❌ Found Firestore conflict with booking:', {
+                        id: booking.id,
+                        existing: `${existingStart.getHours().toString().padStart(2,'0')}:${existingStart.getMinutes().toString().padStart(2,'0')}-${existingEnd.getHours().toString().padStart(2,'0')}:${existingEnd.getMinutes().toString().padStart(2,'0')}`,
+                        new: `${newBooking.startTime.getHours().toString().padStart(2,'0')}:${newBooking.startTime.getMinutes().toString().padStart(2,'0')}-${newBooking.endTime.getHours().toString().padStart(2,'0')}:${newBooking.endTime.getMinutes().toString().padStart(2,'0')}`
+                    });
+                }
+                
+                return hasOverlap;
+            });
+            
+            const hasConflict = conflictingBooking !== undefined;
+            console.log(hasConflict ? '❌ Firestore conflict detected' : '✅ No Firestore conflicts found');
+            
+            return hasConflict;
+            
+        } catch (error) {
+            console.error('❌ Error checking conflict from Firestore:', error);
+            // กรณีข้อผิดพลาด ให้ fallback ไปใช้การตรวจสอบแบบเดิม
+            throw error;
+        }
+    }
+
+    // Create booking safely with Firestore conflict check + transaction
+    async createBookingSafely(data) {
+        try {
+            console.log('🔒 Creating booking with Firestore conflict check...');
+            
+            // 1. ตรวจสอบ conflict จาก Firestore ก่อน
+            const newBooking = {
+                therapistId: data.therapistId,
+                dateKey: data.dateKey,
+                startTime: data.startTime,
+                endTime: data.endTime
+            };
+            
+            const hasConflict = await this.checkBookingConflictFromFirestore(newBooking);
+            if (hasConflict) {
+                throw new Error('มีการจองในช่วงเวลานี้แล้ว กรุณาเลือกเวลาอื่น');
+            }
+            
+            // 2. สร้าง booking ด้วย transaction เพื่อความปลอดภัยสูงสุด
+            const bookingId = SabaiUtils.generateBookingId();
+            
+            const booking = {
+                therapistId: data.therapistId,
+                startTime: firebase.firestore.Timestamp.fromDate(data.startTime),
+                endTime: firebase.firestore.Timestamp.fromDate(data.endTime),
+                dateKey: data.dateKey,
+                duration: data.duration,
+                price: data.price,
+                discount: data.discount || 0,
+                therapistFee: data.therapistFee,
+                serviceId: data.serviceId,
+                paymentMethod: data.paymentMethod,
+                note: data.note,
+                createdAt: firebase.firestore.Timestamp.now()
+            };
+            
+            // Clean up null/empty fields
+            this._cleanBookingData(booking);
+            
+            // 3. ใช้ transaction เพื่อตรวจสอบและสร้างในขั้นตอนเดียว
+            await this.db.runTransaction(async (transaction) => {
+                // ตรวจสอบ conflict อีกครั้งใน transaction
+                const snapshot = await transaction.get(
+                    this.db.collection('bookings')
+                        .where('dateKey', '==', data.dateKey)
+                        .where('therapistId', '==', data.therapistId)
+                );
+                
+                const existingBookings = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                // ตรวจสอบ conflict ใน transaction
+                const stillHasConflict = this.checkBookingConflict(
+                    existingBookings,
+                    {
+                        therapistId: data.therapistId,
+                        startTime: data.startTime,
+                        endTime: data.endTime
+                    }
+                );
+                
+                if (stillHasConflict) {
+                    throw new Error('การจองซ้อนกัน - ตรวจพบใน transaction');
+                }
+                
+                // สร้าง booking
+                transaction.set(this.db.collection('bookings').doc(bookingId), booking);
+            });
+            
+            console.log('✅ Booking created safely with Firestore check + transaction:', bookingId);
+            return bookingId;
+            
+        } catch (error) {
+            console.error('❌ Error creating booking safely:', error);
+            throw error;
+        }
+    }
 }
 
 // Export for use in other modules

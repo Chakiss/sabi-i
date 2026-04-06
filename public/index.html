@@ -8,11 +8,14 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    
-    <!-- html2canvas for screenshot functionality -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    
-    <link rel="stylesheet" href="styles.css">
+
+    <!-- html2canvas for screenshot functionality (defer — not needed at startup) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+
+    <link rel="stylesheet" href="styles.css?v=20260405">
+    <!-- Preload app scripts to start fetching early while HTML parses -->
+    <link rel="preload" href="config.js" as="script">
+    <link rel="preload" href="app.js" as="script">
 </head>
 <body>
     <div id="app" class="app-container">
@@ -38,7 +41,44 @@
         <main class="main-content">
             <!-- Loading State -->
             <div id="loadingSpinner" class="loading-spinner hidden">
-                <div class="spinner">Loading...</div>
+                <div class="skeleton-calendar">
+                    <div class="skeleton-header-row">
+                        <div class="skeleton-cell skeleton-time-col"></div>
+                        <div class="skeleton-cell skeleton-therapist-col"></div>
+                        <div class="skeleton-cell skeleton-therapist-col"></div>
+                        <div class="skeleton-cell skeleton-therapist-col"></div>
+                    </div>
+                    <div class="skeleton-body-row">
+                        <div class="skeleton-cell skeleton-time-col"></div>
+                        <div class="skeleton-cell skeleton-slot-col"></div>
+                        <div class="skeleton-cell skeleton-slot-col"></div>
+                        <div class="skeleton-cell skeleton-slot-col"></div>
+                    </div>
+                    <div class="skeleton-body-row">
+                        <div class="skeleton-cell skeleton-time-col"></div>
+                        <div class="skeleton-cell skeleton-slot-col skeleton-filled"></div>
+                        <div class="skeleton-cell skeleton-slot-col"></div>
+                        <div class="skeleton-cell skeleton-slot-col skeleton-filled"></div>
+                    </div>
+                    <div class="skeleton-body-row">
+                        <div class="skeleton-cell skeleton-time-col"></div>
+                        <div class="skeleton-cell skeleton-slot-col skeleton-filled"></div>
+                        <div class="skeleton-cell skeleton-slot-col skeleton-filled"></div>
+                        <div class="skeleton-cell skeleton-slot-col skeleton-filled"></div>
+                    </div>
+                    <div class="skeleton-body-row">
+                        <div class="skeleton-cell skeleton-time-col"></div>
+                        <div class="skeleton-cell skeleton-slot-col"></div>
+                        <div class="skeleton-cell skeleton-slot-col skeleton-filled"></div>
+                        <div class="skeleton-cell skeleton-slot-col"></div>
+                    </div>
+                    <div class="skeleton-body-row">
+                        <div class="skeleton-cell skeleton-time-col"></div>
+                        <div class="skeleton-cell skeleton-slot-col"></div>
+                        <div class="skeleton-cell skeleton-slot-col"></div>
+                        <div class="skeleton-cell skeleton-slot-col"></div>
+                    </div>
+                </div>
             </div>
 
             <!-- Error Message -->
@@ -63,84 +103,100 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h3 id="modalTitle">จองเวลา</h3>
-                    <button type="button" id="cancelBooking" class="close-btn">×</button>
+                    <button type="button" id="closeBookingBtn" class="close-btn">×</button>
                 </div>
-                <form id="bookingForm" class="modal-body">
-                    <div id="errorMessage" class="error-message" style="display: none; color: red; margin-bottom: 10px;"></div>
-                    
-                    <div class="form-group">
-                        <label for="therapistId">หมอนวด:</label>
-                        <select id="therapistId" name="therapistId" class="form-input" required>
-                            <!-- Therapist options will be populated by JavaScript -->
-                        </select>
-                    </div>
 
-                    <div class="form-group">
-                        <label for="startTime">เริ่มเวลา:</label>
-                        <select id="startTime" name="startTime" class="form-input" required>
-                            <!-- Time options will be populated by JavaScript -->
-                        </select>
-                    </div>
+                <div class="modal-scroll">
+                    <form id="bookingForm">
+                        <div id="errorMessage" class="booking-error" style="display: none;"></div>
 
-                    <div class="form-group">
-                        <label for="duration">ระยะเวลา:</label>
-                        <select id="duration" name="duration" class="form-input" required>
-                            <option value="30">30 นาที</option>
-                            <option value="60" selected>1 ชั่วโมง</option>
-                            <option value="90">1.5 ชั่วโมง</option>
-                            <option value="120">2 ชั่วโมง</option>
-                            <option value="180">3 ชั่วโมง</option>
-                        </select>
-                    </div>
+                        <!-- หมอนวด -->
+                        <div class="form-group">
+                            <label for="therapistId">หมอนวด</label>
+                            <select id="therapistId" name="therapistId" class="form-input" required>
+                                <!-- populated by JS -->
+                            </select>
+                        </div>
 
-                    <div class="form-group">
-                        <label for="endTime">สิ้นสุดเวลา:</label>
-                        <input id="endTime" name="endTime" class="form-input" readonly>
-                    </div>
+                        <!-- เวลาเริ่ม + ระยะเวลา (2 columns) -->
+                        <div class="form-row-2col">
+                            <div class="form-group">
+                                <label for="startTime">เริ่มเวลา</label>
+                                <select id="startTime" name="startTime" class="form-input" required>
+                                    <!-- populated by JS -->
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="duration">ระยะเวลา</label>
+                                <select id="duration" name="duration" class="form-input" required>
+                                    <option value="30">30 นาที</option>
+                                    <option value="60" selected>1 ชม.</option>
+                                    <option value="90">1.5 ชม.</option>
+                                    <option value="120">2 ชม.</option>
+                                    <option value="180">3 ชม.</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- endTime hidden input + badge -->
+                        <input id="endTime" name="endTime" type="hidden">
+                        <div class="end-time-display">สิ้นสุด: <strong id="endTimeBadge">--:--</strong></div>
 
-                    <div class="form-group">
-                        <label for="serviceId">บริการ (ถ้ามี):</label>
-                        <select id="serviceId" name="serviceId" class="form-input">
-                            <option value="">ไม่ระบุบริการ</option>
-                            <!-- Service options will be populated by JavaScript -->
-                        </select>
-                    </div>
+                        <!-- บริการ -->
+                        <div class="form-group">
+                            <label for="serviceId">บริการ</label>
+                            <select id="serviceId" name="serviceId" class="form-input">
+                                <option value="">ไม่ระบุบริการ</option>
+                                <!-- populated by JS -->
+                            </select>
+                        </div>
 
-                    <div class="form-group">
-                        <label for="discount">ลดราคา:</label>
-                        <select id="discount" name="discount" class="form-input">
-                            <option value="0">0%</option>
-                            <option value="10">10%</option>
-                            <option value="15">15%</option>
-                            <option value="20">20%</option>
-                        </select>
-                    </div>
+                        <!-- ส่วนลด + ช่องทางชำระเงิน (2 columns) -->
+                        <div class="form-row-2col">
+                            <div class="form-group">
+                                <label for="discount">ส่วนลด</label>
+                                <select id="discount" name="discount" class="form-input">
+                                    <option value="0">0%</option>
+                                    <option value="10">10%</option>
+                                    <option value="15">15%</option>
+                                    <option value="20">20%</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="paymentMethod">ชำระเงิน</label>
+                                <select id="paymentMethod" name="paymentMethod" class="form-input">
+                                    <option value="">ไม่ระบุ</option>
+                                    <option value="transfer">โอน</option>
+                                    <option value="cash">สด</option>
+                                </select>
+                            </div>
+                        </div>
 
-                    <div class="form-group">
-                        <label for="therapistFee">ค่ามือหมอ:</label>
-                        <input id="therapistFee" name="therapistFee" type="number" class="form-input" min="0" step="50" placeholder="กรอกค่ามือหมอ">
-                    </div>
+                        <!-- ค่ามือหมอ -->
+                        <div class="form-group">
+                            <label for="therapistFee">ค่ามือหมอ (฿)</label>
+                            <input id="therapistFee" name="therapistFee" type="number" inputmode="decimal" class="form-input" min="0" step="50" placeholder="0">
+                        </div>
 
-                    <div class="form-group">
-                        <label for="paymentMethod">ช่องทางชำระเงิน (ถ้ามี):</label>
-                        <select id="paymentMethod" name="paymentMethod" class="form-input">
-                            <option value="">ไม่ระบุ</option>
-                            <option value="transfer">โอน</option>
-                            <option value="cash">สด</option>
-                        </select>
-                    </div>
+                        <!-- หมายเหตุ -->
+                        <div class="form-group">
+                            <label for="note">หมายเหตุ</label>
+                            <textarea id="note" name="note" class="form-input" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
 
-                    <div class="form-group">
-                        <label for="note">หมายเหตุ (ถ้ามี):</label>
-                        <textarea id="note" name="note" class="form-input" rows="3"></textarea>
-                    </div>
+                <!-- Price summary bar -->
+                <div id="priceSummary" class="price-summary" style="display: none;">
+                    <span class="price-summary-label">ราคารวม</span>
+                    <span id="priceSummaryText" class="price-summary-value">--</span>
+                </div>
 
-                    <div class="modal-footer">
-                        <button type="button" id="cancelBooking" class="btn btn-secondary">ยกเลิก</button>
-                        <button type="button" id="deleteBooking" class="btn btn-danger" style="display: none;">ลบ</button>
-                        <button type="submit" id="saveBooking" class="btn btn-primary">บันทึก</button>
-                    </div>
-                </form>
+                <!-- Footer (sticky, outside scroll area) -->
+                <div class="modal-footer">
+                    <button type="button" id="cancelBooking" class="btn btn-secondary">ยกเลิก</button>
+                    <button type="button" id="deleteBooking" class="btn btn-danger" style="display: none;">ลบ</button>
+                    <button type="button" id="saveBooking" class="btn btn-primary">บันทึก</button>
+                </div>
             </div>
         </div>
     </div>
@@ -215,12 +271,12 @@
             }
         });
     </script>
-    <script src="config.js"></script>
-    <script src="utils.js"></script>
-    <script src="dataService.js"></script>
-    <script src="calendarRenderer.js"></script>
-    <script src="bookingManager.js"></script>
-    <script src="app.js"></script>
-    <script src="init-sample-data.js"></script>
+    <script src="config.js?v=20260405"></script>
+    <script src="utils.js?v=20260405"></script>
+    <script src="dataService.js?v=20260405"></script>
+    <script src="calendarRenderer.js?v=20260405"></script>
+    <script src="bookingManager.js?v=20260405"></script>
+    <script src="app.js?v=20260405"></script>
+    <script src="init-sample-data.js?v=20260405"></script>
 </body>
 </html>

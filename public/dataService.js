@@ -416,37 +416,8 @@ class SabaiDataService {
             // Clean up null/empty fields
             this._cleanBookingData(booking);
             
-            // 3. ใช้ transaction เพื่อตรวจสอบและสร้างในขั้นตอนเดียว
-            await this.db.runTransaction(async (transaction) => {
-                // ตรวจสอบ conflict อีกครั้งใน transaction
-                const snapshot = await transaction.get(
-                    this.db.collection('bookings')
-                        .where('dateKey', '==', data.dateKey)
-                        .where('therapistId', '==', data.therapistId)
-                );
-                
-                const existingBookings = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-                
-                // ตรวจสอบ conflict ใน transaction
-                const stillHasConflict = this.checkBookingConflict(
-                    existingBookings,
-                    {
-                        therapistId: data.therapistId,
-                        startTime: data.startTime,
-                        endTime: data.endTime
-                    }
-                );
-                
-                if (stillHasConflict) {
-                    throw new Error('การจองซ้อนกัน - ตรวจพบใน transaction');
-                }
-                
-                // สร้าง booking
-                transaction.set(this.db.collection('bookings').doc(bookingId), booking);
-            });
+            // 3. บันทึก booking
+            await this.db.collection('bookings').doc(bookingId).set(booking);
             
             console.log('✅ Booking created safely with Firestore check + transaction:', bookingId);
             return bookingId;

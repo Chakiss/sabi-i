@@ -152,13 +152,13 @@ class SabaiBookingBoard {
             console.log('📊 Starting to load initial data with real-time listeners...');
             this.showLoading();
             
-            console.log('🔄 Setting up real-time listeners for therapists and services...');
-            
-            // Setup real-time listeners
-            this.setupRealTimeListeners();
-            
-            // Load services (static for now as they don't change often)
+            // Load services first so they're available when calendar first renders
             await this.loadServices();
+
+            console.log('🔄 Setting up real-time listeners for therapists and services...');
+
+            // Setup real-time listeners after services are ready
+            this.setupRealTimeListeners();
             
             console.log('✅ Real-time listeners set up successfully');
             

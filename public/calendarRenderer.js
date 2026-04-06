@@ -242,10 +242,12 @@ class SabaiCalendarRenderer {
     // Generate consistent grid template columns for both headers and grid
     generateGridColumns(therapistCount) {
         // For mobile devices, use fixed widths to prevent layout issues
-        const isMobile = window.innerWidth <= 768;
-        const timeColumnWidth = isMobile ? '60px' : '80px';
-        const therapistColumnWidth = isMobile ? 'minmax(100px, 1fr)' : 'minmax(120px, 1fr)';
-        
+        const width = window.innerWidth;
+        const isSmallMobile = width <= 480;
+        const isMobile = width <= 768;
+        const timeColumnWidth = isSmallMobile ? '50px' : isMobile ? '60px' : '80px';
+        const therapistColumnWidth = isSmallMobile ? 'minmax(75px, 1fr)' : isMobile ? 'minmax(90px, 1fr)' : 'minmax(120px, 1fr)';
+
         return `${timeColumnWidth} repeat(${therapistCount}, ${therapistColumnWidth})`;
     }
 
@@ -275,7 +277,7 @@ class SabaiCalendarRenderer {
         const columnTemplate = this.generateGridColumns(activeTherapists.length);
         container.style.gridTemplateColumns = columnTemplate;
         container.style.width = '100%';
-        container.style.maxWidth = '100vw';
+        container.style.minWidth = '0';
         container.style.boxSizing = 'border-box';
         container.style.position = 'relative'; // For absolute positioning of time indicator
         
@@ -412,13 +414,13 @@ class SabaiCalendarRenderer {
         const summaryTimeCell = document.createElement('div');
         summaryTimeCell.className = 'summary-time-cell';
         summaryTimeCell.innerHTML = `
-            <div class="summary-label">ยอดรวมทั้งหมด</div>
+            <div class="summary-section-title">ยอดรวมทั้งหมด</div>
             <div class="summary-amount">${summaries.grandTotal.toLocaleString()} ฿</div>
-            <div class="summary-label" style="margin-top: 5px; font-size: 12px;">ค่ามือรวม</div>
-            <div class="summary-amount" style="color: #f57c00;">${summaries.grandTotalTherapistFee.toLocaleString()} ฿</div>
+            <div class="summary-fee-label">ค่ามือรวม</div>
+            <div class="summary-fee-amount">${summaries.grandTotalTherapistFee.toLocaleString()} ฿</div>
         `;
         container.appendChild(summaryTimeCell);
-        
+
         // Create summary cells for each therapist
         therapists.forEach(therapist => {
             const therapistSummary = summaries.therapistTotals[therapist.id];
@@ -426,11 +428,11 @@ class SabaiCalendarRenderer {
             const summaryCell = document.createElement('div');
             summaryCell.className = 'summary-therapist-cell';
             summaryCell.innerHTML = `
-                <div class="summary-label">รายได้ ${therapist.name}</div>
+                <div class="summary-section-title">${therapist.name}</div>
                 <div class="summary-amount">${therapistSummary.total.toLocaleString()} ฿</div>
-                <div class="summary-label" style="margin-top: 5px; font-size: 12px;">ค่ามือ</div>
-                <div class="summary-amount" style="color: #f57c00;">${therapistFeeSummary.total.toLocaleString()} ฿</div>
-                <div class="summary-count" style="margin-top: 5px;">(${therapistSummary.bookingCount} การจอง)</div>
+                <div class="summary-fee-label">ค่ามือ</div>
+                <div class="summary-fee-amount">${therapistFeeSummary.total.toLocaleString()} ฿</div>
+                <div class="summary-count-badge">${therapistSummary.bookingCount} การจอง</div>
             `;
             container.appendChild(summaryCell);
         });
@@ -658,7 +660,7 @@ class SabaiCalendarRenderer {
         
         info.innerHTML = `
             <div>${duration} นาที.</div>
-            ${serviceName ? `<div>${serviceName}</div>` : ''}
+            <div>${serviceName || 'ไม่มีบริการ'}</div>
             ${priceDisplay}
             ${therapistFeeDisplay}
             ${paymentMethodText ? `<div style="font-size: 11px;">${paymentMethodText}</div>` : ''}

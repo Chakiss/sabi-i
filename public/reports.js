@@ -47,7 +47,7 @@ class SabaiReports {
 
     setupEventListeners() {
         // Date filter buttons
-        const filterBtns = document.querySelectorAll('.date-filter-btn');
+        const filterBtns = document.querySelectorAll('.filter-btn[data-period]');
         filterBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const period = e.target.getAttribute('data-period');
@@ -136,11 +136,12 @@ class SabaiReports {
     }
 
     setActiveButton(period) {
-        document.querySelectorAll('.date-filter-btn').forEach(btn => {
+        document.querySelectorAll('.filter-btn[data-period]').forEach(btn => {
             btn.classList.remove('active');
         });
-        
-        document.querySelector(`[data-period="${period}"]`).classList.add('active');
+
+        const target = document.querySelector(`.filter-btn[data-period="${period}"]`);
+        if (target) target.classList.add('active');
         
         // Hide custom date range if not custom
         if (period !== 'custom') {
@@ -242,11 +243,6 @@ class SabaiReports {
             this.generateDayOfWeekAnalysis();
             this.generateTherapistServicesBreakdown();
             this.generateTherapistUtilization();
-            this.generatePeakStaffingAnalysis();
-            this.generateServiceROIAnalysis();
-            this.generateDemandForecasting();
-            this.generateSeasonalTrends();
-            this.generateGrowthProjections();
             
             // Show results
             this.showLoading(false);
@@ -322,24 +318,13 @@ class SabaiReports {
         const totalTherapistFee = this.calculateTotalTherapistFee();
         const totalBookings = this.bookings.length;
         const avgTransaction = totalBookings > 0 ? totalRevenue / totalBookings : 0;
-        
-        document.getElementById('totalRevenue').textContent = `${totalRevenue.toLocaleString()} ฿`;
-        document.getElementById('totalTherapistFee').textContent = `${totalTherapistFee.toLocaleString()} ฿`;
+        const netProfit = totalRevenue - totalTherapistFee;
+
+        document.getElementById('totalRevenue').textContent = `${Math.round(totalRevenue).toLocaleString()} ฿`;
+        document.getElementById('totalTherapistFee').textContent = `${Math.round(totalTherapistFee).toLocaleString()} ฿`;
+        document.getElementById('netProfit').textContent = `${Math.round(netProfit).toLocaleString()} ฿`;
         document.getElementById('totalBookings').textContent = totalBookings.toLocaleString();
         document.getElementById('avgTransaction').textContent = `${Math.round(avgTransaction).toLocaleString()} ฿`;
-        
-        // Log summary for debugging
-        console.log('📊 Summary generated:', {
-            totalBookings,
-            totalRevenue,
-            totalTherapistFee,
-            avgTransaction
-        });
-        
-        // Show helpful message if no data
-        if (totalBookings === 0) {
-            console.warn('📊 No bookings data available for summary cards');
-        }
     }
 
     calculateTotalRevenue() {
@@ -570,7 +555,7 @@ class SabaiReports {
         const totalFee = Object.values(feeByTherapist).reduce((sum, fee) => sum + fee, 0);
         
         let tableHTML = `
-            <table class="data-table">
+            <table class="dt">
                 <thead>
                     <tr>
                         <th>หมอนวด</th>
@@ -588,8 +573,8 @@ class SabaiReports {
                     <td>${therapistName}</td>
                     <td>${fee.toLocaleString()} ฿</td>
                     <td>
-                        <div class="percentage-bar">
-                            <div class="percentage-fill" style="width: ${percentage}%"></div>
+                        <div class="pbar-wrap">
+                            <div class="pbar-fill" style="width: ${percentage}%"></div>
                         </div>
                         ${percentage.toFixed(1)}%
                     </td>
@@ -598,7 +583,7 @@ class SabaiReports {
         });
         
         tableHTML += `
-                <tr style="border-top: 2px solid #ddd; font-weight: bold; background: #f8f9fa;">
+                <tr class="total-row">
                     <td>รวมทั้งหมด</td>
                     <td>${totalFee.toLocaleString()} ฿</td>
                     <td>100%</td>
@@ -630,7 +615,7 @@ class SabaiReports {
         const maxBookings = Math.max(...Object.values(bookingsByTherapist));
         
         let tableHTML = `
-            <table class="data-table">
+            <table class="dt">
                 <thead>
                     <tr>
                         <th>หมอนวด</th>
@@ -648,8 +633,8 @@ class SabaiReports {
                     <td>${therapistName}</td>
                     <td>${count}</td>
                     <td>
-                        <div class="percentage-bar">
-                            <div class="percentage-fill" style="width: ${percentage}%"></div>
+                        <div class="pbar-wrap">
+                            <div class="pbar-fill" style="width: ${percentage}%"></div>
                         </div>
                         ${percentage.toFixed(1)}%
                     </td>
@@ -690,7 +675,7 @@ class SabaiReports {
             .sort(([,a], [,b]) => b.count - a.count);
         
         let tableHTML = `
-            <table class="data-table">
+            <table class="dt">
                 <thead>
                     <tr>
                         <th>บริการ</th>
@@ -961,7 +946,7 @@ class SabaiReports {
             .sort(([,a], [,b]) => b - a);
         
         let tableHTML = `
-            <table class="data-table">
+            <table class="dt">
                 <thead>
                     <tr>
                         <th>หมอนวด - บริการ</th>
@@ -991,19 +976,15 @@ class SabaiReports {
 
     showLoading(show) {
         const loadingState = document.getElementById('loadingState');
-        const reportsGrid = document.getElementById('reportsGrid');
-        const detailedReports = document.getElementById('detailedReports');
-        
+        const dashContent = document.getElementById('dashContent');
+
         if (show) {
             loadingState.style.display = 'flex';
-            reportsGrid.style.display = 'none';
-            detailedReports.style.display = 'none';
+            dashContent.style.display = 'none';
         } else {
             loadingState.style.display = 'none';
-            reportsGrid.style.display = 'grid';
-            detailedReports.style.display = 'grid';
-            
-            // If no bookings, show a friendly message
+            dashContent.style.display = 'flex';
+
             if (this.bookings.length === 0) {
                 this.showNoDataMessage();
             }
@@ -1176,18 +1157,17 @@ class SabaiReports {
         });
         
         // Generate summary
-        let summaryHTML = `
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
-                <h4 style="margin-bottom: 10px; color: #333;">📊 สรุปอัตราการใช้งาน</h4>
-        `;
-        
+        let summaryHTML = '';
         utilizationData.forEach(data => {
             const rate = parseFloat(data.utilizationRate);
-            const status = rate >= 80 ? '🟢 สูง' : rate >= 60 ? '🟠 ปานกลาง' : '🔴 ต่ำ';
-            summaryHTML += `<p><strong>${data.name}:</strong> ${data.utilizationRate}% ${status}</p>`;
+            const badgeClass = rate >= 80 ? 'badge-high' : rate >= 60 ? 'badge-medium' : 'badge-low';
+            const label = rate >= 80 ? 'สูง' : rate >= 60 ? 'ปานกลาง' : 'ต่ำ';
+            summaryHTML += `
+                <div class="util-row">
+                    <span>${data.name} — ${data.hours} ชม.</span>
+                    <span class="util-badge ${badgeClass}">${data.utilizationRate}% ${label}</span>
+                </div>`;
         });
-        
-        summaryHTML += '</div>';
         document.getElementById('utilizationSummary').innerHTML = summaryHTML;
     }
 
@@ -1422,7 +1402,7 @@ class SabaiReports {
         
         // Generate ROI table
         let tableHTML = `
-            <table class="data-table">
+            <table class="dt">
                 <thead>
                     <tr>
                         <th>บริการ</th>

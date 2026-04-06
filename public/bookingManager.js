@@ -24,6 +24,11 @@ class SabaiBookingManager {
             this.closeBookingModal();
         });
 
+        // Close (×) button handler
+        document.getElementById('closeBookingBtn').addEventListener('click', () => {
+            this.closeBookingModal();
+        });
+
         // Modal overlay close handler
         document.getElementById('bookingModalOverlay').addEventListener('click', (e) => {
             if (e.target === e.currentTarget) {
@@ -257,6 +262,8 @@ class SabaiBookingManager {
                 endTimeValue = booking.endTime;
             }
             form.endTime.value = endTimeValue;
+            const endTimeBadge = document.getElementById('endTimeBadge');
+            if (endTimeBadge) endTimeBadge.textContent = endTimeValue;
         } else {
             form.endTime.value = '';
         }
@@ -283,13 +290,17 @@ class SabaiBookingManager {
         const startTimeElement = document.getElementById('startTime');
         const durationElement = document.getElementById('duration');
         const endTimeElement = document.getElementById('endTime');
-        
+        const endTimeBadge = document.getElementById('endTimeBadge');
+
         const startTime = startTimeElement.value;
         const duration = parseInt(durationElement.value);
-        
+
         if (startTime && duration) {
             const endTime = SabaiUtils.addMinutes(startTime, duration);
             endTimeElement.value = endTime;
+            if (endTimeBadge) endTimeBadge.textContent = endTime;
+        } else {
+            if (endTimeBadge) endTimeBadge.textContent = '--:--';
         }
     }
 
@@ -297,6 +308,9 @@ class SabaiBookingManager {
     showBookingModal() {
         // Refresh form dropdowns in case data changed
         this.populateFormDropdowns();
+        // Reset price summary
+        const priceSummary = document.getElementById('priceSummary');
+        if (priceSummary) priceSummary.style.display = 'none';
         document.getElementById('bookingModalOverlay').style.display = 'flex';
     }
 
@@ -501,13 +515,13 @@ class SabaiBookingManager {
             
             // Method 2: If not found, try class selector
             if (!errorElement) {
-                errorElement = modalOverlay.querySelector('.error-message');
+                errorElement = modalOverlay.querySelector('.error-message, .booking-error');
                 console.log('🎯 Method 2 - Class search:', errorElement);
             }
-            
+
             // Method 3: Find all error elements and pick first
             if (!errorElement) {
-                const allErrorElements = modalOverlay.querySelectorAll('[id="errorMessage"], .error-message');
+                const allErrorElements = modalOverlay.querySelectorAll('[id="errorMessage"], .error-message, .booking-error');
                 console.log('🔍 All error elements in modal:', allErrorElements);
                 errorElement = allErrorElements[0];
                 console.log('🎯 Method 3 - First from all:', errorElement);
@@ -623,15 +637,26 @@ class SabaiBookingManager {
         const basePrice = this.getCalculatedPrice() || 0;
         const form = document.getElementById('bookingForm');
         const discountPercent = parseFloat(form.discount.value) || 0;
-        
+
+        const priceSummary = document.getElementById('priceSummary');
+        const priceSummaryText = document.getElementById('priceSummaryText');
+
         if (basePrice > 0) {
             const discountAmount = (basePrice * discountPercent) / 100;
             const finalPrice = basePrice - discountAmount;
-            
+
             console.log(`💰 Price calculation: Base: ${basePrice}฿, Discount: ${discountPercent}% (-${discountAmount}฿), Final: ${finalPrice}฿`);
+
+            if (priceSummary && priceSummaryText) {
+                priceSummary.style.display = 'flex';
+                priceSummaryText.textContent = discountPercent > 0
+                    ? `${finalPrice.toLocaleString()}฿ (ลด ${discountPercent}%)`
+                    : `${finalPrice.toLocaleString()}฿`;
+            }
             return finalPrice;
         }
-        
+
+        if (priceSummary) priceSummary.style.display = 'none';
         return 0;
     }
     

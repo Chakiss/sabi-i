@@ -386,7 +386,8 @@ html, body {
 
 @media (max-width: 480px) {
     .main-content {
-        padding: 10px;
+        padding: 6px;
+        padding-bottom: calc(6px + env(safe-area-inset-bottom));
     }
 }
 
@@ -411,10 +412,53 @@ html, body {
     text-align: center;
 }
 
-.spinner {
-    font-size: 20px;
-    color: #4c9fff;
+/* Skeleton Loading */
+.skeleton-calendar {
+    width: 100%;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
+
+.skeleton-header-row,
+.skeleton-body-row {
+    display: grid;
+    grid-template-columns: 60px repeat(3, 1fr);
+    gap: 4px;
+}
+
+@media (max-width: 480px) {
+    .skeleton-header-row,
+    .skeleton-body-row {
+        grid-template-columns: 50px repeat(3, 1fr);
+    }
+}
+
+.skeleton-cell {
+    border-radius: 6px;
+    background: #e8e8e8;
+    position: relative;
+    overflow: hidden;
+}
+
+.skeleton-cell::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%);
+    animation: skeleton-shimmer 1.4s infinite;
+}
+
+@keyframes skeleton-shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.skeleton-time-col { height: 44px; background: #ddd; }
+.skeleton-therapist-col { height: 44px; background: #b8d8ff; }
+.skeleton-slot-col { height: 50px; }
+.skeleton-filled { background: #c8e1ff; }
 
 .error-message {
     flex-direction: column;
@@ -453,11 +497,20 @@ html, body {
     overflow: hidden;
 }
 
+@media (max-width: 480px) {
+    .calendar-container {
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+}
+
 /* Calendar Scroll Area */
 .calendar-scroll {
     flex: 1;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    will-change: scroll-position;
 }
 
 /* Calendar with Headers - Single Grid */
@@ -465,6 +518,20 @@ html, body {
     display: grid;
     grid-template-columns: 80px repeat(auto-fit, minmax(120px, 1fr));
     min-height: 100%;
+    width: 100%;
+    min-width: 0;
+}
+
+@media (max-width: 768px) {
+    .calendar-with-headers {
+        grid-template-columns: 60px repeat(auto-fit, minmax(90px, 1fr));
+    }
+}
+
+@media (max-width: 480px) {
+    .calendar-with-headers {
+        grid-template-columns: 50px repeat(auto-fit, minmax(75px, 1fr));
+    }
 }
 
 /* Header Row Styles (first row of grid) */
@@ -480,6 +547,20 @@ html, body {
     position: sticky;
     top: 0;
     z-index: 10;
+}
+
+@media (max-width: 768px) {
+    .header-time-cell, .header-therapist-cell {
+        padding: 12px 6px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-time-cell, .header-therapist-cell {
+        padding: 8px 4px;
+        font-size: 12px;
+    }
 }
 
 .header-therapist-cell {
@@ -513,6 +594,22 @@ html, body {
     min-height: 50px;
 }
 
+@media (max-width: 768px) {
+    .time-cell {
+        font-size: 11px;
+        padding: 8px 3px;
+        min-height: 44px;
+    }
+}
+
+@media (max-width: 480px) {
+    .time-cell {
+        font-size: 10px;
+        padding: 6px 2px;
+        min-height: 40px;
+    }
+}
+
 /* Current Time Indicator */
 .current-time-indicator {
     position: absolute;
@@ -544,40 +641,55 @@ html, body {
 
 /* Summary Row Styles */
 .summary-time-cell, .summary-therapist-cell {
-    padding: 15px 8px;
-    border-right: 1px solid #e0e0e0;
-    border-top: 2px solid #4c9fff;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 12px 8px;
+    border-right: 1px solid #dde3ef;
+    border-top: 3px solid #4c9fff;
+    background: #eef2ff;
     font-weight: 600;
     text-align: center;
-    min-height: 60px;
+    min-height: 80px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 4px;
+    align-items: center;
+    gap: 3px;
 }
 
 .summary-time-cell {
-    background: linear-gradient(135deg, #4c9fff 0%, #6366f1 100%);
+    background: linear-gradient(160deg, #4c9fff 0%, #6366f1 100%);
     color: white;
+    border-top-color: #4c9fff;
+}
+
+.summary-section-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #6366f1;
+    margin-bottom: 2px;
+}
+
+.summary-time-cell .summary-section-title {
+    color: rgba(255,255,255,0.85);
 }
 
 .summary-label {
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 500;
     line-height: 1.2;
-    opacity: 0.9;
+    color: #64748b;
 }
 
 .summary-time-cell .summary-label {
-    color: rgba(255, 255, 255, 0.9);
+    color: rgba(255, 255, 255, 0.85);
 }
 
 .summary-amount {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
-    color: #2e7d32;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    color: #16a34a;
+    line-height: 1.2;
 }
 
 .summary-time-cell .summary-amount {
@@ -585,10 +697,61 @@ html, body {
     font-size: 18px;
 }
 
+.summary-fee-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: #94a3b8;
+    margin-top: 4px;
+}
+
+.summary-time-cell .summary-fee-label {
+    color: rgba(255,255,255,0.75);
+}
+
+.summary-fee-amount {
+    font-size: 13px;
+    font-weight: 600;
+    color: #ea580c;
+}
+
+.summary-time-cell .summary-fee-amount {
+    color: #fed7aa;
+}
+
+.summary-count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    color: #6366f1;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    margin-top: 4px;
+    border: 1px solid #c7d2fe;
+}
+
 .summary-count {
     font-size: 11px;
     color: #666;
     font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .summary-time-cell, .summary-therapist-cell {
+        min-height: 70px;
+        padding: 10px 6px;
+    }
+    .summary-time-cell .summary-amount {
+        font-size: 15px;
+    }
+    .summary-amount {
+        font-size: 13px;
+    }
+    .summary-fee-amount {
+        font-size: 12px;
+    }
 }
 
 /* Booking Slots */
@@ -630,6 +793,21 @@ html, body {
     justify-content: center;
     line-height: 1.2;
     position: relative;
+}
+
+@media (max-width: 768px) {
+    .booking-slot .booking-info {
+        font-size: 10px;
+        padding: 4px 3px;
+        line-height: 1.1;
+    }
+}
+
+@media (max-width: 480px) {
+    .booking-slot .booking-info {
+        font-size: 9px;
+        padding: 3px 2px;
+    }
 }
 
 .booking-slot .booking-info div {
@@ -679,19 +857,67 @@ html, body {
     z-index: 2;
 }
 
+/* Bottom-sheet modal on mobile */
+@media (max-width: 600px) {
+    .modal {
+        align-items: flex-end;
+    }
+
+    .modal-content {
+        width: 100%;
+        max-width: 100%;
+        max-height: 92dvh;
+        border-radius: 20px 20px 0 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .modal-content::before {
+        content: '';
+        display: block;
+        width: 40px;
+        height: 4px;
+        background: #d0d0d0;
+        border-radius: 2px;
+        margin: 10px auto 0;
+        flex-shrink: 0;
+    }
+}
+
+/* Desktop modal also flex column for sticky footer */
+@media (min-width: 601px) {
+    .modal-content {
+        display: flex;
+        flex-direction: column;
+    }
+}
+
 .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 25px 30px 20px;
+    padding: 16px 20px;
     border-bottom: 1px solid #e0e0e0;
     background: #f8f9fa;
+    flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+    .modal-header {
+        padding: 10px 16px;
+    }
 }
 
 .modal-header h3 {
-    font-size: 22px;
-    font-weight: 600;
-    color: #333;
+    font-size: 18px;
+    font-weight: 700;
+    color: #222;
+}
+
+@media (max-width: 600px) {
+    .modal-header h3 {
+        font-size: 16px;
+    }
 }
 
 .close-btn {
@@ -713,32 +939,102 @@ html, body {
     background: rgba(0, 0, 0, 0.1);
 }
 
-.modal-body {
-    padding: 30px;
+/* Scrollable form area inside modal */
+.modal-scroll {
+    flex: 1;
     overflow-y: auto;
-    max-height: calc(80vh - 160px);
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding: 20px 24px;
+}
+
+@media (max-width: 600px) {
+    .modal-scroll {
+        padding: 12px 16px;
+    }
+}
+
+/* Error inside booking form */
+.booking-error {
+    background: #fff0f0;
+    border: 1px solid #f5c6c6;
+    color: #c0392b;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 14px;
+}
+
+/* 2-column form row */
+.form-row-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+/* End time badge */
+.end-time-display {
+    font-size: 13px;
+    color: #555;
+    background: #f0f6ff;
+    border: 1px solid #c8deff;
+    border-radius: 20px;
+    padding: 5px 14px;
+    margin: -6px 0 16px;
+    display: inline-block;
+}
+
+.end-time-display strong {
+    color: #2563eb;
+}
+
+/* Price summary bar */
+.price-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%);
+    border-top: 1px solid #c8deff;
+    border-bottom: 1px solid #c8deff;
+    flex-shrink: 0;
+}
+
+.price-summary-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #444;
+}
+
+.price-summary-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #2e7d32;
 }
 
 .form-group {
-    margin-bottom: 25px;
+    margin-bottom: 16px;
 }
 
 .form-group label {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     font-weight: 600;
-    color: #333;
-    font-size: 16px;
+    color: #444;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
 }
 
 .form-input {
     width: 100%;
-    padding: 15px;
-    border: 2px solid #e0e0e0;
-    border-radius: 12px;
+    padding: 11px 14px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 10px;
     font-size: 16px;
     font-family: inherit;
-    transition: border-color 0.3s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
     background: white;
     min-height: 44px;
 }
@@ -746,7 +1042,7 @@ html, body {
 .form-input:focus {
     outline: none;
     border-color: #4c9fff;
-    box-shadow: 0 0 0 3px rgba(76, 159, 255, 0.1);
+    box-shadow: 0 0 0 3px rgba(76, 159, 255, 0.12);
 }
 
 select.form-input {
@@ -765,10 +1061,17 @@ textarea.form-input {
 
 .modal-footer {
     display: flex;
-    gap: 15px;
-    padding: 25px 30px 30px;
+    gap: 10px;
+    padding: 14px 20px calc(14px + env(safe-area-inset-bottom));
     background: #f8f9fa;
     border-top: 1px solid #e0e0e0;
+    flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+    .modal-footer {
+        padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    }
 }
 
 .btn {

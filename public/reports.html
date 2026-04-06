@@ -1,492 +1,529 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Summary Report - สบาย Saba-i</title>
-    
-    <!-- Firebase SDK -->
+    <title>Dashboard - สบาย Saba-i</title>
+
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    
-    <!-- Chart.js for data visualization -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
-    
-    <link rel="stylesheet" href="styles.css">
+
     <style>
-        /* Additional styles for reports page */
-        .reports-container {
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --blue:    #4c9fff;
+            --indigo:  #6366f1;
+            --green:   #16a34a;
+            --orange:  #ea580c;
+            --red:     #dc2626;
+            --bg:      #f1f5f9;
+            --surface: #ffffff;
+            --border:  #e2e8f0;
+            --text:    #0f172a;
+            --muted:   #64748b;
+            --radius:  12px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        /* ─── Top bar ─────────────────────────────────────────── */
+        .topbar {
+            background: linear-gradient(135deg, var(--blue) 0%, var(--indigo) 100%);
+            color: white;
+            padding: 0 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 12px rgba(76,159,255,.35);
+        }
+
+        .topbar-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            height: 60px;
+        }
+
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,.18);
+            border: 1px solid rgba(255,255,255,.3);
+            color: white;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .back-btn:hover { background: rgba(255,255,255,.28); }
+
+        .topbar-title {
+            flex: 1;
+            font-size: 18px;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #reportPeriodText {
+            font-size: 13px;
+            font-weight: 400;
+            opacity: .85;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* ─── Filter bar ──────────────────────────────────────── */
+        .filter-bar {
+            background: white;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .filter-bar-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: var(--bg);
+            border: 1.5px solid var(--border);
+            color: var(--muted);
+            border-radius: 999px;
+            padding: 6px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all .2s;
+            white-space: nowrap;
+        }
+        .filter-btn:hover { border-color: var(--blue); color: var(--blue); }
+        .filter-btn.active {
+            background: var(--blue);
+            border-color: var(--blue);
+            color: white;
+        }
+
+        .custom-range {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            width: 100%;
+            padding-top: 8px;
+        }
+        .custom-range.show { display: flex; }
+        .custom-range label { font-size: 13px; color: var(--muted); }
+        .custom-range input {
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-size: 13px;
+            color: var(--text);
+        }
+
+        /* ─── Page body ───────────────────────────────────────── */
+        .page {
             max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
-        }
-
-        .reports-header {
-            background: linear-gradient(135deg, #4c9fff 0%, #2196f3 100%);
-            color: white;
-            padding: 30px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            text-align: center;
-        }
-
-        .reports-header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-        }
-
-        .date-filters {
             display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
-            margin-top: 20px;
+            flex-direction: column;
+            gap: 24px;
         }
 
-        .date-filter-btn {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 25px;
-            padding: 10px 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 500;
-        }
-
-        .date-filter-btn:hover,
-        .date-filter-btn.active {
-            background: rgba(255, 255, 255, 0.3);
-            border-color: rgba(255, 255, 255, 0.6);
-            transform: translateY(-2px);
-        }
-
-        .custom-date-range {
-            display: none;
-            margin-top: 15px;
-            gap: 10px;
-            justify-content: center;
+        /* ─── Loading ─────────────────────────────────────────── */
+        .loading-overlay {
+            display: flex;
             align-items: center;
+            justify-content: center;
+            gap: 14px;
+            padding: 80px 20px;
+            color: var(--muted);
+            font-size: 15px;
         }
-
-        .custom-date-range.show {
-            display: flex;
+        .spinner {
+            width: 32px; height: 32px;
+            border: 3px solid #e2e8f0;
+            border-top-color: var(--blue);
+            border-radius: 50%;
+            animation: spin .9s linear infinite;
+            flex-shrink: 0;
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        .custom-date-range input {
-            padding: 8px 12px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-weight: 500;
-        }
-
-        .custom-date-range input::placeholder {
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .reports-grid {
+        /* ─── KPI cards ───────────────────────────────────────── */
+        .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 25px;
-            margin-bottom: 30px;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 14px;
         }
 
-        .report-card {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .report-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
-        }
-
-        .report-card h3 {
-            color: #2196f3;
-            margin-bottom: 20px;
-            font-size: 1.3rem;
+        .kpi-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 18px 16px;
+            border: 1px solid var(--border);
             display: flex;
-            align-items: center;
-            gap: 10px;
+            flex-direction: column;
+            gap: 6px;
         }
 
-        .report-value {
-            font-size: 2.5rem;
+        .kpi-label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .kpi-value {
+            font-size: 22px;
             font-weight: 700;
-            color: #4c9fff;
-            margin-bottom: 10px;
+            line-height: 1.1;
+            color: var(--text);
         }
 
-        .report-subtitle {
-            color: #666;
-            font-size: 0.9rem;
+        .kpi-card.revenue   .kpi-value { color: #1d4ed8; }
+        .kpi-card.profit    .kpi-value { color: var(--green); }
+        .kpi-card.fee       .kpi-value { color: var(--orange); }
+        .kpi-card.bookings  .kpi-value { color: var(--indigo); }
+        .kpi-card.avg       .kpi-value { color: #0891b2; }
+
+        .kpi-icon {
+            font-size: 18px;
+            margin-bottom: 2px;
         }
 
-        .chart-container {
+        /* ─── Section ─────────────────────────────────────────── */
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 14px;
+        }
+
+        /* ─── Cards & charts ──────────────────────────────────── */
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 20px;
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 16px;
+        }
+
+        .chart-wrap {
             position: relative;
-            height: 300px;
-            margin-top: 20px;
+            height: 260px;
         }
 
-        .data-table {
+        /* 2-col layout */
+        .cols-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        /* 3-col layout */
+        .cols-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+        }
+
+        /* ─── Tables ──────────────────────────────────────────── */
+        .dt {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            font-size: 13px;
         }
-
-        .data-table th,
-        .data-table td {
-            padding: 12px 15px;
+        .dt th {
+            background: var(--bg);
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            padding: 8px 12px;
             text-align: left;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--border);
+        }
+        .dt td {
+            padding: 9px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            color: var(--text);
+        }
+        .dt tbody tr:last-child td { border-bottom: none; }
+        .dt tbody tr:hover { background: #f8fafc; }
+        .dt .total-row td {
+            font-weight: 700;
+            border-top: 2px solid var(--border);
+            background: var(--bg);
         }
 
-        .data-table th {
-            background: #f8f9fa;
-            font-weight: 600;
-            color: #333;
-            font-size: 14px;
+        /* Progress bar */
+        .pbar-wrap {
+            background: #e9ecef;
+            border-radius: 999px;
+            height: 6px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        .pbar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--blue), var(--indigo));
+            border-radius: 999px;
         }
 
-        .data-table td {
-            font-size: 14px;
-        }
-
-        .data-table tbody tr:hover {
-            background: #f8f9fa;
-        }
-
-        .data-table tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        .loading-state {
+        /* Utilization summary blurb */
+        .util-blurb {
             display: flex;
-            justify-content: center;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 14px;
+        }
+        .util-row {
+            display: flex;
             align-items: center;
-            height: 200px;
-            color: #666;
+            justify-content: space-between;
+            font-size: 13px;
         }
-
-        .loading-spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #4c9fff;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin-right: 15px;
+        .util-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 999px;
         }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        .badge-high   { background: #dcfce7; color: #16a34a; }
+        .badge-medium { background: #fff7ed; color: #ea580c; }
+        .badge-low    { background: #fef2f2; color: #dc2626; }
 
         .no-data {
             text-align: center;
-            color: #999;
-            font-style: italic;
+            color: var(--muted);
+            font-size: 13px;
             padding: 30px;
         }
 
-        .percentage-bar {
-            background: #e9ecef;
-            border-radius: 10px;
-            height: 8px;
-            overflow: hidden;
-            margin-top: 5px;
+        /* ─── Responsive ─────────────────────────────────────── */
+        @media (max-width: 900px) {
+            .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+            .cols-2, .cols-3 { grid-template-columns: 1fr; }
         }
 
-        .percentage-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #4c9fff, #2196f3);
-            border-radius: 10px;
-            transition: width 0.5s ease;
+        @media (max-width: 600px) {
+            .page { padding: 12px; gap: 16px; }
+            .topbar-inner { height: 52px; }
+            .topbar-title { font-size: 15px; }
+            #reportPeriodText { display: none; }
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            .kpi-value { font-size: 18px; }
+            .filter-bar-inner { gap: 6px; }
+            .filter-btn { font-size: 12px; padding: 5px 12px; }
         }
 
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        
-        .data-table th,
-        .data-table td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .data-table th {
-            background: #f8f9fa;
-            font-weight: 600;
-            color: #333;
-            font-size: 14px;
-        }
-        
-        .data-table td {
-            font-size: 14px;
-        }
-        
-        .data-table tbody tr:hover {
-            background: #f8f9fa;
-        }
-        
-        .data-table tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        @media (max-width: 768px) {
-            .reports-container {
-                padding: 15px;
-            }
-
-            .reports-header {
-                padding: 20px;
-            }
-
-            .reports-header h1 {
-                font-size: 2rem;
-            }
-
-            .date-filters {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .date-filter-btn {
-                width: 200px;
-                text-align: center;
-            }
-
-            .reports-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .report-value {
-                font-size: 2rem;
-            }
-
-            .custom-date-range {
-                flex-direction: column;
-                gap: 10px;
-            }
+        @media (max-width: 380px) {
+            .kpi-grid { grid-template-columns: 1fr 1fr; }
         }
     </style>
 </head>
 <body>
-    <div class="reports-container">
-        <!-- Header with filters -->
-        <div class="reports-header">
-            <h1>📊 สรุปรายงาน</h1>
-            <p id="reportPeriodText">รายงานวันนี้</p>
-            
-            <div class="date-filters">
-                <button class="date-filter-btn active" data-period="today">วันนี้</button>
-                <button class="date-filter-btn" data-period="7days">7 วันที่แล้ว</button>
-                <button class="date-filter-btn" data-period="30days">30 วันที่แล้ว</button>
-                <button class="date-filter-btn" data-period="thisweek">สัปดาห์นี้</button>
-                <button class="date-filter-btn" data-period="thismonth">เดือนนี้</button>
-                <button class="date-filter-btn" data-period="custom">กำหนดเอง</button>
-            </div>
 
-            <div class="custom-date-range" id="customDateRange">
-                <label style="color: white;">จาก:</label>
-                <input type="date" id="fromDate" />
-                <label style="color: white;">ถึง:</label>
-                <input type="date" id="toDate" />
-                <button class="date-filter-btn" onclick="applyCustomDate()">นำไปใช้</button>
-            </div>
-        </div>
+<!-- Top bar -->
+<div class="topbar">
+    <div class="topbar-inner">
+        <a href="index.html" class="back-btn">← กลับ</a>
+        <div class="topbar-title">Dashboard</div>
+        <div id="reportPeriodText">วันนี้</div>
+    </div>
+</div>
 
-        <!-- Loading State -->
-        <div id="loadingState" class="loading-state">
-            <div class="loading-spinner"></div>
-            <span>กำลังโหลดข้อมูล...</span>
-        </div>
+<!-- Filter bar -->
+<div class="filter-bar">
+    <div class="filter-bar-inner">
+        <button class="filter-btn active" data-period="today">วันนี้</button>
+        <button class="filter-btn" data-period="7days">7 วัน</button>
+        <button class="filter-btn" data-period="30days">30 วัน</button>
+        <button class="filter-btn" data-period="thisweek">สัปดาห์นี้</button>
+        <button class="filter-btn" data-period="thismonth">เดือนนี้</button>
+        <button class="filter-btn" data-period="custom">กำหนดเอง</button>
 
-        <!-- Summary Cards -->
-        <div class="reports-grid" id="reportsGrid" style="display: none;">
-            <!-- Total Revenue Card -->
-            <div class="report-card">
-                <h3>💰 ยอดขายรวม</h3>
-                <div class="report-value" id="totalRevenue">0 ฿</div>
-                <div class="report-subtitle">รายได้ทั้งหมด</div>
-            </div>
-
-            <!-- Total Therapist Fee Card -->
-            <div class="report-card">
-                <h3>👋 ค่ามือรวม</h3>
-                <div class="report-value" id="totalTherapistFee">0 ฿</div>
-                <div class="report-subtitle">ค่ามือหมอทั้งหมด</div>
-            </div>
-
-            <!-- Total Bookings Card -->
-            <div class="report-card">
-                <h3>📅 การจองทั้งหมด</h3>
-                <div class="report-value" id="totalBookings">0</div>
-                <div class="report-subtitle">จำนวนการจองทั้งหมด</div>
-            </div>
-
-            <!-- Average Transaction Card -->
-            <div class="report-card">
-                <h3>📈 ยอดขายเฉลี่ย</h3>
-                <div class="report-value" id="avgTransaction">0 ฿</div>
-                <div class="report-subtitle">ยอดขายเฉลี่ยต่อรายการ</div>
-            </div>
-        </div>
-
-        <!-- Detailed Reports -->
-        <div class="reports-grid" id="detailedReports" style="display: none;">
-            <!-- Revenue by Therapist -->
-            <div class="report-card">
-                <h3>👩‍⚕️ ยอดขายตามหมอ</h3>
-                <div class="chart-container">
-                    <canvas id="revenueByTherapistChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Therapist Fee by Therapist -->
-            <div class="report-card">
-                <h3>💵 ค่ามือตามหมอ</h3>
-                <div class="chart-container">
-                    <canvas id="feeByTherapistChart"></canvas>
-                </div>
-                <div id="feeByTherapistTable" style="margin-top: 20px;"></div>
-            </div>
-
-            <!-- Bookings by Therapist -->
-            <div class="report-card">
-                <h3>📊 จำนวนการจองตามหมอ</h3>
-                <div id="bookingsByTherapistTable"></div>
-            </div>
-
-            <!-- Popular Services -->
-            <div class="report-card">
-                <h3>🔥 บริการยอดนิยม</h3>
-                <div id="popularServicesTable"></div>
-            </div>
-
-            <!-- Peak Hours -->
-            <div class="report-card">
-                <h3>⏰ ช่วงเวลาที่คนมากที่สุด</h3>
-                <div class="chart-container">
-                    <canvas id="peakHoursChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Day of Week Analysis -->
-            <div class="report-card">
-                <h3>📅 การจองตามวันในสัปดาห์</h3>
-                <div class="chart-container">
-                    <canvas id="dayOfWeekChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Therapist Services Breakdown -->
-            <div class="report-card">
-                <h3>🎯 หมอกับบริการที่ได้มากที่สุด</h3>
-                <div id="therapistServicesTable"></div>
-            </div>
-
-            <!-- Therapist Utilization Rate -->
-            <div class="report-card">
-                <h3>⚡ อัตราการใช้งานหมอ</h3>
-                <div class="chart-container">
-                    <canvas id="therapistUtilizationChart"></canvas>
-                </div>
-                <div id="utilizationSummary" style="margin-top: 15px;"></div>
-            </div>
-
-            <!-- Peak Hour Staffing Analysis -->
-            <div class="report-card">
-                <h3>👥 การจัดพนักงานช่วงเวลาเร่งด่วน</h3>
-                <div class="chart-container">
-                    <canvas id="peakStaffingChart"></canvas>
-                </div>
-                <div id="staffingRecommendations" style="margin-top: 15px;"></div>
-            </div>
-
-            <!-- Service ROI Analysis -->
-            <div class="report-card">
-                <h3>💎 การวิเคราะห์ ROI บริการ</h3>
-                <div class="chart-container">
-                    <canvas id="serviceROIChart"></canvas>
-                </div>
-                <div id="roiTable" style="margin-top: 15px;"></div>
-            </div>
-
-            <!-- Demand Forecasting -->
-            <div class="report-card">
-                <h3>🔮 การคาดการณ์ความต้องการ</h3>
-                <div class="chart-container">
-                    <canvas id="demandForecastChart"></canvas>
-                </div>
-                <div id="forecastSummary" style="margin-top: 15px;"></div>
-            </div>
-
-            <!-- Seasonal Trends -->
-            <div class="report-card">
-                <h3>🌟 แนวโน้มตามฤดูกาล</h3>
-                <div class="chart-container">
-                    <canvas id="seasonalTrendsChart"></canvas>
-                </div>
-                <div id="seasonalInsights" style="margin-top: 15px;"></div>
-            </div>
-
-            <!-- Growth Projections -->
-            <div class="report-card">
-                <h3>📈 การคาดการณ์การเติบโต</h3>
-                <div class="chart-container">
-                    <canvas id="growthProjectionChart"></canvas>
-                </div>
-                <div id="growthMetrics" style="margin-top: 15px;"></div>
-            </div>
+        <div class="custom-range" id="customDateRange">
+            <label>จาก</label>
+            <input type="date" id="fromDate">
+            <label>ถึง</label>
+            <input type="date" id="toDate">
+            <button class="filter-btn active" onclick="applyCustomDate()">นำไปใช้</button>
         </div>
     </div>
+</div>
 
-    <!-- Include the same dependencies -->
-    <script src="config.js"></script>
-    <script src="utils.js"></script>
-    <script src="dataService.js"></script>
-    <script src="reports.js"></script>
+<!-- Page body -->
+<div class="page">
 
-    <script>
-        // Initialize reports when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🌟 Reports page loaded');
-            
-            // Check dependencies
-            if (typeof CONFIG === 'undefined' || typeof SabaiDataService === 'undefined') {
-                console.error('❌ Required dependencies not loaded');
-                return;
-            }
-            
-            if (typeof SabaiReports === 'undefined') {
-                console.error('❌ SabaiReports class not loaded');
-                return;
-            }
-            
-            try {
-                window.reportsApp = new SabaiReports();
-            } catch (error) {
-                console.error('❌ Failed to initialize Reports:', error);
-            }
-        });
-    </script>
+    <!-- Loading -->
+    <div id="loadingState" class="loading-overlay">
+        <div class="spinner"></div>
+        <span>กำลังโหลดข้อมูล...</span>
+    </div>
+
+    <!-- Content (hidden until loaded) -->
+    <div id="dashContent" style="display:none; flex-direction:column; gap:24px;">
+
+        <!-- ── KPI row ─────────────────────────────────────── -->
+        <div id="reportsGrid" class="kpi-grid">
+            <div class="kpi-card revenue">
+                <div class="kpi-icon">💰</div>
+                <div class="kpi-label">ยอดขายรวม</div>
+                <div class="kpi-value" id="totalRevenue">—</div>
+            </div>
+            <div class="kpi-card profit">
+                <div class="kpi-icon">✅</div>
+                <div class="kpi-label">กำไรสุทธิ</div>
+                <div class="kpi-value" id="netProfit">—</div>
+            </div>
+            <div class="kpi-card fee">
+                <div class="kpi-icon">👋</div>
+                <div class="kpi-label">ค่ามือรวม</div>
+                <div class="kpi-value" id="totalTherapistFee">—</div>
+            </div>
+            <div class="kpi-card bookings">
+                <div class="kpi-icon">📅</div>
+                <div class="kpi-label">การจองทั้งหมด</div>
+                <div class="kpi-value" id="totalBookings">—</div>
+            </div>
+            <div class="kpi-card avg">
+                <div class="kpi-icon">📈</div>
+                <div class="kpi-label">เฉลี่ย/ครั้ง</div>
+                <div class="kpi-value" id="avgTransaction">—</div>
+            </div>
+        </div>
+
+        <!-- ── Therapist performance ──────────────────────── -->
+        <div id="detailedReports">
+            <div class="section-title">ผลการดำเนินงานหมอนวด</div>
+
+            <div class="cols-2" style="margin-bottom:14px;">
+                <!-- Revenue by therapist doughnut -->
+                <div class="card">
+                    <div class="card-title">รายได้แยกตามหมอ</div>
+                    <div class="chart-wrap">
+                        <canvas id="revenueByTherapistChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Utilization rate -->
+                <div class="card">
+                    <div class="card-title">อัตราการทำงาน (%)</div>
+                    <div class="chart-wrap">
+                        <canvas id="therapistUtilizationChart"></canvas>
+                    </div>
+                    <div id="utilizationSummary" class="util-blurb"></div>
+                </div>
+            </div>
+
+            <div class="cols-2">
+                <!-- Fee by therapist bar + table -->
+                <div class="card">
+                    <div class="card-title">ค่ามือตามหมอ</div>
+                    <div class="chart-wrap" style="height:200px;">
+                        <canvas id="feeByTherapistChart"></canvas>
+                    </div>
+                    <div id="feeByTherapistTable" style="margin-top:14px;"></div>
+                </div>
+
+                <!-- Bookings by therapist table -->
+                <div class="card">
+                    <div class="card-title">จำนวนการจองตามหมอ</div>
+                    <div id="bookingsByTherapistTable"></div>
+                </div>
+            </div>
+
+            <!-- ── Service analysis ───────────────────────── -->
+            <div class="section-title" style="margin-top:24px;">การวิเคราะห์บริการ</div>
+
+            <div class="cols-2">
+                <div class="card">
+                    <div class="card-title">บริการยอดนิยม</div>
+                    <div id="popularServicesTable"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">หมอ × บริการที่ทำบ่อย</div>
+                    <div id="therapistServicesTable"></div>
+                </div>
+            </div>
+
+            <!-- ── Time analysis ──────────────────────────── -->
+            <div class="section-title" style="margin-top:24px;">วิเคราะห์เวลา</div>
+
+            <div class="cols-2">
+                <div class="card">
+                    <div class="card-title">ช่วงเวลาที่คนมากที่สุด</div>
+                    <div class="chart-wrap">
+                        <canvas id="peakHoursChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">การจองตามวันในสัปดาห์</div>
+                    <div class="chart-wrap">
+                        <canvas id="dayOfWeekChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script src="config.js?v=20260405"></script>
+<script src="utils.js?v=20260405"></script>
+<script src="dataService.js?v=20260405"></script>
+<script src="reports.js?v=20260405"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof SabaiReports === 'undefined') {
+            console.error('SabaiReports not loaded');
+            return;
+        }
+        try {
+            window.reportsApp = new SabaiReports();
+        } catch (e) {
+            console.error('Failed to init SabaiReports:', e);
+        }
+    });
+</script>
 </body>
 </html>

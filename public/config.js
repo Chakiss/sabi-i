@@ -25,7 +25,7 @@ window.log = log;
 // Configuration Constants
 const CONFIG = {
     // App version - increment on each deploy
-    APP_VERSION: '1.4',
+    APP_VERSION: '1.5',
 
     // Shop Hours (24-hour format)
     SHOP_START_HOUR: 10,

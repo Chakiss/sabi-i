@@ -10,6 +10,7 @@ class SabaiBookingBoard {
         this.timeSlots = [];
         this.services = [];
         this.isLoading = false;
+        this.isDragging = false;
         
         log('📅 Initial date:', this.currentDate);
         
@@ -62,6 +63,9 @@ class SabaiBookingBoard {
             
             this.bookingManager = new SabaiBookingManager(this.dataService, this.calendarRenderer, this);
             log('✅ BookingManager initialized');
+
+            this.dragDropHandler = new SabaiDragDropHandler(this);
+            log('✅ DragDropHandler initialized');
         } catch (error) {
             console.error('❌ Failed to initialize modules:', error);
             this.showError('ไม่สามารถเริ่มต้นระบบได้: ' + error.message);
@@ -297,7 +301,7 @@ class SabaiBookingBoard {
         }, { passive: true });
 
         scrollArea.addEventListener('touchend', (e) => {
-            if (!isSwiping) return;
+            if (!isSwiping || this.isDragging) return;
             isSwiping = false;
             const diff = e.changedTouches[0].clientX - touchStartX;
             if (Math.abs(diff) > 80) {
@@ -419,6 +423,9 @@ class SabaiBookingBoard {
             this.timeSlots,
             this.currentDate
         );
+
+        // Re-attach drag-and-drop after render
+        if (this.dragDropHandler) this.dragDropHandler.init();
 
         // Auto-scroll to current time on first render of today
         if (!this._hasScrolledToNow) {

@@ -1,9 +1,8 @@
 // Calendar Rendering and Display Logic
-console.log('🚀 Loading SabaiCalendarRenderer...');
 
 class SabaiCalendarRenderer {
     constructor(dataService, app) {
-        console.log('🔧 Initializing SabaiCalendarRenderer...', { dataService, app });
+        log('🔧 Initializing SabaiCalendarRenderer...', { dataService, app });
         
         this.dataService = dataService;
         this.app = app; // Store app reference
@@ -14,7 +13,7 @@ class SabaiCalendarRenderer {
         
         try {
             this.initCurrentTimeIndicator();
-            console.log('✅ SabaiCalendarRenderer initialized successfully');
+            log('✅ SabaiCalendarRenderer initialized successfully');
         } catch (error) {
             console.error('❌ Error initializing SabaiCalendarRenderer:', error);
             throw error;
@@ -51,7 +50,7 @@ class SabaiCalendarRenderer {
         const currentMinute = now.getMinutes();
         const currentTimeString = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
         
-        console.log('🕐 Current time calculation:', {
+        log('🕐 Current time calculation:', {
             currentHour,
             currentMinute,
             currentTimeString,
@@ -63,7 +62,7 @@ class SabaiCalendarRenderer {
         const startMinutes = CONFIG.SHOP_START_HOUR * 60;
         const endMinutes = (CONFIG.SHOP_END_HOUR + 1) * 60; // +1 เพื่อให้ครอบคลุมถึง 23:00 สำหรับ slot 22:30-23:00
         
-        console.log('⏱️ Minutes comparison:', {
+        log('⏱️ Minutes comparison:', {
             currentMinutes,
             startMinutes,
             endMinutes,
@@ -71,12 +70,12 @@ class SabaiCalendarRenderer {
         });
         
         if (currentMinutes < startMinutes || currentMinutes >= endMinutes) {
-            console.log('⏰ Outside business hours');
+            log('⏰ Outside business hours');
             return null; // Outside business hours
         }
         
-        console.log('✅ Within business hours');
-        console.log('📅 Available time slots:', this.currentTimeSlots);
+        log('✅ Within business hours');
+        log('📅 Available time slots:', this.currentTimeSlots);
         
         // Find the time slot that contains the current time
         let targetSlotIndex = -1;
@@ -102,20 +101,20 @@ class SabaiCalendarRenderer {
             const slotEndMinutes = (nextSlotHour * 60) + nextSlotMinute;
             const currentMinutes = (currentHour * 60) + currentMinute;
             
-            console.log(`🕰️ Checking slot ${i}: ${slotTime} (${slotStartMinutes}-${slotEndMinutes} min), current: ${currentMinutes} min`);
+            log(`🕰️ Checking slot ${i}: ${slotTime} (${slotStartMinutes}-${slotEndMinutes} min), current: ${currentMinutes} min`);
             
             if (currentMinutes >= slotStartMinutes && currentMinutes < slotEndMinutes) {
                 targetSlotIndex = i;
                 const slotDuration = slotEndMinutes - slotStartMinutes;
                 const elapsedMinutes = currentMinutes - slotStartMinutes;
                 positionRatio = elapsedMinutes / slotDuration;
-                console.log(`🎯 Found target slot ${i}: ratio ${positionRatio}`);
+                log(`🎯 Found target slot ${i}: ratio ${positionRatio}`);
                 break;
             }
         }
         
         if (targetSlotIndex === -1) {
-            console.log('❌ Current time doesn\'t match any slot');
+            log('❌ Current time doesn\'t match any slot');
             return null; // Current time doesn't match any slot
         }
         
@@ -125,32 +124,32 @@ class SabaiCalendarRenderer {
             currentTime: currentTimeString
         };
         
-        console.log('✅ Position calculation result:', result);
+        log('✅ Position calculation result:', result);
         return result;
     }
     
     // Update current time indicator
     updateCurrentTimeIndicator() {
-        console.log('🕒 Updating current time indicator...');
+        log('🕒 Updating current time indicator...');
         
         if (!this.currentTimeIndicator) {
-            console.log('❌ No current time indicator element found');
+            log('❌ No current time indicator element found');
             return;
         }
         
-        console.log('✅ Current time indicator element exists');
+        log('✅ Current time indicator element exists');
         
         const position = this.calculateCurrentTimePosition();
-        console.log('📍 Calculated position:', position);
+        log('📍 Calculated position:', position);
         
         if (!position) {
             // Hide indicator if outside business hours
-            console.log('⏰ Outside business hours - hiding indicator');
+            log('⏰ Outside business hours - hiding indicator');
             this.currentTimeIndicator.style.display = 'none';
             return;
         }
 
-        console.log('🎯 Position found - showing indicator');
+        log('🎯 Position found - showing indicator');
         
         // Show indicator
         this.currentTimeIndicator.style.display = 'block';
@@ -159,18 +158,18 @@ class SabaiCalendarRenderer {
         const timeLabel = this.currentTimeIndicator.querySelector('.current-time-label');
         timeLabel.textContent = position.currentTime;
         
-        console.log('⏰ Time label updated:', position.currentTime);
+        log('⏰ Time label updated:', position.currentTime);
         
         // Calculate position within the calendar grid
         // Each row contains: 1 time cell + N therapist cells
         // We need to position the indicator across all therapist cells for the target time slot
         const container = document.getElementById('calendarWithHeaders');
         if (!container) {
-            console.log('❌ Calendar container not found');
+            log('❌ Calendar container not found');
             return;
         }
         
-        console.log('📦 Container found, active therapists:', this.activeTherapistsCount);
+        log('📦 Container found, active therapists:', this.activeTherapistsCount);
         
         // Find the time cell for the target slot (remember +1 for header row)
         const headerRowCells = this.activeTherapistsCount + 1; // time cell + therapist cells
@@ -179,11 +178,11 @@ class SabaiCalendarRenderer {
         
         const timeCell = container.children[timeCellIndex];
         if (!timeCell) {
-            console.log('❌ Time cell not found at index:', timeCellIndex);
+            log('❌ Time cell not found at index:', timeCellIndex);
             return;
         }
         
-        console.log('⏱️ Time cell found at index:', timeCellIndex);
+        log('⏱️ Time cell found at index:', timeCellIndex);
         
         const timeCellRect = timeCell.getBoundingClientRect();
         const containerRect = container.getBoundingClientRect();
@@ -201,7 +200,7 @@ class SabaiCalendarRenderer {
         this.currentTimeIndicator.style.left = timeCellWidth + 'px';
         this.currentTimeIndicator.style.width = (containerWidth - timeCellWidth) + 'px';
         
-        console.log('📏 Indicator positioned at:', {
+        log('📏 Indicator positioned at:', {
             top: topPosition + 'px',
             left: timeCellWidth + 'px',
             width: (containerWidth - timeCellWidth) + 'px'
@@ -210,19 +209,19 @@ class SabaiCalendarRenderer {
     
     // Create current time indicator element
     createCurrentTimeIndicator() {
-        console.log('🔧 Creating current time indicator element...');
+        log('🔧 Creating current time indicator element...');
         
         const indicator = document.createElement('div');
         indicator.className = 'current-time-indicator';
         indicator.style.display = 'none';
         
-        console.log('📐 Base indicator created with class:', indicator.className);
+        log('📐 Base indicator created with class:', indicator.className);
         
         const timeLabel = document.createElement('div');
         timeLabel.className = 'current-time-label';
         timeLabel.textContent = '00:00';
         
-        console.log('🏷️ Time label created with class:', timeLabel.className);
+        log('🏷️ Time label created with class:', timeLabel.className);
         
         indicator.appendChild(timeLabel);
         
@@ -234,7 +233,7 @@ class SabaiCalendarRenderer {
         indicator.style.pointerEvents = 'none';
         indicator.style.boxShadow = '0 0 4px rgba(255, 0, 0, 0.5)';
         
-        console.log('✨ Indicator styled, final element:', indicator.outerHTML);
+        log('✨ Indicator styled, final element:', indicator.outerHTML);
         
         return indicator;
     }
@@ -371,16 +370,16 @@ class SabaiCalendarRenderer {
             // Calculate therapist fee
             if (booking.therapistFee && booking.therapistFee > 0) {
                 therapistFeeAmount = booking.therapistFee;
-                console.log('💰 Summary: Using explicit therapist fee from booking:', therapistFeeAmount);
+                log('💰 Summary: Using explicit therapist fee from booking:', therapistFeeAmount);
             } else if (booking.serviceId && services) {
                 const service = services.find(s => s.id === booking.serviceId);
                 if (service && service.durations) {
                     const duration = booking.duration || SabaiUtils.calculateDuration(booking.startTime, booking.endTime);
                     const durationOption = service.durations.find(d => d.duration === duration);
-                    console.log('📊 Summary: Service and duration option:', { service: service.name, duration, durationOption });
+                    log('📊 Summary: Service and duration option:', { service: service.name, duration, durationOption });
                     if (durationOption && durationOption.therapistFee !== undefined) {
                         therapistFeeAmount = durationOption.therapistFee;
-                        console.log('💵 Summary: Using therapist fee from service:', therapistFeeAmount);
+                        log('💵 Summary: Using therapist fee from service:', therapistFeeAmount);
                     }
                 }
             }
@@ -440,26 +439,26 @@ class SabaiCalendarRenderer {
     
     // Add current time indicator to calendar
     addCurrentTimeIndicator(container) {
-        console.log('🚀 Adding current time indicator to calendar...');
+        log('🚀 Adding current time indicator to calendar...');
         
         // Remove existing indicator if it exists
         if (this.currentTimeIndicator) {
-            console.log('🗑️ Removing existing indicator');
+            log('🗑️ Removing existing indicator');
             this.currentTimeIndicator.remove();
         }
         
         // Create new indicator
-        console.log('🔨 Creating new time indicator');
+        log('🔨 Creating new time indicator');
         this.currentTimeIndicator = this.createCurrentTimeIndicator();
         container.appendChild(this.currentTimeIndicator);
         
-        console.log('✅ Time indicator added to DOM');
-        console.log('📋 Indicator element:', this.currentTimeIndicator);
-        console.log('🎨 Indicator styles:', this.currentTimeIndicator.style.cssText);
+        log('✅ Time indicator added to DOM');
+        log('📋 Indicator element:', this.currentTimeIndicator);
+        log('🎨 Indicator styles:', this.currentTimeIndicator.style.cssText);
         
         // Update position immediately
         setTimeout(() => {
-            console.log('⏱️ Updating indicator position after DOM render...');
+            log('⏱️ Updating indicator position after DOM render...');
             this.updateCurrentTimeIndicator();
         }, 100); // Small delay to ensure DOM is rendered
     }
@@ -536,23 +535,27 @@ class SabaiCalendarRenderer {
     // Render a booked slot
     renderBookedSlot(slot, booking, services, timeSlot, currentDate) {
         slot.classList.add('booked');
-        
+        slot.dataset.bookingId = booking.id;
+
         // Same booking ID = same color
         const bookingColorHue = SabaiUtils.getBookingColor(booking.id);
         const bookingColor = `hsl(${bookingColorHue}, 50%, 60%)`;
         slot.style.backgroundColor = bookingColor;
-        
+
         // Add hover effect
         this.addBookingHoverEffect(slot, bookingColorHue);
-        
+
         // Only show booking info on the first slot of the booking
         if (this.dataService.isFirstSlotOfBooking(booking, timeSlot, currentDate)) {
             const info = this.createBookingInfo(booking, services);
             slot.appendChild(info);
         }
-        
-        // Add click handler for editing
-        slot.addEventListener('click', () => this.app.openEditBookingModal(booking));
+
+        // Add click handler for editing (guarded during drag)
+        slot.addEventListener('click', () => {
+            if (this.app.isDragging) return;
+            this.app.openEditBookingModal(booking);
+        });
     }
 
     // Render an empty slot
@@ -622,40 +625,40 @@ class SabaiCalendarRenderer {
         let therapistFeeAmount = 0;
         
         // Debug log
-        console.log('🔍 Calculating therapist fee for booking:', booking.id);
-        console.log('📊 Booking data:', { serviceId: booking.serviceId, therapistFee: booking.therapistFee, duration });
+        log('🔍 Calculating therapist fee for booking:', booking.id);
+        log('📊 Booking data:', { serviceId: booking.serviceId, therapistFee: booking.therapistFee, duration });
         
         // First check if booking has explicit therapistFee
         if (booking.therapistFee && booking.therapistFee > 0) {
             therapistFeeAmount = booking.therapistFee;
-            console.log('💰 Using explicit therapist fee from booking:', therapistFeeAmount);
+            log('💰 Using explicit therapist fee from booking:', therapistFeeAmount);
         } else if (booking.serviceId && services && services.length > 0) {
             // If no explicit fee, try to get from service data
             const service = services.find(s => s.id === booking.serviceId);
-            console.log('🔎 Found service:', service);
+            log('🔎 Found service:', service);
             
             if (service && service.durations && service.durations.length > 0) {
-                console.log('📋 Service durations:', service.durations);
+                log('📋 Service durations:', service.durations);
                 const durationOption = service.durations.find(d => d.duration === duration);
-                console.log('⏰ Found duration option:', durationOption);
+                log('⏰ Found duration option:', durationOption);
                 
                 if (durationOption && durationOption.therapistFee !== undefined) {
                     therapistFeeAmount = durationOption.therapistFee;
-                    console.log('💵 Using therapist fee from service:', therapistFeeAmount);
+                    log('💵 Using therapist fee from service:', therapistFeeAmount);
                 } else {
-                    console.log('❌ No therapist fee found in duration option');
+                    log('❌ No therapist fee found in duration option');
                 }
             } else {
-                console.log('❌ No service durations found');
+                log('❌ No service durations found');
             }
         } else {
-            console.log('❌ No serviceId or services not loaded');
+            log('❌ No serviceId or services not loaded');
         }
         
         // Always show therapist fee if we have service or booking fee data
         if (booking.serviceId || booking.therapistFee !== undefined) {
             therapistFeeDisplay = `<div class="therapist-fee" style="color: #f57c00; background: rgba(255, 255, 255, 0.4); padding: 1px 4px; border-radius: 3px; font-size: 10px; margin-top: 1px;">ค่ามือ: ${therapistFeeAmount.toLocaleString()}฿</div>`;
-            console.log('✅ Displaying therapist fee:', therapistFeeAmount);
+            log('✅ Displaying therapist fee:', therapistFeeAmount);
         }
         
         info.innerHTML = `
@@ -691,7 +694,7 @@ class SabaiCalendarRenderer {
             captureBtn.textContent = '📸 กำลังบันทึก...';
             captureBtn.disabled = true;
 
-            console.log('📷 Starting calendar capture...');
+            log('📷 Starting calendar capture...');
 
             // Get calendar elements  
             const calendarWithHeaders = document.getElementById('calendarWithHeaders');
@@ -699,7 +702,7 @@ class SabaiCalendarRenderer {
             // Create temporary container
             const tempContainer = this.createTempContainer(currentDate, null, calendarWithHeaders);
             
-            console.log('📦 Temporary container created:', tempContainer.children.length, 'children');
+            log('📦 Temporary container created:', tempContainer.children.length, 'children');
             
             // Add to document and capture
             document.body.appendChild(tempContainer);
@@ -707,8 +710,8 @@ class SabaiCalendarRenderer {
             // Wait longer to ensure all styles are applied
             await new Promise(resolve => setTimeout(resolve, 300));
             
-            console.log('✅ Temporary container added to DOM, ready for capture');
-            console.log('📐 Container dimensions:', {
+            log('✅ Temporary container added to DOM, ready for capture');
+            log('📐 Container dimensions:', {
                 width: tempContainer.scrollWidth,
                 height: tempContainer.scrollHeight
             });
@@ -729,12 +732,12 @@ class SabaiCalendarRenderer {
                 }
             };
 
-            console.log('🖼️ Capture options:', options);
+            log('🖼️ Capture options:', options);
 
             // Create canvas and download
             const canvas = await html2canvas(tempContainer, options);
             
-            console.log('🎨 Canvas created:', {
+            log('🎨 Canvas created:', {
                 width: canvas.width,
                 height: canvas.height
             });
@@ -747,7 +750,7 @@ class SabaiCalendarRenderer {
             captureBtn.textContent = originalText;
             captureBtn.disabled = false;
             
-            console.log('✅ Complete calendar captured and downloaded successfully');
+            log('✅ Complete calendar captured and downloaded successfully');
             alert('บันทึกตารางสำเร็จ! ไฟล์จะถูกดาวน์โหลดอัตโนมัติ');
             
         } catch (error) {
@@ -823,7 +826,7 @@ class SabaiCalendarRenderer {
             headerRow.appendChild(therapistHeaderCell);
         });
         
-        console.log('📋 Created header row with', originalTherapistHeaders.length, 'therapists');
+        log('📋 Created header row with', originalTherapistHeaders.length, 'therapists');
         
         // Clone the calendar data (without the header row)
         const calendarClone = calendarWithHeaders.cloneNode(true);
@@ -842,7 +845,7 @@ class SabaiCalendarRenderer {
             el.remove();
         });
         
-        console.log('🗑️ Removed', headerElements.length, 'header elements from data clone');
+        log('🗑️ Removed', headerElements.length, 'header elements from data clone');
         
         // Remove any time indicators from the clone
         const timeIndicators = calendarClone.querySelectorAll('.current-time-indicator');
@@ -859,7 +862,7 @@ class SabaiCalendarRenderer {
         calendarClone.style.border = '1px solid #ddd';
         calendarClone.style.borderTop = 'none'; // Connect with header
         
-        console.log('📊 Data clone prepared');
+        log('📊 Data clone prepared');
         
         // Append elements in correct order: Title -> Header -> Data
         tempContainer.appendChild(titleDiv);
@@ -877,19 +880,15 @@ class SabaiCalendarRenderer {
         link.download = `Saba-i-Report-${dateStr}.png`;
         link.href = canvas.toDataURL('image/png', 1.0);
         
-        console.log('💾 Downloading calendar image:', link.download);
+        log('💾 Downloading calendar image:', link.download);
         
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         
-        console.log('✅ Download initiated successfully');
+        log('✅ Download initiated successfully');
     }
 }
 
-console.log('✅ SabaiCalendarRenderer class defined');
-
 // Export for use in other modules
 window.SabaiCalendarRenderer = SabaiCalendarRenderer;
-
-console.log('✅ SabaiCalendarRenderer exported to window');

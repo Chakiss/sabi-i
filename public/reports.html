@@ -366,6 +366,7 @@
         <div class="topbar-title">Dashboard</div>
         <div id="reportPeriodText">วันนี้</div>
         <button id="exportRawBtn" class="back-btn" style="margin-left:8px;">Export CSV</button>
+        <span id="appVersion" style="font-size:10px;opacity:.5;flex-shrink:0;"></span>
     </div>
 </div>
 
@@ -521,6 +522,8 @@
         }
         try {
             window.reportsApp = new SabaiReports();
+            var v = document.getElementById('appVersion');
+            if (v && typeof CONFIG !== 'undefined') v.textContent = 'v' + CONFIG.APP_VERSION;
         } catch (e) {
             console.error('Failed to init SabaiReports:', e);
         }

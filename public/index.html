@@ -3,17 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Saba-i">
+    <meta name="theme-color" content="#4c9fff">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
     <title>สบาย Saba-i Booking Board</title>
-    
+
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
 
-    <!-- html2canvas for screenshot functionality (defer — not needed at startup) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+    <!-- html2canvas is lazy-loaded on demand when capture button is clicked -->
 
     <link rel="stylesheet" href="styles.css?v=20260405">
-    <!-- Preload app scripts to start fetching early while HTML parses -->
     <link rel="preload" href="config.js" as="script">
     <link rel="preload" href="app.js" as="script">
 </head>
@@ -29,8 +34,11 @@
                         <button id="prevDay" class="nav-btn">‹</button>
                         <span id="selectedDate" class="current-date">Loading...</span>
                         <button id="nextDay" class="nav-btn">›</button>
+                        <button id="todayBtn" class="today-btn">วันนี้</button>
                     </div>
                     
+                    <span id="appVersion" class="app-version"></span>
+                    <button id="notifyBtn" class="capture-btn" title="เปิดการแจ้งเตือน">🔔</button>
                     <button id="captureBtn" class="capture-btn">📷</button>
                     <button id="settingsBtn" class="settings-btn">⚙️</button>
                 </div>
@@ -98,6 +106,25 @@
             </div>
         </main>
 
+        <!-- PWA Install Banner (shows only in Safari, not when already installed) -->
+        <div id="installBanner" style="display:none;">
+            <div class="install-banner">
+                <div class="install-banner-text">
+                    <strong>ติดตั้งแอป Saba-i</strong>
+                    <span>เพิ่มลงหน้าจอหลักเพื่อรับการแจ้งเตือน</span>
+                </div>
+                <div class="install-banner-steps">
+                    <span>กดปุ่ม</span>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="vertical-align:middle;">
+                        <rect x="4" y="7" width="12" height="10" rx="1.5" stroke="#007AFF" stroke-width="1.5" fill="none"/>
+                        <path d="M10 2v9M7 5l3-3 3 3" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>ด้านล่าง แล้วเลือก <strong>"เพิ่มไปยังหน้าจอโฮม"</strong></span>
+                </div>
+                <button id="dismissInstall" class="install-banner-close">เข้าใจแล้ว</button>
+            </div>
+        </div>
+
         <!-- Booking Modal -->
         <div id="bookingModalOverlay" class="modal" style="display: none;">
             <div class="modal-content">
@@ -108,7 +135,7 @@
 
                 <div class="modal-scroll">
                     <form id="bookingForm">
-                        <div id="errorMessage" class="booking-error" style="display: none;"></div>
+                        <div id="bookingErrorMessage" class="booking-error" style="display: none;"></div>
 
                         <!-- หมอนวด -->
                         <div class="form-group">
@@ -159,13 +186,15 @@
                                     <option value="10">10%</option>
                                     <option value="15">15%</option>
                                     <option value="20">20%</option>
+                                    <option value="50">50%</option>
                                 </select>
                             </div>
                             <div class="form-group">
                                 <label for="paymentMethod">ชำระเงิน</label>
                                 <select id="paymentMethod" name="paymentMethod" class="form-input">
                                     <option value="">ไม่ระบุ</option>
-                                    <option value="transfer">โอน</option>
+                                    <option value="kbank">กสิกร # 213-1-15671-8</option>
+                                    <option value="scb">ไทยพาณิชย์ # 316-4-22005-3</option>
                                     <option value="cash">สด</option>
                                 </select>
                             </div>
@@ -271,12 +300,13 @@
             }
         });
     </script>
-    <script src="config.js?v=20260405"></script>
-    <script src="utils.js?v=20260405"></script>
-    <script src="dataService.js?v=20260405"></script>
-    <script src="calendarRenderer.js?v=20260405"></script>
-    <script src="bookingManager.js?v=20260405"></script>
-    <script src="app.js?v=20260405"></script>
-    <script src="init-sample-data.js?v=20260405"></script>
+    <script src="config.js?v=20260410"></script>
+    <script src="utils.js?v=20260410"></script>
+    <script src="dataService.js?v=20260410"></script>
+    <script src="calendarRenderer.js?v=20260410"></script>
+    <script src="bookingManager.js?v=20260410"></script>
+    <script src="fcm.js?v=20260410"></script>
+    <script src="app.js?v=20260410"></script>
+    <script src="init-sample-data.js?v=20260410"></script>
 </body>
 </html>

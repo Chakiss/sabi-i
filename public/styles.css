@@ -266,12 +266,16 @@ html, body {
         margin: 0 !important; /* ไม่มี margin */
     }
     
-    .header-compact .nav-btn:first-child {
-        order: 1; /* ปุ่ม < อยู่แรก */
+    .header-compact #prevDay {
+        order: 1;
     }
-    
-    .header-compact .nav-btn:last-child {
-        order: 3; /* ปุ่ม > อยู่สุดท้าย */
+
+    .header-compact #nextDay {
+        order: 3;
+    }
+
+    .header-compact .today-btn {
+        order: 4;
     }
     
     .header-compact .settings-btn, .header-compact .capture-btn {
@@ -284,6 +288,13 @@ html, body {
         order: 4; /* ให้อยู่หลัง date-nav */
         margin: 0 !important; /* ไม่มี margin */
     }
+}
+
+.app-version {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.5);
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .settings-btn, .capture-btn {
@@ -320,13 +331,42 @@ html, body {
 .date-nav {
     display: flex;
     align-items: center;
-    gap: 2px; /* ลด gap เริ่มต้น */
+    gap: 2px;
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 6px; /* ลด radius */
-    padding: 2px; /* ลด padding เริ่มต้น */
-    justify-content: space-between; /* กระจายเต็มพื้นที่ */
-    flex: 1; /* ขยายเต็มพื้นที่ */
-    width: 100%; /* กว้างเต็ม */
+    border-radius: 6px;
+    padding: 2px;
+    justify-content: space-between;
+    flex: 1;
+    width: 100%;
+}
+
+/* Today button */
+.today-btn {
+    background: rgba(255, 255, 255, 0.25);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0.3);
+    white-space: nowrap;
+    min-height: 32px;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.today-btn:hover, .today-btn:active {
+    background: rgba(255, 255, 255, 0.4);
+    transform: scale(0.95);
+}
+
+.today-btn.is-today {
+    opacity: 0.5;
+    pointer-events: none;
 }
 
 .nav-btn {
@@ -763,11 +803,111 @@ html, body {
     cursor: pointer;
     transition: background-color 0.2s ease;
     -webkit-tap-highlight-color: rgba(76, 159, 255, 0.1);
-    /* Default background will be set by JavaScript */
+    content-visibility: auto;
+    contain-intrinsic-size: auto 50px;
 }
 
 .booking-slot:hover {
     /* Hover effect will be handled by JavaScript to maintain color consistency */
+}
+
+/* Saving state feedback */
+.booking-slot.saving {
+    opacity: 0.6;
+    pointer-events: none;
+    position: relative;
+}
+
+.booking-slot.saving::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 5px,
+        rgba(255, 255, 255, 0.3) 5px,
+        rgba(255, 255, 255, 0.3) 10px
+    );
+    animation: saving-stripe 0.5s linear infinite;
+}
+
+@keyframes saving-stripe {
+    0% { background-position: 0 0; }
+    100% { background-position: 14px 0; }
+}
+
+/* Modal saving state */
+.btn-primary.saving {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+/* PWA Install Banner */
+.install-banner {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #e0e0e0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+    padding: 16px 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+.install-banner-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.install-banner-text strong {
+    font-size: 16px;
+    color: #1d1d1f;
+}
+
+.install-banner-text span {
+    font-size: 13px;
+    color: #666;
+}
+
+.install-banner-steps {
+    background: #f5f5f7;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 14px;
+    color: #333;
+    line-height: 1.6;
+}
+
+.install-banner-close {
+    background: #4c9fff;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.install-banner-close:active {
+    opacity: 0.8;
+}
+
+.btn-primary.saving::after {
+    content: ' ...';
 }
 
 .booking-slot.booked {

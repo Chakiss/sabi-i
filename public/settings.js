@@ -1131,4 +1131,6 @@ class SabaiSettingsManager {
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Initializing Saba-i Settings Manager...');
     window.settingsApp = new SabaiSettingsManager();
+    var v = document.getElementById('appVersion');
+    if (v && typeof CONFIG !== 'undefined') v.textContent = 'v' + CONFIG.APP_VERSION;
 });

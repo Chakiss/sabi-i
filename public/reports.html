@@ -7,7 +7,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <!-- Chart.js is lazy-loaded on demand before first report render -->
 
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -365,6 +365,7 @@
         <a href="index.html" class="back-btn">← กลับ</a>
         <div class="topbar-title">Dashboard</div>
         <div id="reportPeriodText">วันนี้</div>
+        <button id="exportRawBtn" class="back-btn" style="margin-left:8px;">Export CSV</button>
     </div>
 </div>
 
@@ -398,7 +399,7 @@
     </div>
 
     <!-- Content (hidden until loaded) -->
-    <div id="dashContent" style="display:none; flex-direction:column; gap:24px;">
+    <div id="dashContent" style="display:none; flex-direction:column; gap:24px; transition: opacity 0.3s ease;">
 
         <!-- ── KPI row ─────────────────────────────────────── -->
         <div id="reportsGrid" class="kpi-grid">

@@ -4,7 +4,8 @@ class SabaiSettingsManager {
         this.services = [];
         this.isLoading = false;
         this.currentEditingServiceId = null;
-        
+        this._dragCleanup = null; // Track drag listeners for cleanup
+
         this.bindEvents();
         this.loadInitialData();
     }
@@ -231,18 +232,27 @@ class SabaiSettingsManager {
 
     // Render therapist list
     renderTherapistList() {
+        // Cleanup old drag listeners before re-rendering
+        if (this._dragCleanup) {
+            this._dragCleanup();
+            this._dragCleanup = null;
+        }
+
         const container = document.getElementById('therapistList');
         container.innerHTML = '';
-        
+
         if (this.therapists.length === 0) {
             container.innerHTML = '<p style="text-align: center; color: #666;">ไม่มีหมอนวดในระบบ</p>';
             return;
         }
-        
+
         this.therapists.forEach((therapist, index) => {
             const item = this.createTherapistItem(therapist, index);
             container.appendChild(item);
         });
+
+        // Setup drag-and-drop for the whole list (single set of document listeners)
+        this._dragCleanup = this.setupDragAndDrop(container);
     }
 
     // Create individual therapist item
@@ -281,10 +291,7 @@ class SabaiSettingsManager {
         item.querySelector('.delete-therapist').addEventListener('click', (e) => {
             this.deleteTherapist(therapist.id);
         });
-        
-        // Add drag and drop functionality
-        this.addDragAndDropToItem(item);
-        
+
         return item;
     }
 
@@ -375,114 +382,92 @@ class SabaiSettingsManager {
         }
     }
 
-    // Add drag and drop functionality to therapist item
-    addDragAndDropToItem(item) {
-        const dragHandle = item.querySelector('.drag-handle');
-        let isDragging = false;
+    // Setup drag-and-drop for the therapist list container
+    // Returns a cleanup function to remove document-level listeners
+    setupDragAndDrop(container) {
+        let dragItem = null;
         let startY = 0;
-        let currentY = 0;
-        const self = this; // Store reference to class instance
-        
-        // Mouse events
-        dragHandle.addEventListener('mousedown', startDrag);
-        document.addEventListener('mousemove', onDrag);
-        document.addEventListener('mouseup', endDrag);
-        
-        // Touch events
-        dragHandle.addEventListener('touchstart', startDragTouch, { passive: false });
-        document.addEventListener('touchmove', onDragTouch, { passive: false });
-        document.addEventListener('touchend', endDragTouch);
-        
-        function startDrag(e) {
-            isDragging = true;
-            startY = e.clientY;
-            currentY = e.clientY;
+        const self = this;
+
+        function getClientY(e) {
+            return e.touches ? e.touches[0].clientY : e.clientY;
+        }
+
+        function onStart(e) {
+            const handle = e.target.closest('.drag-handle');
+            if (!handle) return;
+            const item = handle.closest('.therapist-item');
+            if (!item) return;
+
+            e.preventDefault();
+            dragItem = item;
+            startY = getClientY(e);
             item.classList.add('dragging');
+        }
+
+        function onMove(e) {
+            if (!dragItem) return;
             e.preventDefault();
-        }
-        
-        function startDragTouch(e) {
-            isDragging = true;
-            startY = e.touches[0].clientY;
-            currentY = e.touches[0].clientY;
-            item.classList.add('dragging');
-            e.preventDefault();
-        }
-        
-        function onDrag(e) {
-            if (!isDragging) return;
-            e.preventDefault();
-            
-            currentY = e.clientY;
-            updateDragPosition();
-        }
-        
-        function onDragTouch(e) {
-            if (!isDragging) return;
-            e.preventDefault();
-            
-            currentY = e.touches[0].clientY;
-            updateDragPosition();
-        }
-        
-        function updateDragPosition() {
-            const deltaY = currentY - startY;
-            item.style.transform = `translateY(${deltaY}px)`;
-            item.style.zIndex = '1000';
-            
-            // Find the closest item to insert after
-            const container = item.parentNode;
-            const afterElement = getDragAfterElement(container, currentY);
-            
-            if (afterElement == null) {
-                container.appendChild(item);
-            } else {
-                container.insertBefore(item, afterElement);
-            }
-        }
-        
-        function endDrag(e) {
-            if (!isDragging) return;
-            
-            isDragging = false;
-            item.classList.remove('dragging');
-            item.style.transform = '';
-            item.style.zIndex = '';
-            
-            // Update display order in database
-            setTimeout(() => {
-                self.updateTherapistOrders();
-            }, 100);
-        }
-        
-        function endDragTouch(e) {
-            if (!isDragging) return;
-            
-            isDragging = false;
-            item.classList.remove('dragging');
-            item.style.transform = '';
-            item.style.zIndex = '';
-            
-            // Update display order in database
-            setTimeout(() => {
-                self.updateTherapistOrders();
-            }, 100);
-        }
-        
-        function getDragAfterElement(container, y) {
-            const draggableElements = [...container.querySelectorAll('.therapist-item:not(.dragging)')];
-            
-            return draggableElements.reduce((closest, child) => {
+
+            const y = getClientY(e);
+            const deltaY = y - startY;
+            dragItem.style.transform = `translateY(${deltaY}px)`;
+            dragItem.style.zIndex = '1000';
+
+            // Find where to insert based on cursor position
+            const siblings = [...container.querySelectorAll('.therapist-item:not(.dragging)')];
+            const afterElement = siblings.reduce((closest, child) => {
                 const box = child.getBoundingClientRect();
                 const offset = y - box.top - box.height / 2;
-                
                 if (offset < 0 && offset > closest.offset) {
-                    return { offset: offset, element: child };
-                } else {
-                    return closest;
+                    return { offset, element: child };
                 }
+                return closest;
             }, { offset: Number.NEGATIVE_INFINITY }).element;
+
+            // Only move in DOM if position actually changed
+            const currentNext = dragItem.nextElementSibling;
+            const needsMove = (afterElement == null && currentNext != null) ||
+                              (afterElement != null && afterElement !== dragItem && afterElement !== currentNext);
+
+            if (needsMove) {
+                if (afterElement == null) {
+                    container.appendChild(dragItem);
+                } else {
+                    container.insertBefore(dragItem, afterElement);
+                }
+                // Reset startY after DOM reorder so transform recalculates
+                // from the new natural position — prevents visual jump
+                startY = y;
+                dragItem.style.transform = 'translateY(0px)';
+            }
         }
+
+        function onEnd() {
+            if (!dragItem) return;
+            dragItem.classList.remove('dragging');
+            dragItem.style.transform = '';
+            dragItem.style.zIndex = '';
+            dragItem = null;
+            self.updateTherapistOrders();
+        }
+
+        container.addEventListener('mousedown', onStart);
+        container.addEventListener('touchstart', onStart, { passive: false });
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('touchmove', onMove, { passive: false });
+        document.addEventListener('mouseup', onEnd);
+        document.addEventListener('touchend', onEnd);
+
+        // Return cleanup function
+        return function cleanup() {
+            container.removeEventListener('mousedown', onStart);
+            container.removeEventListener('touchstart', onStart);
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('touchmove', onMove);
+            document.removeEventListener('mouseup', onEnd);
+            document.removeEventListener('touchend', onEnd);
+        };
     }
 
     // Update therapist display orders based on current DOM order
@@ -490,29 +475,35 @@ class SabaiSettingsManager {
         try {
             const items = document.querySelectorAll('.therapist-item');
             const updates = [];
-            
+
             items.forEach((item, index) => {
                 const therapistId = item.dataset.therapistId;
                 const newOrder = index + 1;
-                
+
+                // Update local data
+                const therapist = this.therapists.find(t => t.id === therapistId);
+                if (therapist) therapist.displayOrder = newOrder;
+
+                // Update the order label in DOM
+                const orderLabel = item.querySelector('.therapist-order');
+                if (orderLabel) orderLabel.textContent = `ลำดับที่ ${newOrder}`;
+
                 updates.push(
                     db.collection('therapists').doc(therapistId).update({
                         displayOrder: newOrder
                     })
                 );
             });
-            
+
             await Promise.all(updates);
-            
-            // Reload and update display
-            await this.loadTherapists();
-            this.renderTherapistList();
-            
             console.log('Updated therapist display orders');
-            
+
         } catch (error) {
             console.error('Error updating therapist orders:', error);
             alert('ไม่สามารถจัดเรียงลำดับหมอนวดได้');
+            // On error, reload to restore correct state
+            await this.loadTherapists();
+            this.renderTherapistList();
         }
     }
 

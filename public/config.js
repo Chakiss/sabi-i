@@ -12,8 +12,15 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
-// Initialize Firestore
+// Initialize Firestore with offline persistence for fast loads on slow networks
 const db = firebase.firestore();
+db.settings({ cache: { kind: 'persistent', tabManager: { kind: 'persistentMultipleTab' } } });
+
+// Debug mode - set to true to enable console logging
+const DEBUG = false;
+const log = DEBUG ? console.log.bind(console) : () => {};
+window.DEBUG = DEBUG;
+window.log = log;
 
 // Configuration Constants
 const CONFIG = {
@@ -33,6 +40,9 @@ const CONFIG = {
     // Date format for Firestore
     DATE_FORMAT: 'YYYY-MM-DD'
 };
+
+// FCM Web Push VAPID Key (from Firebase Console > Cloud Messaging > Web Push certificates)
+window.FCM_VAPID_KEY = 'BBAX1Uu6K0v92kP1D_Y0yV2lkmCh8U41jHODanYahf3eceEyvbFYUr3BEUIay7UcjSL93tw3rYXTahKbC9l3Fhg';
 
 // Export for use in other files
 window.CONFIG = CONFIG;

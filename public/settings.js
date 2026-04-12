@@ -274,7 +274,6 @@ class SabaiSettingsManager {
                         data-therapist-id="${therapist.id}" 
                         title="${therapist.status === 'active' ? 'ซ่อนหมอนวด' : 'แสดงหมอนวด'}">
                 </button>
-                <button class="edit-therapist" data-therapist-id="${therapist.id}">แก้ไข</button>
                 <button class="delete-therapist" data-therapist-id="${therapist.id}">ลบ</button>
             </div>
         `;
@@ -282,10 +281,6 @@ class SabaiSettingsManager {
         // Add event listeners
         item.querySelector('.toggle-visibility').addEventListener('click', (e) => {
             this.toggleTherapistVisibility(therapist.id);
-        });
-        
-        item.querySelector('.edit-therapist').addEventListener('click', (e) => {
-            this.editTherapist(therapist.id);
         });
         
         item.querySelector('.delete-therapist').addEventListener('click', (e) => {

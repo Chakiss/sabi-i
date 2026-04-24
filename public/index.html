@@ -381,16 +381,21 @@
                 moreBtn.setAttribute('aria-expanded', 'true');
                 document.addEventListener('click', onOutside, true);
                 document.addEventListener('keydown', onKey, true);
-                window.addEventListener('resize', positionMenu);
-                window.addEventListener('scroll', positionMenu, true);
+                window.addEventListener('resize', close);
+                window.addEventListener('scroll', onScroll, true);
             };
             const close = () => {
                 moreMenu.hidden = true;
                 moreBtn.setAttribute('aria-expanded', 'false');
                 document.removeEventListener('click', onOutside, true);
                 document.removeEventListener('keydown', onKey, true);
-                window.removeEventListener('resize', positionMenu);
-                window.removeEventListener('scroll', positionMenu, true);
+                window.removeEventListener('resize', close);
+                window.removeEventListener('scroll', onScroll, true);
+            };
+            const onScroll = (e) => {
+                // Ignore scrolls that happen inside the menu itself (e.g. if it ever becomes scrollable)
+                if (moreMenu.contains(e.target)) return;
+                close();
             };
             const onOutside = (e) => {
                 if (!moreMenu.contains(e.target) && e.target !== moreBtn && !moreBtn.contains(e.target)) {
@@ -457,7 +462,7 @@
     })();
     </script>
 
-    <script src="config.js?v=20260410"></script>
+    <script src="config.js?v=20260424"></script>
     <script src="utils.js?v=20260410"></script>
     <script src="dataService.js?v=20260410"></script>
     <script src="calendarRenderer.js?v=20260424c"></script>

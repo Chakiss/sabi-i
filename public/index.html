@@ -2,14 +2,22 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Saba-i">
-    <meta name="theme-color" content="#4c9fff">
+    <meta name="theme-color" content="#6E5B3F">
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+    <link rel="shortcut icon" href="icons/favicon-32.png">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
     <title>สบาย Saba-i Booking Board</title>
+
+    <!-- Elegant typography to match the Saba-i seal aesthetic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700&family=Raleway:wght@300..700&family=Noto+Sans+Thai:wght@300..700&display=swap" rel="stylesheet">
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -18,7 +26,7 @@
 
     <!-- html2canvas is lazy-loaded on demand when capture button is clicked -->
 
-    <link rel="stylesheet" href="styles.css?v=20260405">
+    <link rel="stylesheet" href="styles.css?v=20260424f">
     <link rel="preload" href="config.js" as="script">
     <link rel="preload" href="app.js" as="script">
 </head>
@@ -27,20 +35,56 @@
         <!-- Header -->
         <header class="header">
             <div class="header-compact">
-                <h1 class="app-title">Saba-i Booking Board</h1>
-                
+                <h1 class="app-title">
+                    <img src="icons/logo.jpg" alt="" class="brand-mark" aria-hidden="true">
+                    <span>Saba-i Booking Board</span>
+                </h1>
+
                 <div class="header-controls">
                     <div class="date-nav">
-                        <button id="prevDay" class="nav-btn">‹</button>
+                        <button id="prevDay" class="nav-btn" aria-label="วันก่อนหน้า">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+                        </button>
                         <span id="selectedDate" class="current-date">Loading...</span>
-                        <button id="nextDay" class="nav-btn">›</button>
+                        <button id="nextDay" class="nav-btn" aria-label="วันถัดไป">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                        </button>
                         <button id="todayBtn" class="today-btn">วันนี้</button>
                     </div>
-                    
+
                     <span id="appVersion" class="app-version"></span>
-                    <button id="notifyBtn" class="capture-btn" title="เปิดการแจ้งเตือน">🔔</button>
-                    <button id="captureBtn" class="capture-btn">📷</button>
-                    <button id="settingsBtn" class="settings-btn">⚙️</button>
+
+                    <!-- Hidden: original handlers stay bound here; the menu items trigger .click() on these -->
+                    <button id="notifyBtn" hidden aria-hidden="true" tabindex="-1"></button>
+                    <button id="captureBtn" hidden aria-hidden="true" tabindex="-1"></button>
+                    <button id="settingsBtn" hidden aria-hidden="true" tabindex="-1"></button>
+
+                    <!-- Single "more" menu button -->
+                    <div class="more-wrap">
+                        <button id="moreBtn" class="settings-btn" title="เมนูเพิ่มเติม" aria-label="เมนูเพิ่มเติม" aria-haspopup="menu" aria-expanded="false">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+                        </button>
+                        <div id="moreMenu" class="more-menu" role="menu" aria-labelledby="moreBtn" hidden>
+                            <button type="button" class="more-item" data-action="notify" role="menuitem">
+                                <span class="more-item-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                                </span>
+                                <span class="more-item-label">เปิดการแจ้งเตือน</span>
+                            </button>
+                            <button type="button" class="more-item" data-action="capture" role="menuitem">
+                                <span class="more-item-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                                </span>
+                                <span class="more-item-label">บันทึกภาพหน้าจอ</span>
+                            </button>
+                            <button type="button" class="more-item" data-action="settings" role="menuitem">
+                                <span class="more-item-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                                </span>
+                                <span class="more-item-label">ตั้งค่า</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </header>
@@ -300,10 +344,123 @@
             }
         });
     </script>
+    <!-- Header "more" menu: single button that proxies to the hidden action buttons -->
+    <script>
+    (function initMoreMenu() {
+        document.addEventListener('DOMContentLoaded', () => {
+            const moreBtn = document.getElementById('moreBtn');
+            const moreMenu = document.getElementById('moreMenu');
+            if (!moreBtn || !moreMenu) return;
+
+            // Portal the menu out of the header so the header's z-index/stacking
+            // context can't cap it — append to <body> at the end of the DOM.
+            if (moreMenu.parentElement !== document.body) {
+                document.body.appendChild(moreMenu);
+            }
+
+            const positionMenu = () => {
+                const r = moreBtn.getBoundingClientRect();
+                const margin = 8;
+                // Anchor below the button, right-aligned to its right edge
+                moreMenu.style.top = Math.round(r.bottom + margin) + 'px';
+                // Measure menu to clamp inside the viewport
+                const menuW = moreMenu.offsetWidth || 220;
+                let left = Math.round(r.right - menuW);
+                const minLeft = 8;
+                const maxLeft = window.innerWidth - menuW - 8;
+                if (left < minLeft) left = minLeft;
+                if (left > maxLeft) left = maxLeft;
+                moreMenu.style.left = left + 'px';
+            };
+
+            const open = () => {
+                moreMenu.hidden = false;
+                positionMenu();
+                // Re-measure once layout settles (flex children may change width)
+                requestAnimationFrame(positionMenu);
+                moreBtn.setAttribute('aria-expanded', 'true');
+                document.addEventListener('click', onOutside, true);
+                document.addEventListener('keydown', onKey, true);
+                window.addEventListener('resize', positionMenu);
+                window.addEventListener('scroll', positionMenu, true);
+            };
+            const close = () => {
+                moreMenu.hidden = true;
+                moreBtn.setAttribute('aria-expanded', 'false');
+                document.removeEventListener('click', onOutside, true);
+                document.removeEventListener('keydown', onKey, true);
+                window.removeEventListener('resize', positionMenu);
+                window.removeEventListener('scroll', positionMenu, true);
+            };
+            const onOutside = (e) => {
+                if (!moreMenu.contains(e.target) && e.target !== moreBtn && !moreBtn.contains(e.target)) {
+                    close();
+                }
+            };
+            const onKey = (e) => {
+                if (e.key === 'Escape') { close(); moreBtn.focus(); }
+            };
+
+            moreBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (moreMenu.hidden) open(); else close();
+            });
+
+            moreMenu.addEventListener('click', (e) => {
+                const item = e.target.closest('.more-item');
+                if (!item) return;
+                const action = item.dataset.action;
+                const targetId = { notify: 'notifyBtn', capture: 'captureBtn', settings: 'settingsBtn' }[action];
+                close();
+                const target = targetId && document.getElementById(targetId);
+                if (target) target.click();
+            });
+
+            // Mirror capture button busy state onto the moreBtn so users
+            // still see a loading indicator while a screenshot is rendering.
+            const captureBtn = document.getElementById('captureBtn');
+            if (captureBtn && 'MutationObserver' in window) {
+                const obs = new MutationObserver(() => {
+                    const busy = captureBtn.disabled;
+                    moreBtn.classList.toggle('is-busy', busy);
+                    moreBtn.setAttribute('aria-busy', busy ? 'true' : 'false');
+                });
+                obs.observe(captureBtn, { attributes: true, attributeFilter: ['disabled'] });
+            }
+
+            // Mirror notification permission state onto the notify menu item
+            // (fcm.js updates the hidden #notifyBtn's classes and title).
+            const notifyBtn = document.getElementById('notifyBtn');
+            const notifyItem = moreMenu.querySelector('.more-item[data-action="notify"]');
+            if (notifyBtn && notifyItem && 'MutationObserver' in window) {
+                const label = notifyItem.querySelector('.more-item-label');
+                const syncNotify = () => {
+                    const granted = notifyBtn.classList.contains('active');
+                    const denied = notifyBtn.classList.contains('denied');
+                    notifyItem.classList.toggle('is-active', granted);
+                    notifyItem.classList.toggle('is-denied', denied);
+                    if (label) {
+                        label.textContent = denied
+                            ? 'การแจ้งเตือนถูกบล็อก'
+                            : granted
+                                ? 'การแจ้งเตือนเปิดอยู่'
+                                : 'เปิดการแจ้งเตือน';
+                    }
+                    if (notifyBtn.title) notifyItem.title = notifyBtn.title;
+                };
+                syncNotify();
+                new MutationObserver(syncNotify).observe(notifyBtn, {
+                    attributes: true, attributeFilter: ['class', 'title']
+                });
+            }
+        });
+    })();
+    </script>
+
     <script src="config.js?v=20260410"></script>
     <script src="utils.js?v=20260410"></script>
     <script src="dataService.js?v=20260410"></script>
-    <script src="calendarRenderer.js?v=20260410"></script>
+    <script src="calendarRenderer.js?v=20260424"></script>
     <script src="bookingManager.js?v=20260410"></script>
     <script src="dragDropHandler.js?v=20260412"></script>
     <script src="fcm.js?v=20260410"></script>

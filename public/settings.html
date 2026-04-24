@@ -2,22 +2,48 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>จัดการระบบ - Saba-i Booking Board</title>
-    
+
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+    <link rel="shortcut icon" href="icons/favicon-32.png">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700&family=Raleway:wght@300..700&family=Noto+Sans+Thai:wght@300..700&display=swap" rel="stylesheet">
+
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    
-    <link rel="stylesheet" href="styles.css">
+
+    <link rel="stylesheet" href="styles.css?v=20260424b">
 </head>
 <body>
     <div id="app" class="app-container">
         <!-- Header -->
         <header class="header">
             <div class="header-top">
-                <button id="backBtn" class="nav-btn">‹ กลับ</button>
-                <h1 class="app-title">จัดการระบบ</h1>
+                <button id="backBtn" class="nav-btn back-btn-wide" aria-label="กลับ">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+                    <span>กลับ</span>
+                </button>
+                <style>
+                    .back-btn-wide {
+                        max-width: none !important;
+                        min-width: auto !important;
+                        width: auto !important;
+                        padding: 8px 14px !important;
+                        gap: 4px;
+                        font-size: 14px;
+                    }
+                    .back-btn-wide span { font-weight: 500; }
+                </style>
+                <h1 class="app-title">
+                    <img src="icons/logo.jpg" alt="" class="brand-mark" aria-hidden="true">
+                    <span>จัดการระบบ</span>
+                </h1>
                 <span id="appVersion" style="font-size:10px;color:rgba(255,255,255,.5);"></span>
                 <div class="placeholder"></div>
             </div>
@@ -60,7 +86,7 @@
                         <form id="addTherapistForm" class="add-therapist-form">
                             <div class="form-row">
                                 <input type="text" id="therapistName" class="form-input" placeholder="ชื่อหมอนวด" required>
-                                <input type="color" id="therapistColor" class="color-input" value="#4c9fff" title="สีแสดงผล">
+                                <input type="color" id="therapistColor" class="color-input" value="#A08562" title="สีแสดงผล">
                                 <button type="submit" class="btn btn-primary">เพิ่ม</button>
                             </div>
                         </form>

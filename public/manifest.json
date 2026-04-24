@@ -1,0 +1,25 @@
+{
+  "name": "Saba-i Booking Board",
+  "short_name": "Saba-i",
+  "description": "ระบบจองเวลานวด สบาย",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#FFFCF7",
+  "theme_color": "#6E5B3F",
+  "orientation": "any",
+  "gcm_sender_id": "971855188313",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

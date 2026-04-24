@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saba-i — ระบบจองคิวนวดสำหรับร้านนวดแผนไทย</title>
+    <meta name="description" content="Saba-i คือระบบจองคิวนวดที่ออกแบบมาสำหรับ iPad โดยเฉพาะ ใช้งานง่าย โหลดเร็ว รองรับเน็ตช้า เหมาะสำหรับร้านนวดทุกขนาด">
+    <meta property="og:title" content="Saba-i — ระบบจองคิวนวดสำหรับร้านนวดแผนไทย">
+    <meta property="og:description" content="ระบบจองคิวที่ลื่นไหล เบาเครื่อง เหมาะกับ iPad รุ่นเก่า ไม่สะดุดแม้สัญญาณเน็ตช้า">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+    <link rel="shortcut icon" href="icons/favicon-32.png">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Raleway:wght@300..700&family=Noto+Sans+Thai:wght@300..700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        serif: ['Lora', 'Noto Sans Thai', 'serif'],
+                        sans: ['Raleway', 'Noto Sans Thai', 'system-ui', 'sans-serif'],
+                        thai: ['"Noto Sans Thai"', 'Raleway', 'sans-serif'],
+                    },
+                    colors: {
+                        // Warm taupe (from logo) as the brand spine
+                        sand: {
+                            50:  '#FBF8F3',
+                            100: '#F4EDE2',
+                            200: '#E8DCC6',
+                            300: '#D4C2A0',
+                            400: '#B89C70',
+                            500: '#A08562',  // primary — close to logo ink
+                            600: '#8A7250',
+                            700: '#6E5B3F',
+                            800: '#4F4130',
+                            900: '#2D2619',
+                        },
+                        // Deep espresso/ink for text
+                        ink: {
+                            50:  '#FAF8F4',
+                            100: '#EEE9DF',
+                            500: '#3B322A',
+                            700: '#2A231D',
+                            900: '#1A1510',
+                        },
+                        // Subtle warm accents
+                        blush: {
+                            50:  '#FBF3ED',
+                            100: '#F5E4D4',
+                            200: '#E9C9AD',
+                            300: '#D4A37A',
+                            500: '#B67A4E',
+                        },
+                        cream:   '#FBF8F3',
+                        oatmeal: '#F4EDE2',
+                    },
+                    boxShadow: {
+                        'soft-sm': '0 1px 2px rgba(61, 49, 34, 0.04), 0 1px 3px rgba(61, 49, 34, 0.06)',
+                        'soft':    '0 6px 18px rgba(138, 114, 80, 0.08), 0 2px 6px rgba(61, 49, 34, 0.04)',
+                        'soft-lg': '0 24px 56px -16px rgba(138, 114, 80, 0.22), 0 10px 28px -8px rgba(61, 49, 34, 0.08)',
+                        'soft-xl': '0 40px 96px -28px rgba(110, 91, 63, 0.32), 0 18px 48px -14px rgba(61, 49, 34, 0.10)',
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style>
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Raleway', 'Noto Sans Thai', system-ui, sans-serif;
+            background: #FBF8F3;
+            color: #2A231D;
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+        }
+        .font-display {
+            font-family: 'Lora', 'Noto Sans Thai', serif;
+            font-feature-settings: "liga", "kern";
+            letter-spacing: -0.01em;
+        }
+        :lang(th), .font-thai {
+            font-family: 'Noto Sans Thai', 'Raleway', sans-serif;
+            letter-spacing: 0;
+        }
+
+        /* Soft mesh — warm earth tones */
+        .mesh-bg {
+            background-image:
+                radial-gradient(at 18% 12%, rgba(232, 220, 198, 0.55) 0px, transparent 55%),
+                radial-gradient(at 82% 8%, rgba(245, 228, 212, 0.55) 0px, transparent 55%),
+                radial-gradient(at 72% 92%, rgba(212, 194, 160, 0.35) 0px, transparent 55%);
+        }
+
+        /* Focus ring */
+        a:focus-visible, button:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(160, 133, 98, 0.28);
+            border-radius: 999px;
+        }
+
+        .card-soft {
+            transition: transform 260ms cubic-bezier(.2,.7,.2,1), box-shadow 260ms cubic-bezier(.2,.7,.2,1);
+        }
+        .card-soft:hover { transform: translateY(-4px); }
+
+        /* iPad device frame */
+        .device-frame {
+            background: linear-gradient(145deg, #2a231d, #0f0c09);
+            border-radius: 28px;
+            padding: 14px;
+            box-shadow:
+                0 50px 100px -24px rgba(78, 65, 48, 0.45),
+                0 22px 56px -14px rgba(26, 21, 16, 0.32),
+                inset 0 1px 0 rgba(255,255,255,0.06);
+        }
+
+        /* Warm ink gradient text */
+        .text-gradient {
+            background: linear-gradient(135deg, #6E5B3F 0%, #A08562 45%, #B67A4E 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        @keyframes softPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.55; }
+        }
+        .live-dot { animation: softPulse 2.2s ease-in-out infinite; }
+
+        @keyframes floatY {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .float-slow { animation: floatY 6s ease-in-out infinite; }
+        .float-slower { animation: floatY 8s ease-in-out infinite; }
+
+        /* Seal logo subtle rotation on hero (decorative only) */
+        @keyframes sealRotate {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .float-slow, .float-slower, .live-dot { animation: none !important; transition: none !important; }
+            html { scroll-behavior: auto; }
+        }
+
+        /* Calendar mock — warm palette */
+        .calendar-mock {
+            display: grid;
+            grid-template-columns: 56px repeat(4, 1fr);
+            gap: 2px;
+            background: #EDE5D6;
+            border-radius: 16px;
+            overflow: hidden;
+            font-size: 11px;
+        }
+        .cal-cell  { background: #FDFBF6; padding: 10px 8px; min-height: 34px; }
+        .cal-time  { background: #F7F1E5; color: #8A7250; display: flex; align-items: center; justify-content: center; font-weight: 500; }
+        .cal-head  { background: #F4EDE2; color: #4F4130; font-weight: 600; text-align: center; padding: 10px 4px; }
+        .cal-booked{ background: linear-gradient(135deg, #8A7250, #A08562); color: #FBF8F3; font-weight: 600; padding: 6px 8px; }
+        .cal-booked.rose  { background: linear-gradient(135deg, #B67A4E, #D4A37A); color: #2A231D; }
+        .cal-booked.olive { background: linear-gradient(135deg, #6E5B3F, #8A7250); color: #FBF8F3; }
+        .cal-booked.sage  { background: linear-gradient(135deg, #6B7A5A, #8D9C75); color: #FBF8F3; }
+
+        /* Thin divider */
+        .hairline { border-top: 1px solid rgba(138, 114, 80, 0.18); }
+
+        /* Fine corner ornament */
+        .ornament {
+            width: 40px; height: 1px; background: linear-gradient(to right, transparent, #B89C70, transparent);
+        }
+    </style>
+</head>
+<body class="font-thai">
+
+<!-- ============ NAVBAR ============ -->
+<header class="sticky top-0 z-40 backdrop-blur-md bg-cream/80 border-b border-sand-200/60">
+    <nav class="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <a href="#" class="flex items-center gap-2.5 group" aria-label="Saba-i home">
+            <img src="icons/logo.jpg" alt="" class="w-10 h-10 rounded-full object-cover ring-1 ring-sand-200">
+            <span class="font-display text-xl font-semibold tracking-[0.04em] text-ink-900">Saba-i</span>
+        </a>
+
+        <div class="hidden md:flex items-center gap-9 text-sm font-medium text-sand-800">
+            <a href="#features" class="hover:text-sand-600 transition-colors">ฟีเจอร์</a>
+            <a href="#how" class="hover:text-sand-600 transition-colors">วิธีใช้งาน</a>
+            <a href="#pricing" class="hover:text-sand-600 transition-colors">ราคา</a>
+            <a href="#faq" class="hover:text-sand-600 transition-colors">คำถามที่พบบ่อย</a>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <a href="index.html" class="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-sand-700 hover:text-sand-900 transition-colors">
+                เข้าสู่ระบบ
+            </a>
+            <a href="#cta" class="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold text-cream bg-ink-700 hover:bg-ink-900 rounded-full shadow-soft transition-all cursor-pointer">
+                เริ่มใช้ฟรี
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+            </a>
+        </div>
+    </nav>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="relative overflow-hidden mesh-bg">
+    <!-- Oversized seal backdrop -->
+    <img src="icons/logo.jpg" alt="" aria-hidden="true"
+         class="hidden lg:block pointer-events-none absolute -right-40 -top-32 w-[680px] opacity-[0.06] select-none">
+
+    <div class="relative max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 pt-16 md:pt-24 pb-20 md:pb-28">
+        <div class="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+
+            <!-- Left: copy -->
+            <div class="lg:col-span-6 max-w-xl">
+                <span class="inline-flex items-center gap-2 px-3.5 py-1.5 bg-white/80 backdrop-blur rounded-full border border-sand-200/80 text-xs font-semibold text-sand-700 shadow-soft-sm">
+                    <span class="w-1.5 h-1.5 bg-emerald-600 rounded-full live-dot"></span>
+                    THAI MASSAGE · RELAX AND WELLNESS
+                </span>
+
+                <h1 class="mt-6 font-display text-4xl sm:text-5xl lg:text-[56px] leading-[1.08] font-medium text-ink-900 tracking-tight">
+                    จัดคิวหมอนวด<br>
+                    <em class="not-italic text-gradient">ง่ายเหมือนแตะครั้งเดียว</em>
+                </h1>
+
+                <p class="mt-6 text-lg leading-relaxed text-ink-500">
+                    ระบบจองคิวบนกระดานเดียว ใช้งานลื่นบน iPad รุ่นเก่า โหลดเร็วแม้สัญญาณเน็ตช้า
+                    ซิงค์ข้อมูลแบบเรียลไทม์ ให้ทั้งพนักงานและเจ้าของร้านมองเห็นคิวเดียวกันตลอดเวลา
+                </p>
+
+                <div class="mt-8 flex flex-col sm:flex-row gap-3">
+                    <a href="#cta" class="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-ink-700 hover:bg-ink-900 text-cream font-semibold rounded-full shadow-soft-lg hover:shadow-soft-xl transition-all cursor-pointer">
+                        ทดลองใช้ฟรี 30 วัน
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+                    </a>
+                    <a href="#how" class="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-white/80 backdrop-blur text-sand-800 font-semibold rounded-full border border-sand-200 hover:bg-white hover:border-sand-300 transition-all cursor-pointer">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        ดูวิธีใช้งาน
+                    </a>
+                </div>
+
+                <!-- Trust row -->
+                <dl class="mt-12 grid grid-cols-3 gap-6 max-w-md">
+                    <div>
+                        <dt class="text-[11px] font-medium text-sand-600 uppercase tracking-[0.15em]">น้ำหนักแอป</dt>
+                        <dd class="mt-2 font-display text-2xl font-medium text-ink-900">&lt; 150<span class="text-base text-sand-600 font-sans font-medium"> KB</span></dd>
+                    </div>
+                    <div>
+                        <dt class="text-[11px] font-medium text-sand-600 uppercase tracking-[0.15em]">ซิงค์เรียลไทม์</dt>
+                        <dd class="mt-2 font-display text-2xl font-medium text-ink-900">&lt; 1<span class="text-base text-sand-600 font-sans font-medium"> วินาที</span></dd>
+                    </div>
+                    <div>
+                        <dt class="text-[11px] font-medium text-sand-600 uppercase tracking-[0.15em]">รองรับ iPad</dt>
+                        <dd class="mt-2 font-display text-2xl font-medium text-ink-900">iOS 12<span class="text-base text-sand-600 font-sans font-medium">+</span></dd>
+                    </div>
+                </dl>
+            </div>
+
+            <!-- Right: device mockup -->
+            <div class="lg:col-span-6 relative">
+                <!-- Floating badges -->
+                <div class="hidden md:flex absolute -left-4 top-12 z-10 float-slow items-center gap-2.5 bg-white rounded-2xl shadow-soft-lg px-4 py-3 border border-sand-100">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-50 grid place-items-center">
+                        <svg class="w-5 h-5 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-xs text-ink-500/70 font-medium">จองสำเร็จ</p>
+                        <p class="text-sm font-semibold text-ink-900">คุณพลอย · 13:00</p>
+                    </div>
+                </div>
+
+                <div class="hidden md:flex absolute -right-2 bottom-16 z-10 float-slower items-center gap-2.5 bg-white rounded-2xl shadow-soft-lg px-4 py-3 border border-sand-100">
+                    <div class="w-10 h-10 rounded-xl bg-blush-50 grid place-items-center">
+                        <svg class="w-5 h-5 text-blush-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 1 0-18 0"/><path d="M12 7v5l3 2"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-xs text-ink-500/70 font-medium">คิวถัดไป</p>
+                        <p class="text-sm font-semibold text-ink-900">หมอเมย์ · อีก 15 นาที</p>
+                    </div>
+                </div>
+
+                <!-- iPad device -->
+                <div class="device-frame mx-auto max-w-xl">
+                    <div class="bg-white rounded-[18px] overflow-hidden">
+                        <!-- App header bar -->
+                        <div class="flex items-center justify-between px-5 py-3 bg-gradient-to-r from-ink-700 to-ink-900 text-cream">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                                <span class="text-sm font-semibold">วันนี้ · 14 เมษายน</span>
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                            </div>
+                            <div class="flex items-center gap-1.5 text-xs bg-white/15 backdrop-blur px-2 py-1 rounded-full">
+                                <span class="w-1.5 h-1.5 bg-emerald-300 rounded-full live-dot"></span>
+                                เรียลไทม์
+                            </div>
+                        </div>
+
+                        <!-- Calendar grid -->
+                        <div class="p-3 bg-oatmeal">
+                            <div class="calendar-mock">
+                                <div class="cal-head cal-time">เวลา</div>
+                                <div class="cal-head">เมย์</div>
+                                <div class="cal-head">แอน</div>
+                                <div class="cal-head">บี</div>
+                                <div class="cal-head">ฝน</div>
+
+                                <div class="cal-cell cal-time">12:00</div>
+                                <div class="cal-cell cal-booked">คุณพลอย<br><span class="opacity-80 font-normal">60 นาที</span></div>
+                                <div class="cal-cell"></div>
+                                <div class="cal-cell cal-booked rose">คุณนิด</div>
+                                <div class="cal-cell"></div>
+
+                                <div class="cal-cell cal-time">12:30</div>
+                                <div class="cal-cell cal-booked" style="opacity:.85"></div>
+                                <div class="cal-cell cal-booked sage">Walk-in</div>
+                                <div class="cal-cell cal-booked rose" style="opacity:.85"></div>
+                                <div class="cal-cell cal-booked olive">คุณแดน</div>
+
+                                <div class="cal-cell cal-time">13:00</div>
+                                <div class="cal-cell"></div>
+                                <div class="cal-cell cal-booked sage" style="opacity:.85"></div>
+                                <div class="cal-cell"></div>
+                                <div class="cal-cell cal-booked olive" style="opacity:.85"></div>
+
+                                <div class="cal-cell cal-time">13:30</div>
+                                <div class="cal-cell cal-booked rose">คุณจอย</div>
+                                <div class="cal-cell"></div>
+                                <div class="cal-cell cal-booked">คุณอาร์ม</div>
+                                <div class="cal-cell"></div>
+
+                                <div class="cal-cell cal-time">14:00</div>
+                                <div class="cal-cell cal-booked rose" style="opacity:.85"></div>
+                                <div class="cal-cell cal-booked olive">Walk-in</div>
+                                <div class="cal-cell cal-booked" style="opacity:.85"></div>
+                                <div class="cal-cell"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Trust bar -->
+    <div class="relative border-t border-sand-200/60 bg-white/30 backdrop-blur-sm">
+        <div class="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-8">
+            <p class="text-center text-[11px] font-semibold tracking-[0.2em] uppercase text-sand-600 mb-5">
+                ออกแบบสำหรับร้านนวดขนาดเล็กและขนาดกลาง
+            </p>
+            <div class="flex flex-wrap items-center justify-center gap-x-10 gap-y-4 text-sand-400">
+                <span class="flex items-center gap-2 text-sm font-semibold text-sand-700">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                    นวดแผนไทย
+                </span>
+                <span class="flex items-center gap-2 text-sm font-semibold text-sand-700">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v18M18 3v18M6 12h12M6 7h12M6 17h12"/></svg>
+                    นวดน้ำมัน / อโรมา
+                </span>
+                <span class="flex items-center gap-2 text-sm font-semibold text-sand-700">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    ฟุตแอนด์บอดี้
+                </span>
+                <span class="flex items-center gap-2 text-sm font-semibold text-sand-700">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    สปาในโรงแรม
+                </span>
+                <span class="flex items-center gap-2 text-sm font-semibold text-sand-700">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                    ร้านชุมชน
+                </span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ PROBLEM / SOLUTION ============ -->
+<section class="py-20 md:py-28 bg-gradient-to-b from-cream to-white">
+    <div class="max-w-6xl mx-auto px-5 sm:px-6 lg:px-8">
+        <div class="text-center max-w-2xl mx-auto">
+            <div class="flex items-center justify-center gap-3 mb-5">
+                <span class="ornament"></span>
+                <p class="text-[11px] font-semibold text-sand-600 uppercase tracking-[0.25em]">ปัญหาที่เจอทุกวัน</p>
+                <span class="ornament"></span>
+            </div>
+            <h2 class="font-display text-3xl md:text-4xl font-medium text-ink-900 tracking-tight">
+                จองคิวในกระดาษ ลืมคิวซ้อน<br>แก้ทีไรก็วุ่นทุกที
+            </h2>
+        </div>
+
+        <div class="mt-14 grid md:grid-cols-3 gap-5">
+            <div class="card-soft bg-white rounded-3xl p-7 border border-sand-100 shadow-soft">
+                <div class="w-12 h-12 rounded-2xl bg-blush-50 grid place-items-center mb-5">
+                    <svg class="w-6 h-6 text-blush-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </div>
+                <h3 class="font-display text-lg font-medium text-ink-900 mb-2">คิวชนกันบ่อย</h3>
+                <p class="text-sm text-ink-500 leading-relaxed">
+                    หน้าร้านเขียนในสมุด พนักงานอีกคนรับคิวผ่านโทรศัพท์ สุดท้ายลูกค้ามาพร้อมกัน
+                </p>
+            </div>
+
+            <div class="card-soft bg-white rounded-3xl p-7 border border-sand-100 shadow-soft">
+                <div class="w-12 h-12 rounded-2xl bg-sand-100 grid place-items-center mb-5">
+                    <svg class="w-6 h-6 text-sand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                </div>
+                <h3 class="font-display text-lg font-medium text-ink-900 mb-2">แอปหนัก เน็ตช้า</h3>
+                <p class="text-sm text-ink-500 leading-relaxed">
+                    ระบบจองหลายตัวโหลดช้าบน iPad เครื่องเก่า ลูกค้ารอนาน พนักงานเบื่อ
+                </p>
+            </div>
+
+            <div class="card-soft bg-white rounded-3xl p-7 border border-sand-100 shadow-soft">
+                <div class="w-12 h-12 rounded-2xl bg-oatmeal grid place-items-center mb-5">
+                    <svg class="w-6 h-6 text-sand-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </div>
+                <h3 class="font-display text-lg font-medium text-ink-900 mb-2">เห็นข้อมูลไม่ตรงกัน</h3>
+                <p class="text-sm text-ink-500 leading-relaxed">
+                    เจ้าของอยู่ที่บ้าน พนักงานอยู่ที่ร้าน ต้องโทรถามตลอดว่าวันนี้คิวเต็มไหม
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ FEATURES ============ -->
+<section id="features" class="py-20 md:py-28 bg-white">
+    <div class="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
+        <div class="max-w-2xl">
+            <div class="flex items-center gap-3 mb-5">
+                <span class="ornament"></span>
+                <p class="text-[11px] font-semibold text-sand-600 uppercase tracking-[0.25em]">ฟีเจอร์หลัก</p>
+            </div>
+            <h2 class="font-display text-3xl md:text-4xl font-medium text-ink-900 tracking-tight">
+                ทุกอย่างที่ร้านนวดต้องการ<br>บนหน้าจอเดียว
+            </h2>
+            <p class="mt-4 text-lg text-ink-500">
+                ออกแบบจากการใช้งานจริงในร้านนวดแผนไทย เน้นความเรียบง่ายและเร็วที่สุด
+            </p>
+        </div>
+
+        <div class="mt-14 grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+            <article class="card-soft group bg-gradient-to-br from-sand-50 to-white rounded-3xl p-7 border border-sand-200/70 shadow-soft">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-sand-600 to-ink-700 grid place-items-center mb-6 shadow-soft">
+                    <svg class="w-6 h-6 text-cream" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </div>
+                <h3 class="font-display text-xl font-medium text-ink-900 mb-2">กระดานคิวรายวัน</h3>
+                <p class="text-ink-500 leading-relaxed">
+                    เห็นคิวของหมอนวดทุกคนพร้อมกันในหน้าเดียว แตะช่องว่างเพื่อจอง แตะช่องเดิมเพื่อแก้ไข
+                </p>
+            </article>
+
+            <article class="card-soft bg-white rounded-3xl p-7 border border-sand-100 shadow-soft">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-50 grid place-items-center mb-6">
+                    <svg class="w-6 h-6 text-emerald-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.22-8.56"/><polyline points="21 4 12 13 9 10"/></svg>
+                </div>
+                <h3 class="font-display text-xl font-medium text-ink-900 mb-2">ซิงค์เรียลไทม์</h3>
+                <p class="text-ink-500 leading-relaxed">
+                    บันทึกคิวแล้วเห็นพร้อมกันทุกเครื่อง เจ้าของร้านเปิดดูจากที่ไหนก็ได้ ไม่ต้องรีเฟรช
+                </p>
+            </article>
+
+            <article class="card-soft bg-white rounded-3xl p-7 border border-sand-100 shadow-soft">
+                <div class="w-12 h-12 rounded-2xl bg-blush-50 grid place-items-center mb-6">
+                    <svg class="w-6 h-6 text-blush-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                </div>
+                <h3 class="font-display text-xl font-medium text-ink-900 mb-2">ทำเพื่อ iPad</h3>
+                <p class="text-ink-500 leading-relaxed">
+                    ปุ่มใหญ่ แตะง่าย รองรับ iPad รุ่นเก่าตั้งแต่ iOS 12 ขึ้นไป ไม่ต้องซื้อเครื่องใหม่
+                </p>
+            </article>
+
+            <article class="card-soft bg-white rounded-3xl p-7 border border-sand-100 shadow-soft">
+                <div class="w-12 h-12 rounded-2xl bg-amber-50 grid place-items-center mb-6">
+                    <svg class="w-6 h-6 text-amber-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                </div>
+                <h3 class="font-display text-xl font-medium text-ink-900 mb-2">โหลดเบา เน็ตช้าก็ใช้ได้</h3>
+                <p class="text-ink-500 leading-relaxed">
+                    แอปขนาดน้อยกว่า 150 KB ใช้ได้ดีแม้สัญญาณมือถือไม่เสถียร
+                </p>
+            </article>
+
+            <article class="card-soft bg-white rounded-3xl p-7 border border-sand-100 shadow-soft">
+                <div class="w-12 h-12 rounded-2xl bg-oatmeal grid place-items-center mb-6">
+                    <svg class="w-6 h-6 text-sand-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="18" cy="18" r="3"/></svg>
+                </div>
+                <h3 class="font-display text-xl font-medium text-ink-900 mb-2">ลากและวางย้ายคิว</h3>
+                <p class="text-ink-500 leading-relaxed">
+                    ย้ายคิวระหว่างหมอนวดด้วยการลากเพียงครั้งเดียว เปลี่ยนคนนวดง่ายกว่าเดิม
+                </p>
+            </article>
+
+            <article class="card-soft bg-white rounded-3xl p-7 border border-sand-100 shadow-soft">
+                <div class="w-12 h-12 rounded-2xl bg-teal-50 grid place-items-center mb-6">
+                    <svg class="w-6 h-6 text-teal-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
+                </div>
+                <h3 class="font-display text-xl font-medium text-ink-900 mb-2">รายงาน + ส่งออก CSV</h3>
+                <p class="text-ink-500 leading-relaxed">
+                    ดูรายได้ต่อวัน สถิติหมอนวด ส่งออกเป็นไฟล์ CSV ใช้ต่อใน Excel ได้ทันที
+                </p>
+            </article>
+
+        </div>
+    </div>
+</section>
+
+<!-- ============ HOW IT WORKS ============ -->
+<section id="how" class="py-20 md:py-28 bg-gradient-to-b from-cream via-sand-50 to-cream">
+    <div class="max-w-6xl mx-auto px-5 sm:px-6 lg:px-8">
+        <div class="text-center max-w-2xl mx-auto">
+            <div class="flex items-center justify-center gap-3 mb-5">
+                <span class="ornament"></span>
+                <p class="text-[11px] font-semibold text-sand-600 uppercase tracking-[0.25em]">เริ่มใช้งาน 3 ขั้นตอน</p>
+                <span class="ornament"></span>
+            </div>
+            <h2 class="font-display text-3xl md:text-4xl font-medium text-ink-900 tracking-tight">
+                พร้อมใช้งานจริงภายในบ่ายเดียว
+            </h2>
+        </div>
+
+        <div class="mt-16 grid md:grid-cols-3 gap-6 md:gap-8 relative">
+            <div aria-hidden="true" class="hidden md:block absolute top-12 left-[18%] right-[18%] border-t border-dashed border-sand-300"></div>
+
+            <div class="relative bg-white rounded-3xl p-7 border border-sand-100 shadow-soft card-soft">
+                <div class="relative z-10 w-16 h-16 rounded-full bg-gradient-to-br from-sand-500 to-ink-700 text-cream font-display text-2xl font-medium grid place-items-center shadow-soft-lg mb-6">
+                    1
+                </div>
+                <h3 class="font-display text-xl font-medium text-ink-900 mb-2">เพิ่มรายชื่อหมอนวด</h3>
+                <p class="text-ink-500 leading-relaxed">
+                    ใส่ชื่อหมอนวดในร้าน กำหนดลำดับการแสดง ปรับเปลี่ยนได้ตลอด
+                </p>
+            </div>
+
+            <div class="relative bg-white rounded-3xl p-7 border border-sand-100 shadow-soft card-soft">
+                <div class="relative z-10 w-16 h-16 rounded-full bg-gradient-to-br from-sand-600 to-blush-500 text-cream font-display text-2xl font-medium grid place-items-center shadow-soft-lg mb-6">
+                    2
+                </div>
+                <h3 class="font-display text-xl font-medium text-ink-900 mb-2">แตะเพื่อจองคิว</h3>
+                <p class="text-ink-500 leading-relaxed">
+                    เลือกช่องเวลาที่ว่าง ใส่ชื่อลูกค้า เลือกระยะเวลา 30–120 นาที จบ
+                </p>
+            </div>
+
+            <div class="relative bg-white rounded-3xl p-7 border border-sand-100 shadow-soft card-soft">
+                <div class="relative z-10 w-16 h-16 rounded-full bg-gradient-to-br from-blush-500 to-sand-400 text-cream font-display text-2xl font-medium grid place-items-center shadow-soft-lg mb-6">
+                    3
+                </div>
+                <h3 class="font-display text-xl font-medium text-ink-900 mb-2">ดูสรุปและส่งออก</h3>
+                <p class="text-ink-500 leading-relaxed">
+                    สิ้นวันดูยอดรายได้ สถิติหมอนวด ดาวน์โหลดเป็นไฟล์ CSV ทันที
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ SOCIAL PROOF / QUOTE ============ -->
+<section class="py-20 md:py-24 bg-white">
+    <div class="max-w-4xl mx-auto px-5 sm:px-6 lg:px-8">
+        <figure class="text-center">
+            <svg class="w-10 h-10 mx-auto text-sand-300" viewBox="0 0 24 24" fill="currentColor"><path d="M7.17 6C4.33 6 2 8.33 2 11.17c0 2.53 1.83 4.66 4.28 5.08.39.07.72-.26.72-.66v-1.09c0-.3-.2-.56-.49-.64C5.28 13.54 4.5 12.45 4.5 11.17 4.5 9.7 5.7 8.5 7.17 8.5H8V7c0-.55-.45-1-1-1H7.17zm9 0C13.33 6 11 8.33 11 11.17c0 2.53 1.83 4.66 4.28 5.08.39.07.72-.26.72-.66v-1.09c0-.3-.2-.56-.49-.64-1.23-.32-2.01-1.41-2.01-2.69 0-1.47 1.2-2.67 2.67-2.67H17V7c0-.55-.45-1-1-1h-.17z"/></svg>
+            <blockquote class="mt-6 font-display text-2xl md:text-3xl leading-[1.4] text-ink-900">
+                "เมื่อก่อนใช้สมุดจดคิว ชนกันทุกวัน พอเปลี่ยนมาใช้ Saba-i พนักงานเห็นคิวเดียวกัน
+                เจ้าของเปิดจากมือถือที่บ้านก็เช็กได้ สะดวกขึ้นมาก"
+            </blockquote>
+            <figcaption class="mt-8 flex items-center justify-center gap-3">
+                <div class="w-11 h-11 rounded-full bg-gradient-to-br from-blush-200 to-sand-400"></div>
+                <div class="text-left">
+                    <p class="font-semibold text-ink-900">คุณพิม</p>
+                    <p class="text-sm text-sand-600">เจ้าของร้านนวด · เชียงใหม่</p>
+                </div>
+            </figcaption>
+        </figure>
+    </div>
+</section>
+
+<!-- ============ PRICING ============ -->
+<section id="pricing" class="py-20 md:py-28 bg-gradient-to-b from-cream to-oatmeal/60">
+    <div class="max-w-6xl mx-auto px-5 sm:px-6 lg:px-8">
+        <div class="text-center max-w-2xl mx-auto">
+            <div class="flex items-center justify-center gap-3 mb-5">
+                <span class="ornament"></span>
+                <p class="text-[11px] font-semibold text-sand-600 uppercase tracking-[0.25em]">ราคาชัดเจน</p>
+                <span class="ornament"></span>
+            </div>
+            <h2 class="font-display text-3xl md:text-4xl font-medium text-ink-900 tracking-tight">
+                เลือกแพ็กเกจที่เหมาะกับร้านของคุณ
+            </h2>
+            <p class="mt-4 text-lg text-ink-500">
+                เริ่มจากแพลนฟรี จ่ายเมื่อร้านโตพอ ยกเลิกได้ทุกเมื่อ
+            </p>
+        </div>
+
+        <div class="mt-14 grid md:grid-cols-3 gap-6 items-start">
+
+            <!-- Free -->
+            <div class="bg-white rounded-3xl p-8 border border-sand-100 shadow-soft card-soft">
+                <h3 class="font-display text-xl font-medium text-ink-900">เริ่มต้น</h3>
+                <p class="mt-2 text-sm text-sand-600">สำหรับร้านเล็กๆ แค่อยากลอง</p>
+
+                <p class="mt-6 font-display">
+                    <span class="text-5xl font-medium text-ink-900">ฟรี</span>
+                </p>
+                <p class="mt-1 text-sm text-sand-600">ตลอดการใช้งาน</p>
+
+                <a href="#cta" class="mt-6 inline-flex w-full items-center justify-center gap-2 px-5 py-3 bg-ink-700 hover:bg-ink-900 text-cream font-semibold rounded-full transition-colors cursor-pointer">
+                    เริ่มใช้งาน
+                </a>
+
+                <ul class="mt-7 space-y-3 text-sm text-ink-500">
+                    <li class="flex gap-2"><svg class="w-5 h-5 flex-none text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>หมอนวดสูงสุด 3 คน</li>
+                    <li class="flex gap-2"><svg class="w-5 h-5 flex-none text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>กระดานคิวรายวัน</li>
+                    <li class="flex gap-2"><svg class="w-5 h-5 flex-none text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>ใช้บน iPad 1 เครื่อง</li>
+                    <li class="flex gap-2 text-sand-400"><svg class="w-5 h-5 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>รายงาน / ส่งออก CSV</li>
+                </ul>
+            </div>
+
+            <!-- Shop (popular) -->
+            <div class="relative bg-gradient-to-br from-ink-700 via-sand-800 to-ink-900 text-cream rounded-3xl p-8 shadow-soft-xl card-soft">
+                <span class="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-3 py-1.5 bg-blush-200 text-ink-900 text-xs font-semibold rounded-full shadow-soft">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.39 7.36H22l-6.19 4.5L18.2 21 12 16.5 5.8 21l2.39-7.14L2 9.36h7.61z"/></svg>
+                    แพ็กเกจยอดนิยม
+                </span>
+
+                <h3 class="font-display text-xl font-medium">ร้านทั่วไป</h3>
+                <p class="mt-2 text-sm text-sand-200">เหมาะกับร้านนวดทั่วไป</p>
+
+                <p class="mt-6 font-display">
+                    <span class="text-5xl font-medium">฿490</span>
+                    <span class="text-sand-200 ml-1 text-base font-sans font-medium">/ เดือน</span>
+                </p>
+                <p class="mt-1 text-sm text-sand-300">ยกเลิกได้ทุกเมื่อ</p>
+
+                <a href="#cta" class="mt-6 inline-flex w-full items-center justify-center gap-2 px-5 py-3 bg-cream text-ink-900 hover:bg-white font-semibold rounded-full transition-colors cursor-pointer">
+                    ทดลองใช้ 30 วัน
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+                </a>
+
+                <ul class="mt-7 space-y-3 text-sm text-sand-100">
+                    <li class="flex gap-2"><svg class="w-5 h-5 flex-none text-blush-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>หมอนวดไม่จำกัด</li>
+                    <li class="flex gap-2"><svg class="w-5 h-5 flex-none text-blush-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>ใช้งานได้หลายเครื่องพร้อมกัน</li>
+                    <li class="flex gap-2"><svg class="w-5 h-5 flex-none text-blush-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>รายงานและส่งออก CSV</li>
+                    <li class="flex gap-2"><svg class="w-5 h-5 flex-none text-blush-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>แจ้งเตือนคิวล่วงหน้า</li>
+                    <li class="flex gap-2"><svg class="w-5 h-5 flex-none text-blush-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>ซัพพอร์ตทางไลน์</li>
+                </ul>
+            </div>
+
+            <!-- Chain -->
+            <div class="bg-white rounded-3xl p-8 border border-sand-100 shadow-soft card-soft">
+                <h3 class="font-display text-xl font-medium text-ink-900">เชน / หลายสาขา</h3>
+                <p class="mt-2 text-sm text-sand-600">สำหรับธุรกิจที่ขยายสาขา</p>
+
+                <p class="mt-6 font-display">
+                    <span class="text-5xl font-medium text-ink-900">คุยกัน</span>
+                </p>
+                <p class="mt-1 text-sm text-sand-600">ราคาตามจำนวนสาขา</p>
+
+                <a href="#cta" class="mt-6 inline-flex w-full items-center justify-center gap-2 px-5 py-3 bg-white border border-sand-200 hover:border-sand-400 text-ink-900 hover:text-ink-700 font-semibold rounded-full transition-colors cursor-pointer">
+                    ติดต่อทีมงาน
+                </a>
+
+                <ul class="mt-7 space-y-3 text-sm text-ink-500">
+                    <li class="flex gap-2"><svg class="w-5 h-5 flex-none text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>แดชบอร์ดรวมทุกสาขา</li>
+                    <li class="flex gap-2"><svg class="w-5 h-5 flex-none text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>สิทธิ์การเข้าถึงแบบแยกสาขา</li>
+                    <li class="flex gap-2"><svg class="w-5 h-5 flex-none text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>รายงานเปรียบเทียบสาขา</li>
+                    <li class="flex gap-2"><svg class="w-5 h-5 flex-none text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>ซัพพอร์ตโดยเฉพาะ</li>
+                    <li class="flex gap-2"><svg class="w-5 h-5 flex-none text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>เทรนพนักงานให้</li>
+                </ul>
+            </div>
+
+        </div>
+
+        <p class="mt-10 text-center text-sm text-sand-600">
+            ราคาทุกแพ็กเกจยังไม่รวม VAT · ออกใบเสร็จและใบกำกับภาษีได้
+        </p>
+    </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section id="faq" class="py-20 md:py-28 bg-white">
+    <div class="max-w-3xl mx-auto px-5 sm:px-6 lg:px-8">
+        <div class="text-center mb-14">
+            <div class="flex items-center justify-center gap-3 mb-5">
+                <span class="ornament"></span>
+                <p class="text-[11px] font-semibold text-sand-600 uppercase tracking-[0.25em]">คำถามที่พบบ่อย</p>
+                <span class="ornament"></span>
+            </div>
+            <h2 class="font-display text-3xl md:text-4xl font-medium text-ink-900 tracking-tight">
+                ลังเลอยู่? อ่านคำถามเหล่านี้ก่อน
+            </h2>
+        </div>
+
+        <div class="space-y-3">
+            <details class="group bg-cream rounded-2xl border border-sand-100 shadow-soft-sm overflow-hidden">
+                <summary class="flex items-center justify-between gap-4 p-5 cursor-pointer list-none font-semibold text-ink-900">
+                    <span>ใช้บน iPad รุ่นเก่าได้จริงไหม?</span>
+                    <svg class="w-5 h-5 text-sand-600 transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </summary>
+                <div class="px-5 pb-5 text-ink-500 leading-relaxed">
+                    รองรับ iPad ตั้งแต่ iOS 12 ขึ้นไป แอปขนาดเบาและออกแบบมาให้ลื่นแม้ใช้บนเครื่องเก่า
+                </div>
+            </details>
+
+            <details class="group bg-cream rounded-2xl border border-sand-100 shadow-soft-sm overflow-hidden">
+                <summary class="flex items-center justify-between gap-4 p-5 cursor-pointer list-none font-semibold text-ink-900">
+                    <span>ถ้าเน็ตร้านไม่เสถียรจะเป็นยังไง?</span>
+                    <svg class="w-5 h-5 text-sand-600 transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </summary>
+                <div class="px-5 pb-5 text-ink-500 leading-relaxed">
+                    แอปออกแบบมาเพื่อเน็ตช้าโดยเฉพาะ โหลดครั้งแรกเร็วมาก และเมื่อซิงค์แล้วยังใช้งานต่อได้
+                    แม้สัญญาณจะสะดุดชั่วคราว
+                </div>
+            </details>
+
+            <details class="group bg-cream rounded-2xl border border-sand-100 shadow-soft-sm overflow-hidden">
+                <summary class="flex items-center justify-between gap-4 p-5 cursor-pointer list-none font-semibold text-ink-900">
+                    <span>ต้องติดตั้งอะไรเพิ่มไหม?</span>
+                    <svg class="w-5 h-5 text-sand-600 transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </summary>
+                <div class="px-5 pb-5 text-ink-500 leading-relaxed">
+                    ไม่ต้อง เข้าผ่าน Safari แล้วเพิ่มลงหน้าโฮมของ iPad ก็ใช้ได้เหมือนแอปทันที
+                </div>
+            </details>
+
+            <details class="group bg-cream rounded-2xl border border-sand-100 shadow-soft-sm overflow-hidden">
+                <summary class="flex items-center justify-between gap-4 p-5 cursor-pointer list-none font-semibold text-ink-900">
+                    <span>ข้อมูลลูกค้าปลอดภัยไหม?</span>
+                    <svg class="w-5 h-5 text-sand-600 transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </summary>
+                <div class="px-5 pb-5 text-ink-500 leading-relaxed">
+                    ข้อมูลเก็บบน Firebase ของ Google Cloud เข้ารหัสทั้งระหว่างส่งและจัดเก็บ
+                    เฉพาะผู้ได้รับสิทธิ์จากร้านเท่านั้นที่เข้าถึงได้
+                </div>
+            </details>
+
+            <details class="group bg-cream rounded-2xl border border-sand-100 shadow-soft-sm overflow-hidden">
+                <summary class="flex items-center justify-between gap-4 p-5 cursor-pointer list-none font-semibold text-ink-900">
+                    <span>ยกเลิกได้เมื่อไหร่?</span>
+                    <svg class="w-5 h-5 text-sand-600 transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </summary>
+                <div class="px-5 pb-5 text-ink-500 leading-relaxed">
+                    ยกเลิกได้ทุกเมื่อผ่านหน้าตั้งค่า ไม่มีค่าปรับ ใช้งานต่อได้จนจบรอบบิล
+                </div>
+            </details>
+        </div>
+    </div>
+</section>
+
+<!-- ============ FINAL CTA ============ -->
+<section id="cta" class="relative py-20 md:py-28 overflow-hidden bg-gradient-to-br from-ink-700 via-sand-800 to-ink-900">
+    <!-- Faint seal in the background -->
+    <img src="icons/logo.jpg" alt="" aria-hidden="true"
+         class="pointer-events-none absolute -right-24 -bottom-24 w-[520px] opacity-[0.07] select-none mix-blend-screen">
+    <img src="icons/logo.jpg" alt="" aria-hidden="true"
+         class="pointer-events-none absolute -left-28 -top-28 w-[420px] opacity-[0.05] select-none mix-blend-screen">
+
+    <div class="relative max-w-4xl mx-auto px-5 sm:px-6 lg:px-8 text-center">
+        <h2 class="font-display text-3xl md:text-5xl font-medium text-cream tracking-tight leading-[1.15]">
+            ให้ร้านของคุณ<br class="sm:hidden"><em class="not-italic text-blush-200">วิ่งเร็วกว่าคิว</em>
+        </h2>
+        <p class="mt-5 text-lg md:text-xl text-sand-100 max-w-xl mx-auto">
+            ทดลองใช้ฟรี 30 วัน ไม่ต้องใส่บัตรเครดิต ติดตั้งเสร็จภายในวันเดียว
+        </p>
+
+        <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a href="index.html" class="inline-flex items-center justify-center gap-2 px-7 py-4 bg-cream text-ink-900 hover:bg-white font-semibold rounded-full shadow-soft-xl hover:shadow-soft-lg transition-all cursor-pointer">
+                เริ่มใช้ฟรีเลย
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+            </a>
+            <a href="https://line.me" class="inline-flex items-center justify-center gap-2 px-7 py-4 bg-white/10 hover:bg-white/20 backdrop-blur text-cream font-semibold rounded-full border border-white/25 transition-all cursor-pointer">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                คุยกับทีมใน LINE
+            </a>
+        </div>
+
+        <div class="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-sand-200">
+            <span class="flex items-center gap-2"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>ไม่ต้องใช้บัตรเครดิต</span>
+            <span class="flex items-center gap-2"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>ยกเลิกได้ทุกเมื่อ</span>
+            <span class="flex items-center gap-2"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>ตั้งค่าภายใน 10 นาที</span>
+        </div>
+    </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="bg-ink-900 text-sand-300">
+    <div class="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-14">
+        <div class="grid md:grid-cols-4 gap-10">
+            <div class="md:col-span-2">
+                <div class="flex items-center gap-3">
+                    <img src="icons/logo.jpg" alt="" class="w-11 h-11 rounded-full object-cover ring-1 ring-sand-700">
+                    <span class="font-display text-xl font-medium text-cream tracking-[0.04em]">Saba-i</span>
+                </div>
+                <p class="mt-4 max-w-sm text-sm leading-relaxed">
+                    ระบบจองคิวนวดสำหรับร้านนวดแผนไทย ออกแบบมาให้ใช้งานง่ายบน iPad
+                    โหลดเร็ว เบาเครื่อง รองรับเน็ตช้า
+                </p>
+            </div>
+
+            <div>
+                <h4 class="text-sm font-semibold text-cream mb-4">ผลิตภัณฑ์</h4>
+                <ul class="space-y-2.5 text-sm">
+                    <li><a href="#features" class="hover:text-cream transition-colors">ฟีเจอร์</a></li>
+                    <li><a href="#how" class="hover:text-cream transition-colors">วิธีใช้งาน</a></li>
+                    <li><a href="#pricing" class="hover:text-cream transition-colors">ราคา</a></li>
+                    <li><a href="#faq" class="hover:text-cream transition-colors">คำถามที่พบบ่อย</a></li>
+                </ul>
+            </div>
+
+            <div>
+                <h4 class="text-sm font-semibold text-cream mb-4">ติดต่อเรา</h4>
+                <ul class="space-y-2.5 text-sm">
+                    <li><a href="mailto:hello@saba-i.app" class="hover:text-cream transition-colors">hello@saba-i.app</a></li>
+                    <li><a href="https://line.me" class="hover:text-cream transition-colors">LINE Official</a></li>
+                    <li><a href="#" class="hover:text-cream transition-colors">Facebook</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="mt-12 pt-8 border-t border-ink-700 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-sand-400">
+            <p>© 2026 Saba-i · Thai Massage · Relax and Wellness</p>
+            <div class="flex items-center gap-6">
+                <a href="#" class="hover:text-cream transition-colors">นโยบายความเป็นส่วนตัว</a>
+                <a href="#" class="hover:text-cream transition-colors">เงื่อนไขการใช้งาน</a>
+            </div>
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>

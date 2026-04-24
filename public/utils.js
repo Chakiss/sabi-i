@@ -30,18 +30,12 @@ class SabaiUtils {
         const start = CONFIG.SHOP_START_HOUR;
         const end = CONFIG.SHOP_END_HOUR;
         
-        console.log('🕐 Initializing time slots:', { start, end });
-        
         for (let hour = start; hour <= end; hour++) {
             for (let minute = 0; minute < 60; minute += CONFIG.SLOT_DURATION) {
                 const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
                 timeSlots.push(timeString);
-                console.log('➕ Added time slot:', timeString);
             }
         }
-        
-        console.log('✅ Final time slots:', timeSlots);
-        console.log('⏰ Last slot:', timeSlots[timeSlots.length - 1]);
         
         return timeSlots;
     }
@@ -89,7 +83,9 @@ class SabaiUtils {
             hash = hash & hash;
         }
         
-        const tones = [210, 270, 150, 30, 180, 320, 60, 190];
+        // Warm, earthy palette to match the Saba-i taupe/cream aesthetic
+        // Hues: terracotta, amber, ochre, sand, olive, sage, clay, cocoa
+        const tones = [15, 28, 45, 60, 85, 110, 355, 5];
         return tones[Math.abs(hash) % 8];
     }
 
@@ -97,6 +93,8 @@ class SabaiUtils {
     static getPaymentMethodText(paymentMethod) {
         if (!paymentMethod) return null;
         const paymentMethods = {
+            'kbank': '💳 กสิกร',
+            'scb': '💳 ไทยพาณิชย์',
             'transfer': '💳 โอน',
             'cash': '💵 สด'
         };

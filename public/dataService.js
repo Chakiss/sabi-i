@@ -14,14 +14,14 @@ class SabaiDataService {
             
             // Clean up existing listener if date changed
             if (this.bookingsListener && this.currentDateKey !== dateKey) {
-                console.log('🔄 Date changed, cleaning up old booking listener...');
+                log('🔄 Date changed, cleaning up old booking listener...');
                 this.bookingsListener();
                 this.bookingsListener = null;
             }
             
             // Only create new listener if we don't have one for this date
             if (!this.bookingsListener || this.currentDateKey !== dateKey) {
-                console.log('🔥 Setting up real-time booking listener for:', dateKey);
+                log('🔥 Setting up real-time booking listener for:', dateKey);
                 this.currentDateKey = dateKey;
                 
                 this.bookingsListener = this.db.collection('bookings')
@@ -32,7 +32,7 @@ class SabaiDataService {
                             ...doc.data()
                         }));
                         
-                        console.log('📡 Real-time booking update for', dateKey, ':', bookings.length, 'bookings');
+                        log('📡 Real-time booking update for', dateKey, ':', bookings.length, 'bookings');
                         
                         // Call the callback with updated data
                         if (callback) {
@@ -54,7 +54,7 @@ class SabaiDataService {
         try {
             // Only create listener if we don't have one
             if (!this.therapistsListener) {
-                console.log('🔥 Setting up real-time therapist listener...');
+                log('🔥 Setting up real-time therapist listener...');
                 
                 this.therapistsListener = this.db.collection('therapists')
                     .orderBy('displayOrder')
@@ -65,7 +65,7 @@ class SabaiDataService {
                             ...doc.data()
                         }));
                         
-                        console.log('📡 Real-time therapist update:', therapists.length, 'therapists');
+                        log('📡 Real-time therapist update:', therapists.length, 'therapists');
                         
                         // Call the callback with updated data
                         if (callback) {
@@ -84,7 +84,7 @@ class SabaiDataService {
     
     // Cleanup all listeners
     cleanup() {
-        console.log('🧹 Cleaning up all real-time listeners...');
+        log('🧹 Cleaning up all real-time listeners...');
         
         if (this.bookingsListener) {
             this.bookingsListener();
@@ -97,7 +97,7 @@ class SabaiDataService {
         }
         
         this.currentDateKey = null;
-        console.log('✅ All listeners cleaned up');
+        log('✅ All listeners cleaned up');
     }
 
     // Therapist operations
@@ -113,7 +113,7 @@ class SabaiDataService {
                 ...doc.data()
             }));
             
-            console.log('Loaded therapists:', therapists);
+            log('Loaded therapists:', therapists);
             return therapists;
             
         } catch (error) {
@@ -135,7 +135,7 @@ class SabaiDataService {
                 ...doc.data()
             }));
             
-            console.log('Loaded bookings for', dateKey, ':', bookings);
+            log('Loaded bookings for', dateKey, ':', bookings);
             return bookings;
             
         } catch (error) {
@@ -167,7 +167,7 @@ class SabaiDataService {
             this._cleanBookingData(booking);
             
             await this.db.collection('bookings').doc(bookingId).set(booking);
-            console.log('Created new booking with ID:', bookingId, booking);
+            log('Created new booking with ID:', bookingId, booking);
             
             return booking;
         } catch (error) {
@@ -196,7 +196,7 @@ class SabaiDataService {
             this._cleanBookingData(booking);
             
             await this.db.collection('bookings').doc(bookingId).update(booking);
-            console.log('Updated booking:', booking);
+            log('Updated booking:', booking);
             
             return booking;
         } catch (error) {
@@ -208,7 +208,7 @@ class SabaiDataService {
     async deleteBooking(bookingId) {
         try {
             await this.db.collection('bookings').doc(bookingId).delete();
-            console.log('Deleted booking:', bookingId);
+            log('Deleted booking:', bookingId);
         } catch (error) {
             console.error('Error deleting booking:', error);
             throw error;
@@ -227,13 +227,37 @@ class SabaiDataService {
                 ...doc.data()
             }));
             
-            console.log('Loaded services:', services);
+            log('Loaded services:', services);
             return services;
             
         } catch (error) {
             console.error('Error loading services:', error);
             // Don't throw error to prevent blocking app initialization
             return [];
+        }
+    }
+
+    // Get bookings for a date range using a single query (efficient for reports)
+    async getBookingsByDateRange(startDate, endDate) {
+        try {
+            const startKey = SabaiUtils.formatDateKey(startDate);
+            const endKey = SabaiUtils.formatDateKey(endDate);
+
+            const snapshot = await this.db.collection('bookings')
+                .where('dateKey', '>=', startKey)
+                .where('dateKey', '<=', endKey)
+                .get();
+
+            const bookings = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+
+            log('Loaded bookings for range', startKey, '-', endKey, ':', bookings.length);
+            return bookings;
+        } catch (error) {
+            console.error('Error loading bookings by date range:', error);
+            throw error;
         }
     }
 
@@ -279,7 +303,7 @@ class SabaiDataService {
     }
 
     checkBookingConflict(bookings, newBooking, excludeBookingId = null) {
-        console.log('🔍 Checking booking conflict for:', {
+        log('🔍 Checking booking conflict for:', {
             therapist: newBooking.therapistId,
             startTime: newBooking.startTime,
             endTime: newBooking.endTime,
@@ -288,7 +312,7 @@ class SabaiDataService {
         
         const conflictingBooking = bookings.find(booking => {
             if (excludeBookingId && booking.id === excludeBookingId) {
-                console.log('⏭️ Skipping own booking:', booking.id);
+                log('⏭️ Skipping own booking:', booking.id);
                 return false;
             }
             
@@ -302,7 +326,7 @@ class SabaiDataService {
             const hasOverlap = newBooking.startTime < existingEnd && newBooking.endTime > existingStart;
             
             if (hasOverlap) {
-                console.log('❌ Found conflict with booking:', {
+                log('❌ Found conflict with booking:', {
                     id: booking.id,
                     existing: `${existingStart.getHours().toString().padStart(2,'0')}:${existingStart.getMinutes().toString().padStart(2,'0')}-${existingEnd.getHours().toString().padStart(2,'0')}:${existingEnd.getMinutes().toString().padStart(2,'0')}`,
                     new: `${newBooking.startTime.getHours().toString().padStart(2,'0')}:${newBooking.startTime.getMinutes().toString().padStart(2,'0')}-${newBooking.endTime.getHours().toString().padStart(2,'0')}:${newBooking.endTime.getMinutes().toString().padStart(2,'0')}`
@@ -313,7 +337,7 @@ class SabaiDataService {
         });
         
         const hasConflict = conflictingBooking !== undefined;
-        console.log(hasConflict ? '❌ Booking conflict detected' : '✅ No booking conflicts found');
+        log(hasConflict ? '❌ Booking conflict detected' : '✅ No booking conflicts found');
         
         return hasConflict;
     }
@@ -321,7 +345,7 @@ class SabaiDataService {
     // Check booking conflict from Firestore directly
     async checkBookingConflictFromFirestore(newBooking, excludeBookingId = null) {
         try {
-            console.log('🔥 Checking booking conflict from Firestore for:', {
+            log('🔥 Checking booking conflict from Firestore for:', {
                 therapist: newBooking.therapistId,
                 dateKey: newBooking.dateKey,
                 startTime: newBooking.startTime,
@@ -340,12 +364,12 @@ class SabaiDataService {
                 ...doc.data()
             }));
             
-            console.log(`📊 Found ${existingBookings.length} existing bookings for therapist ${newBooking.therapistId} on ${newBooking.dateKey}`);
+            log(`📊 Found ${existingBookings.length} existing bookings for therapist ${newBooking.therapistId} on ${newBooking.dateKey}`);
             
             // ตรวจสอบการซ้อนทับด้วยข้อมูลจาก Firestore
             const conflictingBooking = existingBookings.find(booking => {
                 if (excludeBookingId && booking.id === excludeBookingId) {
-                    console.log('⏭️ Skipping own booking:', booking.id);
+                    log('⏭️ Skipping own booking:', booking.id);
                     return false;
                 }
                 
@@ -355,7 +379,7 @@ class SabaiDataService {
                 const hasOverlap = newBooking.startTime < existingEnd && newBooking.endTime > existingStart;
                 
                 if (hasOverlap) {
-                    console.log('❌ Found Firestore conflict with booking:', {
+                    log('❌ Found Firestore conflict with booking:', {
                         id: booking.id,
                         existing: `${existingStart.getHours().toString().padStart(2,'0')}:${existingStart.getMinutes().toString().padStart(2,'0')}-${existingEnd.getHours().toString().padStart(2,'0')}:${existingEnd.getMinutes().toString().padStart(2,'0')}`,
                         new: `${newBooking.startTime.getHours().toString().padStart(2,'0')}:${newBooking.startTime.getMinutes().toString().padStart(2,'0')}-${newBooking.endTime.getHours().toString().padStart(2,'0')}:${newBooking.endTime.getMinutes().toString().padStart(2,'0')}`
@@ -366,7 +390,7 @@ class SabaiDataService {
             });
             
             const hasConflict = conflictingBooking !== undefined;
-            console.log(hasConflict ? '❌ Firestore conflict detected' : '✅ No Firestore conflicts found');
+            log(hasConflict ? '❌ Firestore conflict detected' : '✅ No Firestore conflicts found');
             
             return hasConflict;
             
@@ -380,7 +404,7 @@ class SabaiDataService {
     // Create booking safely with Firestore conflict check + transaction
     async createBookingSafely(data) {
         try {
-            console.log('🔒 Creating booking with Firestore conflict check...');
+            log('🔒 Creating booking with Firestore conflict check...');
             
             // 1. ตรวจสอบ conflict จาก Firestore ก่อน
             const newBooking = {
@@ -419,7 +443,7 @@ class SabaiDataService {
             // 3. บันทึก booking
             await this.db.collection('bookings').doc(bookingId).set(booking);
             
-            console.log('✅ Booking created safely with Firestore check + transaction:', bookingId);
+            log('✅ Booking created safely with Firestore check + transaction:', bookingId);
             return bookingId;
             
         } catch (error) {

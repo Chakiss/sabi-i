@@ -5,13 +5,20 @@
 
 @media (max-width: 768px) {
     :root {
-        --header-height: 10vh; /* Mobile header max 10% of viewport */
+        --header-height: 80px; /* Tablet portrait / small screens */
+    }
+}
+
+/* Stacked 2-row header on phones (logo on top, controls below) */
+@media (max-width: 640px) {
+    :root {
+        --header-height: 124px;
     }
 }
 
 @media (max-width: 480px) {
     :root {
-        --header-height: 8vh; /* Small mobile header max 8% of viewport */
+        --header-height: 118px;
     }
 }
 
@@ -23,14 +30,34 @@
 }
 
 html, body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-family: 'Raleway', 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     font-size: 16px; /* Minimum readable font size */
     line-height: 1.5;
     height: 100%;
     overflow: auto;
-    background-color: #f5f5f7;
-    color: #1d1d1f;
+    background-color: #FFFCF7; /* brighter cream */
+    background-image:
+        radial-gradient(at 15% 0%, rgba(232, 220, 198, 0.35) 0, transparent 55%),
+        radial-gradient(at 85% 100%, rgba(245, 228, 212, 0.30) 0, transparent 55%);
+    background-attachment: fixed;
+    color: #2A231D;
     -webkit-text-size-adjust: 100%;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+/* Thai-first font stack when Thai content is present */
+:lang(th), .font-thai {
+    font-family: 'Noto Sans Thai', 'Raleway', system-ui, sans-serif;
+}
+
+/* Elegant display serif for titles/headings (matches Saba-i seal) */
+.app-title,
+.modal-header h3,
+h1, h2, h3 {
+    font-family: 'Lora', 'Noto Sans Thai', serif;
+    letter-spacing: 0.01em;
+    font-feature-settings: "liga", "kern";
 }
 
 .app-container {
@@ -41,20 +68,39 @@ html, body {
     overflow: hidden;
 }
 
-/* Header Styles */
+/* Header Styles — bright warm sand gradient */
 .header {
-    background-color: #4c9fff;
-    color: white;
+    background: linear-gradient(135deg, #D4B78E 0%, #B89C70 55%, #A08562 100%);
+    color: #ffffff;
     padding: 15px 20px;
     flex-shrink: 0;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 24px -10px rgba(138, 114, 80, 0.35), 0 2px 6px rgba(61, 49, 34, 0.08);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+    padding-top: calc(15px + env(safe-area-inset-top, 0px));
+    padding-left: calc(20px + env(safe-area-inset-left, 0px));
+    padding-right: calc(20px + env(safe-area-inset-right, 0px));
 }
 
 .app-title {
     font-size: 22px;
-    font-weight: 600;
+    font-weight: 500;
     margin-bottom: 0;
     text-align: center;
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.app-title .brand-mark {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #FBF8F3;
+    padding: 1px;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.18);
+    flex-shrink: 0;
 }
 
 .header-compact {
@@ -85,88 +131,124 @@ html, body {
 
 @media (max-width: 768px) {
     .header {
-        padding: 12px 16px;
-        max-height: 12vh; /* เพิ่มความสูงสูงสุด */
-        min-height: 80px; /* เพิ่มความสูงขั้นต่ำ */
-        overflow: hidden; /* ป้องกันเนื้อหาล้น */
+        padding: 10px 14px;
+        min-height: 80px;
         display: flex;
         align-items: center;
     }
-    
+
     .header-compact {
-        gap: 8px; /* เพิ่ม gap เมื่อมีพื้นที่มากขึ้น */
-        justify-content: center; /* จัดกลาง เนื่องจากไม่มี app-title */
+        gap: 10px;
+        justify-content: space-between;
         align-items: center;
-        height: 100%;
         width: 100%;
-        min-height: 0; /* อนุญาตให้หด */
-        flex-wrap: nowrap; /* ห้าม wrap */
+        flex-wrap: nowrap;
     }
-    
+
     .header-compact .app-title {
-        display: none; /* ซ่อนชื่อแอปใน mobile */
+        margin: 0;
+        padding: 0;
+        flex-shrink: 0;
+        font-size: 17px;
     }
-    
+    .header-compact .app-title .brand-mark {
+        width: 32px;
+        height: 32px;
+    }
+
     .header-controls {
-        gap: 8px; /* เพิ่ม gap สำหรับ header ที่สูงขึ้น */
+        gap: 8px;
         flex-shrink: 0;
         display: flex;
         align-items: center;
         flex-wrap: nowrap;
     }
-    
+}
+
+/* ─── Phones: stack logo above the controls ────────────────────── */
+@media (max-width: 640px) {
+    .header {
+        padding: 10px 14px;
+        padding-top: calc(10px + env(safe-area-inset-top, 0px));
+    }
+
+    /* Switch header to two vertical rows */
+    .header-compact {
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+    }
+
+    /* Row 1: logo centered with app title visible */
+    .header-compact .app-title {
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        font-size: 18px;
+        letter-spacing: 0.05em;
+        gap: 10px;
+    }
+    .header-compact .app-title > span {
+        display: inline;
+    }
+    .header-compact .app-title .brand-mark {
+        width: 34px;
+        height: 34px;
+    }
+
+    /* Row 2: date nav + action buttons below the logo */
+    .header-controls {
+        width: 100%;
+        justify-content: center;
+        gap: 6px;
+    }
+
     .date-nav {
-        padding: 4px; /* เพิ่ม padding */
-        gap: 6px; /* เพิ่ม gap */
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 6px; /* เพิ่ม radius */
+        padding: 4px;
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.14);
+        border-radius: 8px;
         display: flex;
         align-items: center;
         flex-shrink: 1;
-        order: 1; /* ให้อยู่แรก */
-        flex: 1; /* ขยายเต็มพื้นที่ */
-        justify-content: center; /* จัดกลาง */
+        flex: 1;
+        min-width: 0;
+        justify-content: space-between;
     }
-    
+
     .current-date {
-        font-size: 14px; /* เพิ่ม font size */
-        min-width: 90px; /* เพิ่มความกว้าง */
-        padding: 4px 6px; /* เพิ่ม padding */
+        font-size: 14px;
+        min-width: 0;
+        padding: 4px 6px;
         line-height: 1.2;
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
-        order: 2; /* อยู่กลางระหว่างปุ่ม < และ > */
-        text-align: center; /* จัดข้อความกลาง */
+        text-align: center;
+        flex: 1;
     }
-    
+
     .nav-btn {
-        min-height: 40px; /* เพิ่มขนาดสำหรับ header ที่สูงขึ้น */
+        min-height: 40px;
         min-width: 40px;
         max-height: 40px;
         max-width: 40px;
-        padding: 6px; /* เพิ่ม padding */
-        font-size: 16px; /* เพิ่ม font size */
+        padding: 6px;
+        font-size: 16px;
         border-radius: 8px;
         border-width: 1px;
         display: flex;
         align-items: center;
         justify-content: center;
-        flex-shrink: 0; /* ป้องกันการหด */
+        flex-shrink: 0;
     }
-    
-    .nav-btn:first-child {
-        order: 1; /* ปุ่ม < อยู่แรก */
-    }
-    
-    .nav-btn:last-child {
-        order: 3; /* ปุ่ม > อยู่สุดท้าย */
-    }
-    
+
     .settings-btn, .capture-btn {
-        padding: 6px; /* เพิ่ม padding */
-        font-size: 16px; /* เพิ่ม font size */
-        min-height: 40px; /* เพิ่มขนาดสำหรับ header ที่สูงขึ้น */
+        padding: 6px;
+        font-size: 16px;
+        min-height: 40px;
         min-width: 40px;
         max-height: 40px;
         max-width: 40px;
@@ -175,57 +257,54 @@ html, body {
         display: flex;
         align-items: center;
         justify-content: center;
-        flex-shrink: 0; /* ป้องกันการหด */
+        flex-shrink: 0;
         white-space: nowrap;
-        order: 4; /* ให้อยู่หลัง date-nav */
     }
 }
 
-/* สำหรับจอที่เล็กมาก */
+/* Small phones: keep stacked layout, tighten paddings/sizes */
 @media (max-width: 480px) {
     .header {
-        padding: 8px 12px; /* เพิ่ม padding header กลับมาให้เหมาะสม */
-        max-height: 10vh;
-        min-height: 80px; /* เพิ่มความสูงขั้นต่ำเป็น 80px */
-        overflow: hidden;
+        padding: 8px 12px;
+        padding-top: calc(8px + env(safe-area-inset-top, 0px));
+        min-height: 110px;
         display: flex;
         align-items: center;
     }
-    
+
+    /* Stay stacked (inherited from 640px block) — just tighten spacing */
     .header-compact {
-        gap: 6px; /* เพิ่ม gap ให้เหมาะสมกับ header ที่สูงขึ้น */
-        justify-content: center; /* จัดกลาง เนื่องจากไม่มี app-title */
-        align-items: center;
-        height: 100%;
+        gap: 8px;
+        align-items: stretch;
         width: 100%;
-        min-height: 0;
-        flex-wrap: nowrap; /* ห้าม wrap */
     }
-    
-    .header-controls {
-        gap: 6px; /* เพิ่ม gap ให้เหมาะสมกับ header ที่สูงขึ้น */
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        flex-wrap: nowrap; /* ห้าม wrap */
-    }
-    
-    .header-compact .date-nav {
-        padding: 4px !important; /* เพิ่ม padding */
-        gap: 4px !important; /* เพิ่ม gap */
-        background: rgba(255, 255, 255, 0.1) !important;
-        border-radius: 6px !important; /* เพิ่ม radius */
-        display: flex;
-        align-items: center;
-        flex-shrink: 1; /* อนุญาตให้หด */
-        order: 1; /* ให้อยู่แรก */
-        flex: 1; /* ขยายเต็มพื้นที่ */
-        justify-content: space-between !important; /* กระจายเต็มพื้นที่ */
-        width: 100% !important; /* กว้างเต็ม */
-    }
-    
+
     .header-compact .app-title {
-        display: none; /* ซ่อนชื่อแอปใน mobile */
+        font-size: 16px;
+        gap: 8px;
+    }
+    .header-compact .app-title .brand-mark {
+        width: 32px;
+        height: 32px;
+    }
+
+    .header-controls {
+        gap: 5px;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .header-compact .date-nav {
+        padding: 3px !important;
+        gap: 4px !important;
+        background: rgba(255, 255, 255, 0.14) !important;
+        border-radius: 6px !important;
+        display: flex;
+        align-items: center;
+        flex-shrink: 1;
+        flex: 1;
+        justify-content: space-between !important;
+        min-width: 0;
     }
     
     .header-compact .current-date {
@@ -295,6 +374,140 @@ html, body {
     color: rgba(255, 255, 255, 0.5);
     white-space: nowrap;
     flex-shrink: 0;
+}
+
+/* Hide version badge on phones to save horizontal space */
+@media (max-width: 640px) {
+    .app-version { display: none; }
+}
+
+/* ─── "More" menu button + dropdown ──────────────────────────── */
+.more-wrap {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+}
+
+.more-menu {
+    position: fixed;
+    /* top/left set by JS at open time to anchor below the moreBtn */
+    min-width: 220px;
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 6px;
+    box-shadow:
+        0 20px 48px -16px rgba(61, 49, 34, 0.30),
+        0 8px 24px -12px rgba(61, 49, 34, 0.18),
+        0 0 0 1px rgba(232, 220, 198, 0.8);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    animation: more-menu-in 160ms cubic-bezier(.2,.7,.2,1);
+    transform-origin: top right;
+}
+
+/* Ensure [hidden] wins over the display: flex above */
+.more-menu[hidden] {
+    display: none !important;
+}
+
+@keyframes more-menu-in {
+    from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+    to   { opacity: 1; transform: scale(1)   translateY(0); }
+}
+
+.more-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: transparent;
+    border: 0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    min-height: 44px;
+    width: 100%;
+    cursor: pointer;
+    color: #2A231D;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: left;
+    font-family: inherit;
+    transition: background-color 140ms ease, transform 140ms ease;
+}
+
+.more-item:hover,
+.more-item:focus-visible {
+    background: #FBF3ED;
+    outline: none;
+}
+
+.more-item:active {
+    background: #F4EDE2;
+    transform: scale(0.98);
+}
+
+.more-item-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: #F4EDE2;
+    color: #8A7250;
+    flex-shrink: 0;
+}
+
+.more-item-label {
+    flex: 1;
+}
+
+/* Notify menu item — coloured dot when notifications are on/blocked */
+.more-item.is-active .more-item-icon {
+    background: #E4F1E6;
+    color: #3D7A4B;
+}
+.more-item.is-denied .more-item-icon {
+    background: #FBE4E4;
+    color: #B23A3A;
+}
+
+/* Busy state on the "more" button while a screenshot is rendering */
+#moreBtn.is-busy svg {
+    opacity: 0.35;
+}
+#moreBtn.is-busy::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 18px;
+    height: 18px;
+    margin-top: -9px;
+    margin-left: -9px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: more-busy-spin 0.9s linear infinite;
+}
+@keyframes more-busy-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Phone: menu stretches nicer, anchors from the right edge with some inset */
+@media (max-width: 640px) {
+    .more-menu {
+        right: 0;
+        min-width: 240px;
+    }
+}
+
+@media (max-width: 375px) {
+    .more-menu {
+        min-width: 210px;
+        right: -4px;
+    }
 }
 
 .settings-btn, .capture-btn {
@@ -477,7 +690,7 @@ html, body {
 
 .skeleton-cell {
     border-radius: 6px;
-    background: #e8e8e8;
+    background: #EDE5D6;
     position: relative;
     overflow: hidden;
 }
@@ -496,9 +709,9 @@ html, body {
 }
 
 .skeleton-time-col { height: 44px; background: #ddd; }
-.skeleton-therapist-col { height: 44px; background: #b8d8ff; }
+.skeleton-therapist-col { height: 44px; background: #D4C2A0; }
 .skeleton-slot-col { height: 50px; }
-.skeleton-filled { background: #c8e1ff; }
+.skeleton-filled { background: #E8DCC6; }
 
 .error-message {
     flex-direction: column;
@@ -512,7 +725,7 @@ html, body {
 }
 
 .retry-btn {
-    background: #4c9fff;
+    background: #A08562;
     color: white;
     border: none;
     border-radius: 12px;
@@ -560,6 +773,7 @@ html, body {
     min-height: 100%;
     width: 100%;
     min-width: 0;
+    position: relative; /* Anchor for current-time-indicator */
 }
 
 @media (max-width: 768px) {
@@ -580,9 +794,9 @@ html, body {
     text-align: center;
     font-weight: 600;
     font-size: 18px;
-    border-right: 1px solid #e0e0e0;
-    border-bottom: 2px solid #e0e0e0;
-    background: #f8f9fa;
+    border-right: 1px solid #E8DCC6;
+    border-bottom: 2px solid #E8DCC6;
+    background: #FBF8F3;
     color: #333;
     position: sticky;
     top: 0;
@@ -604,9 +818,10 @@ html, body {
 }
 
 .header-therapist-cell {
-    background: linear-gradient(135deg, #4c9fff 0%, #6366f1 100%);
-    color: white;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    background: linear-gradient(135deg, #D4B78E 0%, #B89C70 100%);
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(61, 49, 34, 0.18);
+    letter-spacing: 0.02em;
 }
 
 /* Legacy support for old classes */
@@ -625,9 +840,9 @@ html, body {
     align-items: center;
     justify-content: center;
     padding: 15px 8px;
-    border-right: 1px solid #e0e0e0;
-    border-bottom: 1px solid #f0f0f0;
-    background: #fafafa;
+    border-right: 1px solid #E8DCC6;
+    border-bottom: 1px solid #EDE5D6;
+    background: #FBF8F3;
     font-size: 16px;
     font-weight: 500;
     color: #666;
@@ -682,9 +897,9 @@ html, body {
 /* Summary Row Styles */
 .summary-time-cell, .summary-therapist-cell {
     padding: 12px 8px;
-    border-right: 1px solid #dde3ef;
-    border-top: 3px solid #4c9fff;
-    background: #eef2ff;
+    border-right: 1px solid #F4EDE2;
+    border-top: 3px solid #A08562;
+    background: #F4EDE2;
     font-weight: 600;
     text-align: center;
     min-height: 80px;
@@ -696,9 +911,9 @@ html, body {
 }
 
 .summary-time-cell {
-    background: linear-gradient(160deg, #4c9fff 0%, #6366f1 100%);
+    background: linear-gradient(160deg, #A08562 0%, #6E5B3F 100%);
     color: white;
-    border-top-color: #4c9fff;
+    border-top-color: #A08562;
 }
 
 .summary-section-title {
@@ -706,7 +921,7 @@ html, body {
     font-weight: 700;
     letter-spacing: 0.07em;
     text-transform: uppercase;
-    color: #6366f1;
+    color: #6E5B3F;
     margin-bottom: 2px;
 }
 
@@ -763,13 +978,13 @@ html, body {
     align-items: center;
     justify-content: center;
     background: white;
-    color: #6366f1;
+    color: #6E5B3F;
     border-radius: 999px;
     font-size: 10px;
     font-weight: 600;
     padding: 2px 8px;
     margin-top: 4px;
-    border: 1px solid #c7d2fe;
+    border: 1px solid #E8DCC6;
 }
 
 .summary-count {
@@ -796,8 +1011,8 @@ html, body {
 
 /* Booking Slots */
 .booking-slot {
-    border-right: 1px solid #e0e0e0;
-    border-bottom: 1px solid #f0f0f0;
+    border-right: 1px solid #E8DCC6;
+    border-bottom: 1px solid #EDE5D6;
     position: relative;
     min-height: 50px;
     cursor: pointer;
@@ -850,7 +1065,7 @@ html, body {
     left: 0;
     right: 0;
     background: white;
-    border-top: 1px solid #e0e0e0;
+    border-top: 1px solid #E8DCC6;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
     padding: 16px 20px;
     z-index: 9999;
@@ -873,7 +1088,7 @@ html, body {
 
 .install-banner-text strong {
     font-size: 16px;
-    color: #1d1d1f;
+    color: #2A231D;
 }
 
 .install-banner-text span {
@@ -882,7 +1097,7 @@ html, body {
 }
 
 .install-banner-steps {
-    background: #f5f5f7;
+    background: #FBF8F3;
     border-radius: 8px;
     padding: 10px 14px;
     font-size: 14px;
@@ -891,7 +1106,7 @@ html, body {
 }
 
 .install-banner-close {
-    background: #4c9fff;
+    background: #A08562;
     color: white;
     border: none;
     border-radius: 10px;
@@ -1037,8 +1252,8 @@ html, body {
     justify-content: space-between;
     align-items: center;
     padding: 16px 20px;
-    border-bottom: 1px solid #e0e0e0;
-    background: #f8f9fa;
+    border-bottom: 1px solid #E8DCC6;
+    background: #FBF8F3;
     flex-shrink: 0;
 }
 
@@ -1117,8 +1332,8 @@ html, body {
 .end-time-display {
     font-size: 13px;
     color: #555;
-    background: #f0f6ff;
-    border: 1px solid #c8deff;
+    background: #FBF8F3;
+    border: 1px solid #E8DCC6;
     border-radius: 20px;
     padding: 5px 14px;
     margin: -6px 0 16px;
@@ -1126,7 +1341,7 @@ html, body {
 }
 
 .end-time-display strong {
-    color: #2563eb;
+    color: #6E5B3F;
 }
 
 /* Price summary bar */
@@ -1135,9 +1350,9 @@ html, body {
     align-items: center;
     justify-content: space-between;
     padding: 10px 20px;
-    background: linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%);
-    border-top: 1px solid #c8deff;
-    border-bottom: 1px solid #c8deff;
+    background: linear-gradient(135deg, #FBF8F3 0%, #F4EDE2 100%);
+    border-top: 1px solid #E8DCC6;
+    border-bottom: 1px solid #E8DCC6;
     flex-shrink: 0;
 }
 
@@ -1170,7 +1385,7 @@ html, body {
 .form-input {
     width: 100%;
     padding: 11px 14px;
-    border: 1.5px solid #e0e0e0;
+    border: 1.5px solid #E8DCC6;
     border-radius: 10px;
     font-size: 16px;
     font-family: inherit;
@@ -1181,7 +1396,7 @@ html, body {
 
 .form-input:focus {
     outline: none;
-    border-color: #4c9fff;
+    border-color: #A08562;
     box-shadow: 0 0 0 3px rgba(76, 159, 255, 0.12);
 }
 
@@ -1203,8 +1418,8 @@ textarea.form-input {
     display: flex;
     gap: 10px;
     padding: 14px 20px calc(14px + env(safe-area-inset-bottom));
-    background: #f8f9fa;
-    border-top: 1px solid #e0e0e0;
+    background: #FBF8F3;
+    border-top: 1px solid #E8DCC6;
     flex-shrink: 0;
 }
 
@@ -1227,22 +1442,24 @@ textarea.form-input {
 }
 
 .btn-primary {
-    background: #4c9fff;
-    color: white;
+    background: linear-gradient(135deg, #B89C70 0%, #A08562 100%);
+    color: #ffffff;
+    box-shadow: 0 6px 16px -6px rgba(138, 114, 80, 0.4), 0 2px 4px rgba(61, 49, 34, 0.08);
 }
 
 .btn-primary:hover, .btn-primary:active {
-    background: #357abd;
+    background: linear-gradient(135deg, #A08562 0%, #8A7250 100%);
     transform: scale(0.98);
+    box-shadow: 0 4px 12px -6px rgba(138, 114, 80, 0.5);
 }
 
 .btn-secondary {
-    background: #f0f0f0;
+    background: #EDE5D6;
     color: #666;
 }
 
 .btn-secondary:hover, .btn-secondary:active {
-    background: #e0e0e0;
+    background: #E8DCC6;
     transform: scale(0.98);
 }
 
@@ -1313,9 +1530,9 @@ textarea.form-input {
 .duration-inputs {
     margin-top: 15px;
     padding: 20px;
-    border: 2px solid #f0f0f0;
+    border: 2px solid #EDE5D6;
     border-radius: 12px;
-    background: #fafafa;
+    background: #FBF8F3;
 }
 
 .duration-inputs h5 {
@@ -1334,7 +1551,7 @@ textarea.form-input {
 
 .duration-select, .price-input, .therapist-fee-input {
     padding: 10px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid #E8DCC6;
     border-radius: 8px;
     font-size: 14px;
     background: white;
@@ -1378,14 +1595,14 @@ textarea.form-input {
 
 .service-item {
     background: white;
-    border: 2px solid #f0f0f0;
+    border: 2px solid #EDE5D6;
     border-radius: 12px;
     padding: 20px;
     transition: border-color 0.3s ease;
 }
 
 .service-item:hover {
-    border-color: #4c9fff;
+    border-color: #A08562;
 }
 
 .service-header {
@@ -1410,7 +1627,7 @@ textarea.form-input {
 .service-category {
     font-size: 14px;
     color: #666;
-    background: #f0f0f0;
+    background: #EDE5D6;
     padding: 4px 8px;
     border-radius: 6px;
     width: fit-content;
@@ -1434,7 +1651,7 @@ textarea.form-input {
 }
 
 .service-controls .toggle-visibility {
-    background: #f0f0f0;
+    background: #EDE5D6;
     color: #666;
     width: 40px;
     height: 40px;
@@ -1450,7 +1667,7 @@ textarea.form-input {
 }
 
 .service-controls .toggle-visibility.active {
-    background: #4c9fff;
+    background: #A08562;
     color: white;
 }
 
@@ -1459,12 +1676,12 @@ textarea.form-input {
 }
 
 .service-controls .edit-therapist {
-    background: #4c9fff;
+    background: #A08562;
     color: white;
 }
 
 .service-controls .edit-therapist:hover {
-    background: #357abd;
+    background: #8A7250;
 }
 
 .service-controls .delete-therapist {
@@ -1483,17 +1700,17 @@ textarea.form-input {
 }
 
 .price-option {
-    background: #f8f9fa;
+    background: #FBF8F3;
     padding: 12px;
     border-radius: 8px;
     text-align: center;
-    border: 1px solid #e0e0e0;
+    border: 1px solid #E8DCC6;
 }
 
 .price-option .duration {
     font-size: 14px;
     font-weight: 600;
-    color: #4c9fff;
+    color: #A08562;
     margin-bottom: 5px;
 }
 
@@ -1513,7 +1730,7 @@ textarea.form-input {
 /* Settings Tabs */
 .settings-tabs {
     display: flex;
-    border-bottom: 2px solid #e0e0e0;
+    border-bottom: 2px solid #E8DCC6;
     margin-bottom: 30px;
 }
 
@@ -1531,8 +1748,8 @@ textarea.form-input {
 }
 
 .tab-btn.active {
-    color: #4c9fff;
-    border-bottom-color: #4c9fff;
+    color: #A08562;
+    border-bottom-color: #A08562;
     font-weight: 600;
 }
 
@@ -1565,10 +1782,10 @@ textarea.form-input {
 }
 
 .duration-inputs {
-    background: #f8f9fa;
+    background: #FBF8F3;
     padding: 20px;
     border-radius: 12px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid #E8DCC6;
 }
 
 .duration-inputs h5 {
@@ -1621,14 +1838,14 @@ textarea.form-input {
     display: flex;
     flex-direction: column;
     padding: 20px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid #E8DCC6;
     border-radius: 12px;
     background: white;
     transition: all 0.3s ease;
 }
 
 .service-item:hover {
-    border-color: #4c9fff;
+    border-color: #A08562;
     box-shadow: 0 4px 12px rgba(76, 159, 255, 0.1);
 }
 
@@ -1653,7 +1870,7 @@ textarea.form-input {
     font-size: 14px;
     color: #666;
     padding: 4px 8px;
-    background: #f0f0f0;
+    background: #EDE5D6;
     border-radius: 6px;
     display: inline-block;
 }
@@ -1670,11 +1887,11 @@ textarea.form-input {
     gap: 10px;
     margin-top: 10px;
     padding-top: 15px;
-    border-top: 1px solid #f0f0f0;
+    border-top: 1px solid #EDE5D6;
 }
 
 .price-option {
-    background: #f8f9fa;
+    background: #FBF8F3;
     padding: 10px 12px;
     border-radius: 8px;
     text-align: center;
@@ -1683,7 +1900,7 @@ textarea.form-input {
 
 .duration {
     font-weight: 600;
-    color: #4c9fff;
+    color: #A08562;
     font-size: 14px;
 }
 
@@ -1819,7 +2036,7 @@ textarea.form-input {
 .settings-section {
     margin-bottom: 40px;
     padding-bottom: 30px;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid #E8DCC6;
 }
 
 .settings-section:last-child {
@@ -1849,7 +2066,7 @@ textarea.form-input {
 .color-input {
     width: 60px;
     height: 44px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid #E8DCC6;
     border-radius: 8px;
     cursor: pointer;
     padding: 4px;
@@ -1858,7 +2075,7 @@ textarea.form-input {
 
 .color-input:focus {
     outline: none;
-    border-color: #4c9fff;
+    border-color: #A08562;
     box-shadow: 0 0 0 3px rgba(76, 159, 255, 0.1);
 }
 
@@ -1872,7 +2089,7 @@ textarea.form-input {
     display: flex;
     align-items: center;
     padding: 20px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid #E8DCC6;
     border-radius: 12px;
     background: white;
     transition: all 0.3s ease;
@@ -1882,13 +2099,13 @@ textarea.form-input {
     opacity: 0.8;
     transform: scale(1.02);
     box-shadow: 0 8px 25px rgba(76, 159, 255, 0.3);
-    border-color: #4c9fff;
+    border-color: #A08562;
     z-index: 1000;
     position: relative;
 }
 
 .therapist-item:hover {
-    border-color: #4c9fff;
+    border-color: #A08562;
     box-shadow: 0 4px 12px rgba(76, 159, 255, 0.1);
 }
 
@@ -1904,7 +2121,7 @@ textarea.form-input {
 }
 
 .drag-handle:hover {
-    color: #4c9fff;
+    color: #A08562;
 }
 
 .drag-handle:active {
@@ -1956,7 +2173,7 @@ textarea.form-input {
 }
 
 .toggle-visibility.active {
-    background: #4c9fff;
+    background: #A08562;
 }
 
 .toggle-visibility::after {
@@ -1977,7 +2194,7 @@ textarea.form-input {
 }
 
 .edit-therapist {
-    background: #f0f0f0;
+    background: #EDE5D6;
     color: #666;
     border: none;
     padding: 8px 12px;
@@ -1988,7 +2205,7 @@ textarea.form-input {
 }
 
 .edit-therapist:hover {
-    background: #e0e0e0;
+    background: #E8DCC6;
 }
 
 .delete-therapist {
@@ -2045,37 +2262,30 @@ textarea.form-input {
         height: 100vh;
         overflow: hidden;
     }
-    
-    .header {
-        padding: 15px;
-    }
-    
-    .app-title {
-        font-size: 18px;
-        margin-bottom: 8px;
-    }
-    
+
+    /* header padding handled by earlier stacked-layout block */
+
     .header-top {
         margin-bottom: 10px;
     }
-    
-    .settings-btn {
-        padding: 8px 12px;
+
+    .settings-btn,
+    .capture-btn {
+        padding: 6px;
         font-size: 14px;
         min-height: 40px;
+        min-width: 40px;
+        max-width: 40px;
     }
-    
-    .date-nav {
-        gap: 10px;
-    }
-    
+
     .nav-btn {
-        padding: 8px 12px;
+        padding: 6px;
         font-size: 14px;
         min-height: 40px;
-        min-width: 80px;
+        min-width: 40px;
+        max-width: 40px;
     }
-    
+
     .main-content {
         padding: 10px;
     }
@@ -2168,15 +2378,23 @@ textarea.form-input {
         font-size: inherit;
     }
     
-    .nav-btn {
-        padding: 6px 10px;
+    .nav-btn,
+    .settings-btn,
+    .capture-btn {
+        padding: 5px;
         font-size: 13px;
-        min-width: 70px;
+        min-width: 38px;
+        max-width: 38px;
+        min-height: 38px;
+        max-height: 38px;
     }
-    
-    .settings-btn {
-        padding: 6px 10px;
-        font-size: 13px;
+
+    .header-compact .app-title {
+        font-size: 15px;
+    }
+    .header-compact .app-title .brand-mark {
+        width: 30px;
+        height: 30px;
     }
 }
 
@@ -2187,7 +2405,7 @@ textarea.form-input {
 }
 
 .booking-slot.drag-over {
-    outline: 2px solid #2196F3;
+    outline: 2px solid #A08562;
     outline-offset: -2px;
     background-color: rgba(33, 150, 243, 0.15) !important;
 }
@@ -2197,7 +2415,7 @@ textarea.form-input {
     pointer-events: none;
     z-index: 9999;
     padding: 8px 14px;
-    background: rgba(33, 150, 243, 0.92);
+    background: rgba(160, 133, 98, 0.95);
     color: white;
     border-radius: 8px;
     font-size: 12px;
@@ -2208,4 +2426,193 @@ textarea.form-input {
     max-width: 160px;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  RESPONSIVE & BRIGHTNESS POLISH                                 */
+/*  Mobile-first enhancements, iOS safe-area, tablet & landscape   */
+/* ─────────────────────────────────────────────────────────────── */
+
+/* Ensure body uses the full device height correctly (iOS Safari) */
+@supports (height: 100dvh) {
+    .app-container { height: 100dvh; }
+}
+
+/* Bright booking cells — add crisp white text + gentle transitions */
+.booking-slot.booked {
+    color: #ffffff !important;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(26, 21, 16, 0.22);
+    transition: background-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.booking-slot {
+    transition: background-color 160ms ease;
+}
+
+.booking-slot:not(.booked):active {
+    transform: scale(0.97);
+}
+
+/* Bright cell bottom borders for clearer grid lines on light bg */
+.booking-slot {
+    border-right: 1px solid rgba(184, 156, 112, 0.18);
+    border-bottom: 1px solid rgba(184, 156, 112, 0.14);
+}
+
+/* Floating card look for the calendar on bright bg */
+.calendar-container {
+    background: #ffffff;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow:
+        0 18px 40px -20px rgba(138, 114, 80, 0.18),
+        0 6px 16px -8px rgba(61, 49, 34, 0.08);
+    border: 1px solid rgba(232, 220, 198, 0.6);
+}
+
+/* ─── Safe-area padding for iOS (notch, home indicator) ─────── */
+@supports (padding: env(safe-area-inset-top)) {
+    .modal-content {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+}
+
+/* ─── Tablet portrait (iPad 768-1024) ────────────────────────── */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .calendar-with-headers {
+        grid-template-columns: 72px repeat(auto-fit, minmax(110px, 1fr));
+    }
+
+    .header-time-cell,
+    .header-therapist-cell {
+        padding: 16px 8px;
+        font-size: 16px;
+    }
+
+    .time-cell {
+        font-size: 14px;
+        padding: 12px 6px;
+        min-height: 48px;
+    }
+
+    .booking-slot {
+        min-height: 48px;
+    }
+
+    .modal-content {
+        max-width: 560px;
+    }
+
+    /* Roomier action buttons on tablet */
+    .btn {
+        min-height: 48px;
+        padding: 14px 22px;
+    }
+}
+
+/* ─── Tablet landscape (iPad Pro, etc.) ──────────────────────── */
+@media (min-width: 1025px) and (max-width: 1366px) {
+    .calendar-with-headers {
+        grid-template-columns: 80px repeat(auto-fit, minmax(130px, 1fr));
+    }
+
+    .time-cell { min-height: 52px; }
+    .booking-slot { min-height: 52px; }
+}
+
+/* ─── Phones (≤ 480px) refinements ────────────────────────────── */
+@media (max-width: 480px) {
+    /* Use entire viewport brightness */
+    body {
+        background-color: #FFFDF9;
+    }
+
+    /* Header compacts nicely on small phones */
+    .header {
+        padding: 12px 14px;
+        padding-top: calc(12px + env(safe-area-inset-top, 0px));
+        padding-left: calc(14px + env(safe-area-inset-left, 0px));
+        padding-right: calc(14px + env(safe-area-inset-right, 0px));
+    }
+
+    /* Calendar container: inset card on mobile */
+    .calendar-container {
+        border-radius: 14px;
+    }
+
+    /* Larger tap targets in nav */
+    .nav-btn,
+    .settings-btn,
+    .capture-btn {
+        min-width: 44px !important;
+        min-height: 44px !important;
+    }
+
+    /* Modal takes full-screen feel on small phones */
+    .modal-content {
+        border-radius: 20px 20px 0 0;
+        max-height: 94vh;
+    }
+
+    .modal-header h3 {
+        font-size: 17px;
+    }
+
+    /* Form inputs bigger on mobile (avoid iOS auto-zoom) */
+    .form-input {
+        font-size: 16px;
+        min-height: 44px;
+    }
+
+    /* Primary CTA stretches nicely */
+    .btn {
+        font-size: 15px;
+        padding: 14px 18px;
+    }
+}
+
+/* ─── iPhone 12/13 and newer (iOS with home indicator) ─────── */
+@supports (padding: max(0px)) {
+    .modal-footer {
+        padding-bottom: max(16px, env(safe-area-inset-bottom));
+    }
+}
+
+/* ─── Landscape phones / short-height screens ────────────────── */
+@media (max-height: 500px) and (orientation: landscape) {
+    .header {
+        padding: 8px 14px;
+    }
+
+    .app-title {
+        font-size: 16px;
+    }
+
+    .time-cell,
+    .booking-slot {
+        min-height: 38px;
+    }
+}
+
+/* ─── Motion hygiene ────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .booking-slot,
+    .booking-slot.booked,
+    .btn,
+    .btn-primary,
+    .btn-secondary,
+    .btn-danger,
+    .nav-btn,
+    .capture-btn,
+    .settings-btn {
+        transition: none !important;
+    }
+}
+
+/* ─── High-DPI brightness boost for booking text ──────────── */
+@media (min-resolution: 2dppx) {
+    .booking-slot .booking-info {
+        -webkit-font-smoothing: antialiased;
+    }
 }

@@ -182,7 +182,7 @@ class SabaiBookingManager {
 
     // Set default values for new booking
     setDefaultBookingValues(therapist, timeSlot) {
-        console.log('🎯 Setting default booking values for:', therapist.name, 'at', timeSlot);
+        log('🎯 Setting default booking values for:', therapist.name, 'at', timeSlot);
         
         const form = document.getElementById('bookingForm');
         
@@ -190,14 +190,14 @@ class SabaiBookingManager {
         form.therapistId.value = therapist.id;
         
         // Set start time - ensure the value exists in the dropdown
-        console.log('⏰ Setting start time to:', timeSlot);
+        log('⏰ Setting start time to:', timeSlot);
         form.startTime.value = timeSlot;
         
         // Verify that the value was set correctly
         if (form.startTime.value !== timeSlot) {
             console.warn('⚠️ Failed to set startTime, available options:', Array.from(form.startTime.options).map(opt => opt.value));
         } else {
-            console.log('✅ Start time set successfully:', form.startTime.value);
+            log('✅ Start time set successfully:', form.startTime.value);
         }
         
         // Set default duration and calculate end time
@@ -219,18 +219,18 @@ class SabaiBookingManager {
         // Clear error message
         this.clearErrorMessage();
         
-        console.log('🎯 Default booking values set successfully');
+        log('🎯 Default booking values set successfully');
     }
 
     // Populate form with existing booking data
     populateFormWithBookingData(booking) {
-        console.log('📊 Populating form with booking data:', booking);
+        log('📊 Populating form with booking data:', booking);
         const form = document.getElementById('bookingForm');
         
         // Set therapist
-        console.log('👩‍⚕️ Setting therapist ID:', booking.therapistId);
+        log('👩‍⚕️ Setting therapist ID:', booking.therapistId);
         form.therapistId.value = booking.therapistId || '';
-        console.log('✅ Therapist value set to:', form.therapistId.value, 'Available options:', Array.from(form.therapistId.options).map(o => o.value));
+        log('✅ Therapist value set to:', form.therapistId.value, 'Available options:', Array.from(form.therapistId.options).map(o => o.value));
         
         // Convert Firebase Timestamps to readable time strings
         if (booking.startTime) {
@@ -243,9 +243,9 @@ class SabaiBookingManager {
                 // Regular string
                 startTimeValue = booking.startTime;
             }
-            console.log('⏰ Setting start time to:', startTimeValue);
+            log('⏰ Setting start time to:', startTimeValue);
             form.startTime.value = startTimeValue;
-            console.log('✅ Start time value set to:', form.startTime.value, 'Available options:', Array.from(form.startTime.options).map(o => o.value));
+            log('✅ Start time value set to:', form.startTime.value, 'Available options:', Array.from(form.startTime.options).map(o => o.value));
         } else {
             form.startTime.value = '';
         }
@@ -281,7 +281,7 @@ class SabaiBookingManager {
             this.updatePriceBasedOnService();
         }, 50);
         
-        console.log('📊 Form populated with booking data successfully');
+        log('📊 Form populated with booking data successfully');
         this.clearErrorMessage();
     }
 
@@ -322,58 +322,64 @@ class SabaiBookingManager {
 
     // Handle save booking
     async handleSaveBooking() {
+        const saveBtn = document.getElementById('saveBooking');
         try {
-            console.log('💾 Starting booking save process...');
             const bookingData = this.getBookingDataFromForm();
-            console.log('📊 Booking data from form:', bookingData);
-            
+
             // Validate booking data
             const validationResult = SabaiUtils.validateBookingData(bookingData);
-            console.log('✅ Validation result:', validationResult);
             if (!validationResult.isValid) {
                 this.showErrorMessage(validationResult.message);
                 return;
             }
-            
+
             // Check for conflicts
-            console.log('🔍 Checking for conflicts...');
             const hasConflict = await this.checkBookingConflict(bookingData, this.editingBooking?.id);
-            console.log('⚡ Conflict check result:', hasConflict);
             if (hasConflict) {
                 const timeRange = `${bookingData.startTime.getHours().toString().padStart(2,'0')}:${bookingData.startTime.getMinutes().toString().padStart(2,'0')} - ${bookingData.endTime.getHours().toString().padStart(2,'0')}:${bookingData.endTime.getMinutes().toString().padStart(2,'0')}`;
-                console.log('❌ Showing conflict message for time range:', timeRange);
                 this.showErrorMessage(`มีการจองในช่วงเวลา ${timeRange} แล้ว กรุณาเลือกเวลาอื่น`);
                 return;
             }
-            
+
+            // Show saving state
+            saveBtn.classList.add('saving');
+            saveBtn.textContent = 'กำลังบันทึก...';
+
             // Save booking
             if (this.editingBooking) {
                 await this.updateBooking(bookingData);
             } else {
                 await this.createBooking(bookingData);
             }
-            
+
             this.closeBookingModal();
-            
+
         } catch (error) {
             console.error('Error saving booking:', error);
             this.showErrorMessage('เกิดข้อผิดพลาดในการบันทึก กรุณาลองใหม่อีกครั้ง');
+        } finally {
+            saveBtn.classList.remove('saving');
+            saveBtn.textContent = 'บันทึก';
         }
     }
 
     // Handle delete booking
     async handleDeleteBooking() {
         if (!this.editingBooking) return;
-        
+
         if (confirm('ต้องการลบการจองนี้หรือไม่?')) {
+            const deleteBtn = document.getElementById('deleteBooking');
             try {
+                deleteBtn.classList.add('saving');
+                deleteBtn.textContent = 'กำลังลบ...';
                 await this.dataService.deleteBooking(this.editingBooking.id);
                 this.closeBookingModal();
-                console.log('✅ Booking deleted - real-time listener will update UI automatically');
-                
             } catch (error) {
                 console.error('Error deleting booking:', error);
                 this.showErrorMessage('เกิดข้อผิดพลาดในการลบ กรุณาลองใหม่อีกครั้ง');
+            } finally {
+                deleteBtn.classList.remove('saving');
+                deleteBtn.textContent = 'ลบ';
             }
         }
     }
@@ -413,7 +419,7 @@ class SabaiBookingManager {
 
     // Check for booking conflicts - comprehensive check
     async checkBookingConflict(bookingData, excludeBookingId = null) {
-        console.log('🔍 Starting comprehensive conflict check...');
+        log('🔍 Starting comprehensive conflict check...');
         
         // 1. เช็คจาก memory cache ก่อน (รวดเร็ว)
         const bookings = this.app.bookings;
@@ -431,7 +437,7 @@ class SabaiBookingManager {
             );
             
             if (cacheConflict) {
-                console.log('❌ Conflict detected in memory cache');
+                log('❌ Conflict detected in memory cache');
                 return true;
             }
         }
@@ -451,7 +457,7 @@ class SabaiBookingManager {
             );
             
             if (firestoreConflict) {
-                console.log('❌ Conflict detected in Firestore');
+                log('❌ Conflict detected in Firestore');
                 return true;
             }
             
@@ -460,7 +466,7 @@ class SabaiBookingManager {
             // หาก Firestore check ล้มเหลว ให้ใช้ผลลัพธ์จาก cache
         }
         
-        console.log('✅ No conflicts found in both cache and Firestore');
+        log('✅ No conflicts found in both cache and Firestore');
         return false;
     }
 
@@ -469,7 +475,7 @@ class SabaiBookingManager {
         try {
             // ใช้ createBookingSafely แทน createBooking ปกติ
             const bookingId = await this.dataService.createBookingSafely(bookingData);
-            console.log('✅ Safe booking created with ID:', bookingId, '- real-time listener will update UI automatically');
+            log('✅ Safe booking created with ID:', bookingId, '- real-time listener will update UI automatically');
             return bookingId;
         } catch (error) {
             console.error('❌ Error creating safe booking:', error);
@@ -480,66 +486,33 @@ class SabaiBookingManager {
     // Update existing booking
     async updateBooking(bookingData) {
         await this.dataService.updateBooking(this.editingBooking.id, bookingData);
-        console.log('✅ Booking updated - real-time listener will update UI automatically');
+        log('✅ Booking updated - real-time listener will update UI automatically');
     }
 
     // Show error message
     showErrorMessage(message) {
-        console.log('🚨 Showing error message:', message);
+        log('🚨 Showing error message:', message);
         
         // Prevent multiple alerts within short timeframe
         const now = Date.now();
         if (this.lastAlertTime && (now - this.lastAlertTime) < 1000) {
-            console.log('🚫 Preventing duplicate alert within 1 second');
+            log('🚫 Preventing duplicate alert within 1 second');
             return;
         }
         this.lastAlertTime = now;
         
-        // Check if we're in modal context - look for modal error message first
         const modalOverlay = document.getElementById('bookingModalOverlay');
-        console.log('🔍 Modal overlay found:', modalOverlay);
-        console.log('🔍 Modal display style:', modalOverlay?.style.display);
-        console.log('🔍 Modal computed display:', modalOverlay ? getComputedStyle(modalOverlay).display : 'no modal');
-        
         const isModalOpen = modalOverlay && getComputedStyle(modalOverlay).display !== 'none';
-        console.log('🎭 Is modal open?', isModalOpen);
-        
+
         let errorElement = null;
         if (isModalOpen) {
-            // Try multiple ways to find error element inside the modal
-            console.log('🔍 Searching for error element in modal...');
-            
-            // Method 1: Direct ID search within modal
-            errorElement = modalOverlay.querySelector('#errorMessage');
-            console.log('🎯 Method 1 - Direct ID search:', errorElement);
-            
-            // Method 2: If not found, try class selector
-            if (!errorElement) {
-                errorElement = modalOverlay.querySelector('.error-message, .booking-error');
-                console.log('🎯 Method 2 - Class search:', errorElement);
-            }
-
-            // Method 3: Find all error elements and pick first
-            if (!errorElement) {
-                const allErrorElements = modalOverlay.querySelectorAll('[id="errorMessage"], .error-message, .booking-error');
-                console.log('🔍 All error elements in modal:', allErrorElements);
-                errorElement = allErrorElements[0];
-                console.log('🎯 Method 3 - First from all:', errorElement);
-            }
-        } else {
-            // Use main page error element
-            errorElement = document.querySelector('body > #errorMessage, .error-message:not(.modal *)');
-            console.log('🎯 Using main page error element:', errorElement);
+            errorElement = document.getElementById('bookingErrorMessage');
         }
-        
+        if (!errorElement) {
+            errorElement = document.getElementById('errorMessage');
+        }
+
         if (errorElement) {
-            console.log('📝 Setting error text and showing element');
-            console.log('🔍 Element before styling:', {
-                display: errorElement.style.display,
-                visibility: errorElement.style.visibility,
-                textContent: errorElement.textContent
-            });
-            
             errorElement.textContent = message;
             errorElement.style.display = 'block';
             errorElement.style.visibility = 'visible';
@@ -550,48 +523,26 @@ class SabaiBookingManager {
             errorElement.style.marginBottom = '10px';
             errorElement.style.fontSize = '14px';
             errorElement.style.fontWeight = 'bold';
-            errorElement.style.position = 'relative';
-            errorElement.style.zIndex = '9999';
-            errorElement.style.width = '100%';
-            errorElement.style.boxSizing = 'border-box';
-            
-            console.log('✅ Error message set successfully, final state:', {
-                text: errorElement.textContent,
-                display: errorElement.style.display,
-                visibility: errorElement.style.visibility,
-                backgroundColor: errorElement.style.backgroundColor
-            });
-            
-            // Show alert as backup
+
             setTimeout(() => {
                 alert(message);
             }, 50);
         } else {
-            console.log('⚠️ Error element not found anywhere, using alert fallback');
             alert(message);
         }
     }
 
     // Clear error message
     clearErrorMessage() {
-        console.log('🧹 Clearing error messages');
-        
-        // Clear both modal and main page error messages
-        const modalOverlay = document.getElementById('bookingModalOverlay');
-        if (modalOverlay) {
-            const modalErrorElement = modalOverlay.querySelector('#errorMessage');
-            if (modalErrorElement) {
-                modalErrorElement.style.display = 'none';
-                modalErrorElement.textContent = '';
-                console.log('🧹 Modal error message cleared');
-            }
+        const bookingError = document.getElementById('bookingErrorMessage');
+        if (bookingError) {
+            bookingError.style.display = 'none';
+            bookingError.textContent = '';
         }
-        
-        const mainErrorElement = document.getElementById('errorMessage');
-        if (mainErrorElement) {
-            mainErrorElement.style.display = 'none';
-            mainErrorElement.textContent = '';
-            console.log('🧹 Main page error message cleared');
+
+        const mainError = document.getElementById('errorMessage');
+        if (mainError) {
+            mainError.classList.add('hidden');
         }
     }
     // Get calculated price based on service and duration
@@ -645,7 +596,7 @@ class SabaiBookingManager {
             const discountAmount = (basePrice * discountPercent) / 100;
             const finalPrice = basePrice - discountAmount;
 
-            console.log(`💰 Price calculation: Base: ${basePrice}฿, Discount: ${discountPercent}% (-${discountAmount}฿), Final: ${finalPrice}฿`);
+            log(`💰 Price calculation: Base: ${basePrice}฿, Discount: ${discountPercent}% (-${discountAmount}฿), Final: ${finalPrice}฿`);
 
             if (priceSummary && priceSummaryText) {
                 priceSummary.style.display = 'flex';
@@ -665,14 +616,14 @@ class SabaiBookingManager {
         const serviceId = document.getElementById('serviceId').value;
         const duration = parseInt(document.getElementById('duration').value);
         
-        console.log('💰 Auto-calculating price and therapist fee for service:', serviceId, 'duration:', duration);
+        log('💰 Auto-calculating price and therapist fee for service:', serviceId, 'duration:', duration);
         
         // Auto-calculate price
         const calculatedPrice = this.getCalculatedPrice();
         if (calculatedPrice) {
-            console.log('💰 Auto-calculated price:', calculatedPrice, '฿');
+            log('💰 Auto-calculated price:', calculatedPrice, '฿');
         } else {
-            console.log('💰 No price available for this service/duration combination');
+            log('💰 No price available for this service/duration combination');
         }
         
         // Auto-populate therapist fee
@@ -680,14 +631,14 @@ class SabaiBookingManager {
         const therapistFeeField = document.getElementById('therapistFee');
         if (calculatedTherapistFee) {
             therapistFeeField.value = calculatedTherapistFee;
-            console.log('💵 Auto-calculated therapist fee:', calculatedTherapistFee, '฿');
+            log('💵 Auto-calculated therapist fee:', calculatedTherapistFee, '฿');
         } else {
             therapistFeeField.value = '';
-            console.log('💵 No therapist fee available for this service/duration combination');
+            log('💵 No therapist fee available for this service/duration combination');
         }
         
         this.calculateFinalPrice();
-        console.log('💰 Price and therapist fee update complete');
+        log('💰 Price and therapist fee update complete');
     }
     // Filter bookings by date
     filterBookingsByDate(bookings, date) {

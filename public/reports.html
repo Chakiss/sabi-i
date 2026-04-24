@@ -2,8 +2,17 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Dashboard - สบาย Saba-i</title>
+
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+    <link rel="shortcut icon" href="icons/favicon-32.png">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700&family=Raleway:wght@300..700&family=Noto+Sans+Thai:wght@300..700&display=swap" rel="stylesheet">
 
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -13,36 +22,43 @@
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            --blue:    #4c9fff;
-            --indigo:  #6366f1;
-            --green:   #16a34a;
-            --orange:  #ea580c;
-            --red:     #dc2626;
-            --bg:      #f1f5f9;
+            --blue:    #A08562; /* sand-500 - primary */
+            --indigo:  #6E5B3F; /* sand-700 - deep */
+            --green:   #6B7A5A; /* muted sage for positive */
+            --orange:  #B67A4E; /* warm clay for attention */
+            --red:     #B23A3A; /* warm brick for danger */
+            --bg:      #FBF8F3; /* cream */
             --surface: #ffffff;
-            --border:  #e2e8f0;
-            --text:    #0f172a;
-            --muted:   #64748b;
-            --radius:  12px;
+            --border:  #EDE5D6; /* warm oatmeal border */
+            --text:    #2A231D; /* espresso */
+            --muted:   #8A7250; /* sand-600 */
+            --radius:  14px;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            font-family: 'Raleway', 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
             -webkit-text-size-adjust: 100%;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* ─── Top bar ─────────────────────────────────────────── */
+        h1, h2, h3, .topbar-title {
+            font-family: 'Lora', 'Noto Sans Thai', serif;
+            letter-spacing: 0.01em;
+        }
+
+        /* ─── Top bar — bright sand gradient ──────────────────── */
         .topbar {
-            background: linear-gradient(135deg, var(--blue) 0%, var(--indigo) 100%);
-            color: white;
+            background: linear-gradient(135deg, #D4B78E 0%, #B89C70 55%, #A08562 100%);
+            color: #ffffff;
             padding: 0 20px;
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: 0 2px 12px rgba(76,159,255,.35);
+            box-shadow: 0 8px 24px -10px rgba(138, 114, 80, 0.35), 0 2px 6px rgba(61, 49, 34, 0.08);
+            padding-top: env(safe-area-inset-top, 0px);
         }
 
         .topbar-inner {
@@ -164,7 +180,7 @@
         }
         .spinner {
             width: 32px; height: 32px;
-            border: 3px solid #e2e8f0;
+            border: 3px solid var(--border);
             border-top-color: var(--blue);
             border-radius: 50%;
             animation: spin .9s linear infinite;
@@ -204,11 +220,11 @@
             color: var(--text);
         }
 
-        .kpi-card.revenue   .kpi-value { color: #1d4ed8; }
+        .kpi-card.revenue   .kpi-value { color: var(--indigo); }
         .kpi-card.profit    .kpi-value { color: var(--green); }
         .kpi-card.fee       .kpi-value { color: var(--orange); }
-        .kpi-card.bookings  .kpi-value { color: var(--indigo); }
-        .kpi-card.avg       .kpi-value { color: #0891b2; }
+        .kpi-card.bookings  .kpi-value { color: var(--blue); }
+        .kpi-card.avg       .kpi-value { color: #8A7250; }
 
         .kpi-icon {
             font-size: 18px;
@@ -280,11 +296,11 @@
         }
         .dt td {
             padding: 9px 12px;
-            border-bottom: 1px solid #f1f5f9;
+            border-bottom: 1px solid #F4EDE2;
             color: var(--text);
         }
         .dt tbody tr:last-child td { border-bottom: none; }
-        .dt tbody tr:hover { background: #f8fafc; }
+        .dt tbody tr:hover { background: #FBF8F3; }
         .dt .total-row td {
             font-weight: 700;
             border-top: 2px solid var(--border);
@@ -293,7 +309,7 @@
 
         /* Progress bar */
         .pbar-wrap {
-            background: #e9ecef;
+            background: #EDE5D6;
             border-radius: 999px;
             height: 6px;
             overflow: hidden;
@@ -354,6 +370,25 @@
 
         @media (max-width: 380px) {
             .kpi-grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        /* Tablet portrait */
+        @media (min-width: 601px) and (max-width: 1024px) {
+            .kpi-grid { grid-template-columns: repeat(5, 1fr); }
+            .kpi-value { font-size: 20px; }
+            .back-btn,
+            .filter-btn { min-height: 40px; padding: 8px 14px; }
+        }
+
+        /* iOS safe-area respect for scrollable page bottom */
+        .page {
+            padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+        }
+
+        /* Touch-target hygiene on phones */
+        @media (max-width: 600px) {
+            .back-btn { min-height: 40px; padding: 8px 12px; }
+            .filter-btn { min-height: 36px; }
         }
     </style>
 </head>

@@ -27,7 +27,7 @@ class SabaiCalendarRenderer {
         this.timeUpdateInterval = setInterval(() => {
             this.updateCurrentTimeIndicator();
         }, 60000); // Update every minute
-        
+
         // Handle window visibility changes for battery optimization
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
@@ -35,6 +35,29 @@ class SabaiCalendarRenderer {
                 this.updateCurrentTimeIndicator();
             }
         });
+
+        // Recalculate position on resize / rotation (debounced via rAF)
+        this._pendingReflow = false;
+        const scheduleReflow = () => {
+            if (this._pendingReflow) return;
+            this._pendingReflow = true;
+            requestAnimationFrame(() => {
+                this._pendingReflow = false;
+                this.updateCurrentTimeIndicator();
+            });
+        };
+        window.addEventListener('resize', scheduleReflow);
+        window.addEventListener('orientationchange', () => {
+            // orientationchange fires before the new layout settles — run twice
+            scheduleReflow();
+            setTimeout(scheduleReflow, 250);
+        });
+
+        // Also reflow when the calendar scroll container scrolls horizontally
+        const scrollContainer = document.querySelector('.calendar-scroll');
+        if (scrollContainer) {
+            scrollContainer.addEventListener('scroll', scheduleReflow, { passive: true });
+        }
     }
     
     // Calculate current time indicator position
@@ -186,24 +209,43 @@ class SabaiCalendarRenderer {
         
         const timeCellRect = timeCell.getBoundingClientRect();
         const containerRect = container.getBoundingClientRect();
-        
+
         // Calculate top position based on slot and ratio within slot
         const slotHeight = timeCellRect.height;
         const topPosition = timeCellRect.top - containerRect.top + (slotHeight * position.positionRatio);
-        
+
         this.currentTimeIndicator.style.top = topPosition + 'px';
-        
-        // Set the indicator to span full width of all therapist columns
-        const timeCellWidth = timeCellRect.width;
-        const containerWidth = containerRect.width;
-        
-        this.currentTimeIndicator.style.left = timeCellWidth + 'px';
-        this.currentTimeIndicator.style.width = (containerWidth - timeCellWidth) + 'px';
-        
+
+        // Anchor the indicator from the right edge of the time cell to the right edge
+        // of the LAST therapist column in the target row. This avoids issues where
+        // containerRect.width is stale after rotation or doesn't include scrollable
+        // overflow. We look up the last cell in the same row as timeCell.
+        const cellsPerRow = this.activeTherapistsCount + 1;
+        const lastCellIndex = timeCellIndex + cellsPerRow - 1;
+        const lastCell = container.children[lastCellIndex];
+
+        // Left edge = just past the time cell's right edge (relative to container)
+        const leftPx = timeCellRect.right - containerRect.left;
+
+        // Width = distance from left edge to right edge of last therapist cell.
+        // Fall back to scrollWidth/clientWidth if the last cell can't be resolved.
+        let rightPx;
+        if (lastCell) {
+            const lastRect = lastCell.getBoundingClientRect();
+            rightPx = lastRect.right - containerRect.left;
+        } else {
+            rightPx = Math.max(container.scrollWidth, containerRect.width);
+        }
+        const widthPx = Math.max(0, rightPx - leftPx);
+
+        this.currentTimeIndicator.style.left = leftPx + 'px';
+        this.currentTimeIndicator.style.width = widthPx + 'px';
+
         log('📏 Indicator positioned at:', {
             top: topPosition + 'px',
-            left: timeCellWidth + 'px',
-            width: (containerWidth - timeCellWidth) + 'px'
+            left: leftPx + 'px',
+            width: widthPx + 'px',
+            lastCellResolved: !!lastCell
         });
     }
     
@@ -537,9 +579,9 @@ class SabaiCalendarRenderer {
         slot.classList.add('booked');
         slot.dataset.bookingId = booking.id;
 
-        // Same booking ID = same color
+        // Same booking ID = same color (bright earthy tones)
         const bookingColorHue = SabaiUtils.getBookingColor(booking.id);
-        const bookingColor = `hsl(${bookingColorHue}, 50%, 60%)`;
+        const bookingColor = `hsl(${bookingColorHue}, 58%, 68%)`;
         slot.style.backgroundColor = bookingColor;
 
         // Add hover effect
@@ -560,16 +602,17 @@ class SabaiCalendarRenderer {
 
     // Render an empty slot
     renderEmptySlot(slot, therapist, timeSlot, therapistIndex, timeIndex) {
-        // Empty slot styling with column and alternating row colors
-        const hue = (therapistIndex * 51) % 360;
+        // Bright, airy cream column tints with gentle row alternation
+        const warmHues = [32, 40, 25, 48, 18, 55];
+        const hue = warmHues[therapistIndex % warmHues.length];
         const isEvenRow = timeIndex % 2 === 0;
-        const lightness = isEvenRow ? 95 : 90;
-        const backgroundColor = `hsl(${hue}, 30%, ${lightness}%)`;
+        const lightness = isEvenRow ? 99 : 96;
+        const backgroundColor = `hsl(${hue}, 40%, ${lightness}%)`;
         slot.style.backgroundColor = backgroundColor;
-        
-        // Add hover effect for empty slots
+
+        // Add hover effect for empty slots (brighter pop)
         slot.addEventListener('mouseenter', () => {
-            slot.style.backgroundColor = `hsl(${hue}, 40%, 85%)`;
+            slot.style.backgroundColor = `hsl(${hue}, 55%, 90%)`;
         });
         slot.addEventListener('mouseleave', () => {
             slot.style.backgroundColor = backgroundColor;
@@ -675,8 +718,8 @@ class SabaiCalendarRenderer {
 
     // Add booking hover effect
     addBookingHoverEffect(slot, bookingColorHue) {
-        const normalColor = `hsl(${bookingColorHue}, 50%, 60%)`;
-        const hoverColor = `hsl(${bookingColorHue}, 60%, 50%)`;
+        const normalColor = `hsl(${bookingColorHue}, 58%, 68%)`;
+        const hoverColor = `hsl(${bookingColorHue}, 64%, 58%)`;
         
         slot.addEventListener('mouseenter', () => {
             slot.style.backgroundColor = hoverColor;

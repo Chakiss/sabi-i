@@ -1,6 +1,5 @@
 const functions  = require('firebase-functions');
 const admin      = require('firebase-admin');
-const axios      = require('axios');
 const nodemailer = require('nodemailer');
 
 admin.initializeApp();
@@ -8,14 +7,9 @@ const db = admin.firestore();
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 // ตั้งค่าใน functions/.env :
-//   LINE_TOKEN=...
-//   LINE_TO=...
 //   MAIL_USER=...@gmail.com
 //   MAIL_PASS=app-password
 //   MAIL_TO=...@gmail.com
-
-// LINE
-const LINE_PUSH_URL = 'https://api.line.me/v2/bot/message/push';
 
 // Gmail transporter (สร้างครั้งเดียวต่อ invocation)
 function createTransporter() {
@@ -77,22 +71,6 @@ async function getServiceName(serviceId) {
 }
 
 // ─── Senders ─────────────────────────────────────────────────────────────────
-
-async function sendLine(text) {
-    const recipients = (process.env.LINE_TO || '').split(',').map(s => s.trim()).filter(Boolean);
-    await Promise.all(recipients.map(async (to) => {
-        try {
-            await axios.post(
-                LINE_PUSH_URL,
-                { to, messages: [{ type: 'text', text }] },
-                { headers: { Authorization: `Bearer ${process.env.LINE_TOKEN}`, 'Content-Type': 'application/json' } }
-            );
-            console.log(`✅ LINE sent to ${to}`);
-        } catch (err) {
-            console.error(`❌ LINE error (${to}):`, err.response?.data || err.message);
-        }
-    }));
-}
 
 async function sendEmail(subject, htmlBody, textBody) {
     try {
@@ -302,14 +280,10 @@ exports.dailySummary = functions
         }
 
         const subject = `Saba-i Massage สรุปยอดวันที่ ${formatDateThai(dateKey)}`;
-        const lineText = buildLineText(summary);
         const emailHtml = buildEmailHtml(summary);
-        const textBody  = lineText;
+        const textBody  = buildLineText(summary);
 
-        await Promise.all([
-            sendLine(lineText),
-            sendEmail(subject, emailHtml, textBody),
-        ]);
+        await sendEmail(subject, emailHtml, textBody);
 
         console.log(`✅ Daily summary sent for ${dateKey}`);
         return null;
@@ -330,10 +304,183 @@ exports.testDailySummary = functions
         }
 
         const subject = `Saba-i Massage สรุปยอดวันที่ ${formatDateThai(dateKey)}`;
-        await Promise.all([
-            sendLine(buildLineText(summary)),
-            sendEmail(subject, buildEmailHtml(summary), buildLineText(summary)),
-        ]);
+        await sendEmail(subject, buildEmailHtml(summary), buildLineText(summary));
 
         res.send(`✅ ส่งแล้ว! วันที่ ${dateKey} | ${summary.enriched.length} คิว | รายได้ ${summary.totalRevenue.toLocaleString()}฿`);
+    });
+
+// ─── FCM Push Notification Helper ────────────────────────────────────────────
+
+async function sendPushNotification(title, body, tag) {
+    try {
+        // Get all admin device tokens
+        const devicesSnap = await db.collection('admin_devices').get();
+        if (devicesSnap.empty) {
+            console.log('ℹ️ No admin devices registered for push');
+            return;
+        }
+
+        // Deduplicate tokens (same device may register multiple times)
+        const tokens = [...new Set(devicesSnap.docs.map(doc => doc.data().token).filter(Boolean))];
+        if (tokens.length === 0) return;
+
+        // Send data-only message — no `notification` field
+        // This prevents FCM from auto-displaying a notification
+        // Our service worker handles display manually (single notification)
+        const message = {
+            data: {
+                title: title,
+                body: body,
+                tag: tag || 'booking',
+                click_action: '/index.html'
+            },
+            tokens: tokens
+        };
+
+        const response = await admin.messaging().sendEachForMulticast(message);
+        console.log(`📲 Push sent: ${response.successCount} success, ${response.failureCount} failed`);
+
+        // Clean up invalid tokens
+        if (response.failureCount > 0) {
+            const invalidTokens = [];
+            response.responses.forEach((resp, idx) => {
+                if (!resp.success) {
+                    const code = resp.error?.code;
+                    if (code === 'messaging/invalid-registration-token' ||
+                        code === 'messaging/registration-token-not-registered') {
+                        invalidTokens.push(tokens[idx]);
+                    }
+                }
+            });
+
+            // Delete invalid device docs
+            if (invalidTokens.length > 0) {
+                const batch = db.batch();
+                const invalidDocs = devicesSnap.docs.filter(doc =>
+                    invalidTokens.includes(doc.data().token)
+                );
+                invalidDocs.forEach(doc => batch.delete(doc.ref));
+                await batch.commit();
+                console.log(`🗑️ Removed ${invalidDocs.length} invalid device tokens`);
+            }
+        }
+    } catch (error) {
+        console.error('❌ Push notification error:', error.message);
+    }
+}
+
+// ─── Booking Notification Triggers ───────────────────────────────────────────
+
+// Format booking info as: หมอ: Name | HH:MM-HH:MM | Service | Price฿
+function formatBookingLine(therapistName, booking, serviceName) {
+    const start = formatTimestamp(booking.startTime);
+    const end = formatTimestamp(booking.endTime);
+    const price = booking.price ? `${booking.price.toLocaleString()}฿` : '-';
+    return `หมอ: ${therapistName} | ${start}-${end} | ${serviceName} | ${price}`;
+}
+
+// New booking created
+exports.onBookingCreated = functions
+    .region('asia-southeast1')
+    .firestore.document('bookings/{bookingId}')
+    .onCreate(async (snap) => {
+        const booking = snap.data();
+        const [therapistName, serviceName] = await Promise.all([
+            getTherapistName(booking.therapistId),
+            getServiceName(booking.serviceId)
+        ]);
+
+        await sendPushNotification(
+            '🆕 จองใหม่',
+            formatBookingLine(therapistName, booking, serviceName),
+            'new-booking'
+        );
+    });
+
+// Booking updated
+exports.onBookingUpdated = functions
+    .region('asia-southeast1')
+    .firestore.document('bookings/{bookingId}')
+    .onUpdate(async (change) => {
+        const before = change.before.data();
+        const after = change.after.data();
+
+        const [therapistName, serviceName] = await Promise.all([
+            getTherapistName(after.therapistId),
+            getServiceName(after.serviceId)
+        ]);
+
+        // Build change details
+        const changes = [];
+        if (before.therapistId !== after.therapistId) {
+            const oldName = await getTherapistName(before.therapistId);
+            changes.push(`หมอ ${oldName}→${therapistName}`);
+        }
+        if (before.startTime?.seconds !== after.startTime?.seconds ||
+            before.endTime?.seconds !== after.endTime?.seconds) {
+            changes.push(`เวลา ${formatTimestamp(before.startTime)}-${formatTimestamp(before.endTime)}→${formatTimestamp(after.startTime)}-${formatTimestamp(after.endTime)}`);
+        }
+        if (before.serviceId !== after.serviceId) {
+            const oldService = await getServiceName(before.serviceId);
+            changes.push(`บริการ ${oldService}→${serviceName}`);
+        }
+        if (before.price !== after.price) {
+            changes.push(`ราคา ${(before.price||0).toLocaleString()}→${(after.price||0).toLocaleString()}฿`);
+        }
+
+        const line1 = formatBookingLine(therapistName, after, serviceName);
+        const line2 = changes.length > 0 ? `\nเปลี่ยน: ${changes.join(', ')}` : '';
+
+        await sendPushNotification(
+            '✏️ แก้ไขการจอง',
+            line1 + line2,
+            'edit-booking'
+        );
+    });
+
+// Booking deleted
+exports.onBookingDeleted = functions
+    .region('asia-southeast1')
+    .firestore.document('bookings/{bookingId}')
+    .onDelete(async (snap) => {
+        const booking = snap.data();
+        const [therapistName, serviceName] = await Promise.all([
+            getTherapistName(booking.therapistId),
+            getServiceName(booking.serviceId)
+        ]);
+
+        await sendPushNotification(
+            '🗑️ ยกเลิกการจอง',
+            formatBookingLine(therapistName, booking, serviceName),
+            'delete-booking'
+        );
+    });
+
+// ─── Daily Summary Push Notification ─────────────────────────────────────────
+// Also send push notification with daily summary at 21:00
+
+exports.dailySummaryPush = functions
+    .region('asia-southeast1')
+    .pubsub.schedule('0 21 * * *')
+    .timeZone('Asia/Bangkok')
+    .onRun(async () => {
+        const dateKey = todayKey();
+        const summary = await buildDailySummary(dateKey);
+
+        if (!summary) {
+            await sendPushNotification(
+                '📊 สรุปประจำวัน',
+                'ไม่มีการจองวันนี้',
+                'daily-summary'
+            );
+            return null;
+        }
+
+        await sendPushNotification(
+            `📊 สรุปวันนี้ — ${summary.enriched.length} คิว`,
+            `รายได้ ${summary.totalRevenue.toLocaleString()}฿ | ค่ามือ ${summary.totalFee.toLocaleString()}฿ | กำไร ${summary.netRevenue.toLocaleString()}฿`,
+            'daily-summary'
+        );
+
+        return null;
     });

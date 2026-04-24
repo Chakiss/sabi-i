@@ -793,10 +793,12 @@ h1, h2, h3 {
     will-change: scroll-position;
 }
 
-/* Calendar with Headers - Single Grid */
+/* Calendar with Headers - Single Grid
+   --time-col-width controls the fixed first column (header + every row + summary). */
 .calendar-with-headers {
+    --time-col-width: 72px;
     display: grid;
-    grid-template-columns: 80px repeat(auto-fit, minmax(120px, 1fr));
+    grid-template-columns: var(--time-col-width) repeat(auto-fit, minmax(120px, 1fr));
     min-height: 100%;
     width: 100%;
     min-width: 0;
@@ -805,14 +807,26 @@ h1, h2, h3 {
 
 @media (max-width: 768px) {
     .calendar-with-headers {
-        grid-template-columns: 60px repeat(auto-fit, minmax(90px, 1fr));
+        --time-col-width: 64px;
+        grid-template-columns: var(--time-col-width) repeat(auto-fit, minmax(90px, 1fr));
     }
 }
 
 @media (max-width: 480px) {
     .calendar-with-headers {
-        grid-template-columns: 50px repeat(auto-fit, minmax(75px, 1fr));
+        --time-col-width: 56px;
+        grid-template-columns: var(--time-col-width) repeat(auto-fit, minmax(75px, 1fr));
     }
+}
+
+/* Lock the first-column cells to the same width — header, rows, and summary */
+.header-time-cell,
+.time-cell,
+.summary-time-cell {
+    width: var(--time-col-width, 72px);
+    min-width: var(--time-col-width, 72px);
+    max-width: var(--time-col-width, 72px);
+    box-sizing: border-box;
 }
 
 /* Header Row Styles (first row of grid) */
@@ -2522,7 +2536,8 @@ textarea.form-input {
 /* ─── Tablet portrait (iPad 768-1024) ────────────────────────── */
 @media (min-width: 768px) and (max-width: 1024px) {
     .calendar-with-headers {
-        grid-template-columns: 72px repeat(auto-fit, minmax(110px, 1fr));
+        --time-col-width: 72px;
+        grid-template-columns: var(--time-col-width) repeat(auto-fit, minmax(110px, 1fr));
     }
 
     .header-time-cell,
@@ -2555,7 +2570,8 @@ textarea.form-input {
 /* ─── Tablet landscape (iPad Pro, etc.) ──────────────────────── */
 @media (min-width: 1025px) and (max-width: 1366px) {
     .calendar-with-headers {
-        grid-template-columns: 80px repeat(auto-fit, minmax(130px, 1fr));
+        --time-col-width: 80px;
+        grid-template-columns: var(--time-col-width) repeat(auto-fit, minmax(130px, 1fr));
     }
 
     .time-cell { min-height: 52px; }

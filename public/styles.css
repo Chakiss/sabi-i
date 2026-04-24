@@ -827,7 +827,14 @@ h1, h2, h3 {
     color: #333;
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: 20;
+}
+
+/* Top-left corner: stick to both edges, sit above row + column */
+.header-time-cell {
+    left: 0;
+    z-index: 30;
+    box-shadow: 1px 0 0 #E8DCC6;
 }
 
 @media (max-width: 768px) {
@@ -861,7 +868,7 @@ h1, h2, h3 {
     display: none; /* Hide old grid container */
 }
 
-/* Time Cells */
+/* Time Cells (sticky left column) */
 .time-cell {
     display: flex;
     align-items: center;
@@ -874,6 +881,10 @@ h1, h2, h3 {
     font-weight: 500;
     color: #666;
     min-height: 50px;
+    position: sticky;
+    left: 0;
+    z-index: 15;
+    box-shadow: 1px 0 0 #E8DCC6;
 }
 
 @media (max-width: 768px) {
@@ -941,6 +952,9 @@ h1, h2, h3 {
     background: linear-gradient(160deg, #A08562 0%, #6E5B3F 100%);
     color: white;
     border-top-color: #A08562;
+    position: sticky;
+    left: 0;
+    z-index: 15;
 }
 
 .summary-section-title {

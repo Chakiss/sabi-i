@@ -280,16 +280,13 @@ class SabaiCalendarRenderer {
         return indicator;
     }
 
-    // Generate consistent grid template columns for both headers and grid
+    // Generate grid template columns.
+    // Therapist columns use minmax(0, 1fr) so the grid always fits the viewport
+    // (no horizontal scroll). Time column width comes from the CSS variable.
     generateGridColumns(therapistCount) {
-        // For mobile devices, use fixed widths to prevent layout issues
         const width = window.innerWidth;
-        const isSmallMobile = width <= 480;
-        const isMobile = width <= 768;
-        const timeColumnWidth = isSmallMobile ? '50px' : isMobile ? '60px' : '80px';
-        const therapistColumnWidth = isSmallMobile ? 'minmax(75px, 1fr)' : isMobile ? 'minmax(90px, 1fr)' : 'minmax(120px, 1fr)';
-
-        return `${timeColumnWidth} repeat(${therapistCount}, ${therapistColumnWidth})`;
+        const timeColumnWidth = width <= 480 ? '56px' : width <= 768 ? '64px' : '72px';
+        return `${timeColumnWidth} repeat(${therapistCount}, minmax(0, 1fr))`;
     }
 
     // Render main calendar
@@ -535,31 +532,26 @@ class SabaiCalendarRenderer {
     }
 
     // Create time cell
+    // Width is locked via CSS: .time-cell uses --time-col-width (see styles.css)
     createTimeCell(timeSlot) {
         const timeCell = document.createElement('div');
         timeCell.className = 'time-cell';
         timeCell.textContent = SabaiUtils.getTimeRange(timeSlot);
-        
-        // Ensure consistent cell styling
-        timeCell.style.boxSizing = 'border-box';
-        timeCell.style.minWidth = window.innerWidth <= 768 ? '60px' : '80px';
-        timeCell.style.maxWidth = window.innerWidth <= 768 ? '60px' : '80px';
-        
         return timeCell;
     }
 
     // Create individual booking slot
+    // Width is controlled by the grid track (minmax(0, 1fr)) so slot.minWidth
+    // must stay unset — otherwise it forces the grid wider than the viewport.
     createBookingSlot(therapist, timeSlot, therapistIndex, timeIndex, bookings, services, currentDate) {
         const slot = document.createElement('div');
         slot.className = 'booking-slot';
         slot.dataset.therapistId = therapist.id;
         slot.dataset.timeSlot = timeSlot;
-        
-        // Ensure consistent cell styling
+
         slot.style.boxSizing = 'border-box';
-        const isMobile = window.innerWidth <= 768;
-        slot.style.minWidth = isMobile ? '100px' : '120px';
         slot.style.width = '100%';
+        slot.style.minWidth = '0';
         slot.style.overflow = 'hidden';
 
         // Check if this slot is booked first

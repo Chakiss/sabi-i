@@ -26,7 +26,7 @@
 
     <!-- html2canvas is lazy-loaded on demand when capture button is clicked -->
 
-    <link rel="stylesheet" href="styles.css?v=20260424f">
+    <link rel="stylesheet" href="styles.css?v=20260424h">
     <link rel="preload" href="config.js" as="script">
     <link rel="preload" href="app.js" as="script">
 </head>
@@ -38,6 +38,7 @@
                 <h1 class="app-title">
                     <img src="icons/logo.jpg" alt="" class="brand-mark" aria-hidden="true">
                     <span>Saba-i Booking Board</span>
+                    <span id="appVersion" class="app-version"></span>
                 </h1>
 
                 <div class="header-controls">
@@ -51,8 +52,6 @@
                         </button>
                         <button id="todayBtn" class="today-btn">วันนี้</button>
                     </div>
-
-                    <span id="appVersion" class="app-version"></span>
 
                     <!-- Hidden: original handlers stay bound here; the menu items trigger .click() on these -->
                     <button id="notifyBtn" hidden aria-hidden="true" tabindex="-1"></button>

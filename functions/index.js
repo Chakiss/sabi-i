@@ -25,6 +25,8 @@ function createTransporter() {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const THAI_MONTHS_SHORT = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const THAI_DAYS_FULL = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
 
 function formatTimestamp(ts) {
     if (!ts) return '--:--';
@@ -42,6 +44,24 @@ function formatDateThai(dateKey) {
     if (!dateKey) return '-';
     const [y, m, d] = dateKey.split('-');
     return `${parseInt(d)} ${THAI_MONTHS[parseInt(m) - 1]} ${y}`;
+}
+
+function formatDateThaiPush(dateKey) {
+    if (!dateKey) return '-';
+    const [y, m, d] = dateKey.split('-').map(Number);
+    const dayName = THAI_DAYS_FULL[new Date(y, m - 1, d).getDay()];
+    return `${dayName} ${d} ${THAI_MONTHS_SHORT[m - 1]} ${y}`;
+}
+
+function durationMinutes(start, end) {
+    if (!start || !end) return 0;
+    const s = start.toDate ? start.toDate() : new Date(start.seconds * 1000);
+    const e = end.toDate ? end.toDate() : new Date(end.seconds * 1000);
+    return Math.max(0, Math.round((e - s) / 60000));
+}
+
+function formatTimeRange(start, end) {
+    return `${formatTimestamp(start)}–${formatTimestamp(end)}`;
 }
 
 function paymentLabel(method) {
@@ -311,6 +331,17 @@ exports.testDailySummary = functions
 
 // ─── FCM Push Notification Helper ────────────────────────────────────────────
 
+// Per-type icons. Drop new PNGs into public/icons/ and swap the paths to
+// differentiate notification types visually on Chrome / Android / Mac Safari.
+const PUSH_ICONS = {
+    'new-booking':         '/icons/icon-192.png',
+    'edit-booking':        '/icons/icon-192.png',
+    'delete-booking':      '/icons/icon-192.png',
+    'incomplete-booking':  '/icons/icon-192.png',
+    'daily-summary':       '/icons/icon-192.png',
+    'new-reservation':     '/icons/icon-192.png',
+};
+
 async function sendPushNotification(title, body, tag) {
     try {
         // Get all admin device tokens
@@ -332,6 +363,7 @@ async function sendPushNotification(title, body, tag) {
                 title: title,
                 body: body,
                 tag: tag || 'booking',
+                icon: PUSH_ICONS[tag] || '/icons/icon-192.png',
                 click_action: '/index.html'
             },
             tokens: tokens
@@ -371,12 +403,50 @@ async function sendPushNotification(title, body, tag) {
 
 // ─── Booking Notification Triggers ───────────────────────────────────────────
 
-// Format booking info as: หมอ: Name | HH:MM-HH:MM | Service | Price฿
-function formatBookingLine(therapistName, booking, serviceName) {
-    const start = formatTimestamp(booking.startTime);
-    const end = formatTimestamp(booking.endTime);
-    const price = booking.price ? `${booking.price.toLocaleString()}฿` : '-';
-    return `หมอ: ${therapistName} | ${start}-${end} | ${serviceName} | ${price}`;
+// Title: "[icon prefix] • [therapist] [start time]"
+function buildPushTitle(prefix, therapistName, booking) {
+    return `${prefix} • ${therapistName} ${formatTimestamp(booking.startTime)}`;
+}
+
+// Body for new booking (full detail)
+function buildCreateBody(booking, serviceName) {
+    const lines = [
+        `📅 ${formatDateThaiPush(booking.dateKey)}`,
+        `⏰ ${formatTimeRange(booking.startTime, booking.endTime)} (${durationMinutes(booking.startTime, booking.endTime)} นาที)`,
+        `💆 ${serviceName}`,
+    ];
+    let priceLine = `💰 ${(booking.price || 0).toLocaleString()}฿`;
+    if (booking.discount > 0) priceLine += ` (ส่วนลด ${booking.discount}%)`;
+    lines.push(priceLine);
+    lines.push(`💳 ${paymentLabel(booking.paymentMethod)}`);
+    if (booking.note) lines.push(`📝 ${booking.note}`);
+    return lines.join('\n');
+}
+
+// Body for deleted booking (price + payment combined on one line)
+function buildDeleteBody(booking, serviceName) {
+    const lines = [
+        `📅 ${formatDateThaiPush(booking.dateKey)}`,
+        `⏰ ${formatTimeRange(booking.startTime, booking.endTime)} (${durationMinutes(booking.startTime, booking.endTime)} นาที)`,
+        `💆 ${serviceName}`,
+        `💰 ${(booking.price || 0).toLocaleString()}฿ • 💳 ${paymentLabel(booking.paymentMethod)}`,
+    ];
+    if (booking.note) lines.push(`📝 ${booking.note}`);
+    return lines.join('\n');
+}
+
+// Body for updated booking — lead with what changed so the diff is visible
+// in iOS collapsed view (only first ~2 body lines), then the full booking state.
+function buildUpdateBody(after, serviceName, changes) {
+    const lines = [];
+    if (changes.length > 0) {
+        for (const c of changes) lines.push(`🔄 ${c}`);
+        lines.push('');
+    }
+    lines.push(`📅 ${formatDateThaiPush(after.dateKey)}`);
+    lines.push(`⏰ ${formatTimeRange(after.startTime, after.endTime)} (${durationMinutes(after.startTime, after.endTime)} นาที)`);
+    lines.push(`💆 ${serviceName} • ${(after.price || 0).toLocaleString()}฿ • ${paymentLabel(after.paymentMethod)}`);
+    return lines.join('\n');
 }
 
 // New booking created
@@ -391,8 +461,8 @@ exports.onBookingCreated = functions
         ]);
 
         await sendPushNotification(
-            '🆕 จองใหม่',
-            formatBookingLine(therapistName, booking, serviceName),
+            buildPushTitle('🆕 จองใหม่', therapistName, booking),
+            buildCreateBody(booking, serviceName),
             'new-booking'
         );
     });
@@ -410,30 +480,26 @@ exports.onBookingUpdated = functions
             getServiceName(after.serviceId)
         ]);
 
-        // Build change details
         const changes = [];
         if (before.therapistId !== after.therapistId) {
             const oldName = await getTherapistName(before.therapistId);
-            changes.push(`หมอ ${oldName}→${therapistName}`);
+            changes.push(`หมอ: ${oldName} → ${therapistName}`);
         }
         if (before.startTime?.seconds !== after.startTime?.seconds ||
             before.endTime?.seconds !== after.endTime?.seconds) {
-            changes.push(`เวลา ${formatTimestamp(before.startTime)}-${formatTimestamp(before.endTime)}→${formatTimestamp(after.startTime)}-${formatTimestamp(after.endTime)}`);
+            changes.push(`เวลา: ${formatTimeRange(before.startTime, before.endTime)} → ${formatTimeRange(after.startTime, after.endTime)}`);
         }
         if (before.serviceId !== after.serviceId) {
             const oldService = await getServiceName(before.serviceId);
-            changes.push(`บริการ ${oldService}→${serviceName}`);
+            changes.push(`บริการ: ${oldService} → ${serviceName}`);
         }
         if (before.price !== after.price) {
-            changes.push(`ราคา ${(before.price||0).toLocaleString()}→${(after.price||0).toLocaleString()}฿`);
+            changes.push(`ราคา: ${(before.price || 0).toLocaleString()}฿ → ${(after.price || 0).toLocaleString()}฿`);
         }
 
-        const line1 = formatBookingLine(therapistName, after, serviceName);
-        const line2 = changes.length > 0 ? `\nเปลี่ยน: ${changes.join(', ')}` : '';
-
         await sendPushNotification(
-            '✏️ แก้ไขการจอง',
-            line1 + line2,
+            buildPushTitle('✏️ แก้ไข', therapistName, after),
+            buildUpdateBody(after, serviceName, changes),
             'edit-booking'
         );
     });
@@ -450,8 +516,8 @@ exports.onBookingDeleted = functions
         ]);
 
         await sendPushNotification(
-            '🗑️ ยกเลิกการจอง',
-            formatBookingLine(therapistName, booking, serviceName),
+            buildPushTitle('🗑️ ยกเลิก', therapistName, booking),
+            buildDeleteBody(booking, serviceName),
             'delete-booking'
         );
     });
@@ -469,18 +535,177 @@ exports.dailySummaryPush = functions
 
         if (!summary) {
             await sendPushNotification(
-                '📊 สรุปประจำวัน',
-                'ไม่มีการจองวันนี้',
+                '📊 สรุปวันนี้',
+                'ไม่มีการจองวันนี้ 😴',
                 'daily-summary'
             );
             return null;
         }
 
+        const therapistList = Object.entries(summary.byTherapist)
+            .sort((a, b) => b[1].count - a[1].count)
+            .map(([name, stat]) => `${name} ${stat.count}`)
+            .join(' • ');
+
+        const body = [
+            `📅 ${formatDateThaiPush(dateKey)}`,
+            `💰 รายได้: ${summary.totalRevenue.toLocaleString()}฿`,
+            `🤝 ค่ามือ: ${summary.totalFee.toLocaleString()}฿`,
+            `✨ กำไรสุทธิ: ${summary.netRevenue.toLocaleString()}฿`,
+            '',
+            `👥 ${therapistList}`,
+        ].join('\n');
+
         await sendPushNotification(
-            `📊 สรุปวันนี้ — ${summary.enriched.length} คิว`,
-            `รายได้ ${summary.totalRevenue.toLocaleString()}฿ | ค่ามือ ${summary.totalFee.toLocaleString()}฿ | กำไร ${summary.netRevenue.toLocaleString()}฿`,
+            `📊 สรุปวันนี้ • ${summary.enriched.length} คิว`,
+            body,
             'daily-summary'
         );
 
         return null;
+    });
+
+// ─── Incomplete Booking Reminder ─────────────────────────────────────────────
+// เตือนทุก 15:00 / 18:00 / 21:00 ถ้ามี booking วันนี้ที่จบไปแล้ว
+// แต่ยังขาด serviceId หรือ paymentMethod
+
+async function runIncompleteBookingCheck(triggerLabel) {
+    const dateKey = todayKey();
+    const now = new Date();
+    const nowSec = Math.floor(now.getTime() / 1000);
+
+    const snap = await db.collection('bookings')
+        .where('dateKey', '==', dateKey)
+        .get();
+
+    const incomplete = [];
+    for (const doc of snap.docs) {
+        const b = { id: doc.id, ...doc.data() };
+        const endSec = b.endTime?.seconds || 0;
+        if (endSec === 0 || endSec > nowSec) continue; // ยังไม่จบ
+
+        const missingService = !b.serviceId;
+        const missingPayment = !b.paymentMethod || (b.paymentMethod !== 'cash' && b.paymentMethod !== 'transfer');
+        if (!missingService && !missingPayment) continue;
+
+        b._missingService = missingService;
+        b._missingPayment = missingPayment;
+        incomplete.push(b);
+    }
+
+    if (incomplete.length === 0) {
+        console.log(`ℹ️ [${triggerLabel}] No incomplete bookings`);
+        return null;
+    }
+
+    // Enrich with therapist + service names
+    const enriched = await Promise.all(incomplete.map(async (b) => {
+        const [therapistName, serviceName] = await Promise.all([
+            getTherapistName(b.therapistId),
+            b.serviceId ? getServiceName(b.serviceId) : Promise.resolve(null),
+        ]);
+        return { ...b, therapistName, serviceName };
+    }));
+
+    // Sort by start time
+    enriched.sort((a, b) => (a.startTime?.seconds || 0) - (b.startTime?.seconds || 0));
+
+    // Header: trigger time + date on one line. Then per-booking block:
+    //   <n>. <therapist> <time>  (<existing fields>)
+    //      ❌ ยังไม่ระบุ: <missing fields>
+    // Blank line between bookings for readability in expanded view.
+    const lines = [`🕐 เช็คเมื่อ ${triggerLabel} • ${formatDateThaiPush(dateKey)}`];
+    enriched.forEach((b, idx) => {
+        const existing = [];
+        if (b.serviceName) existing.push(b.serviceName);
+        existing.push(`${(b.price || 0).toLocaleString()}฿`);
+        if (!b._missingPayment) existing.push(paymentLabel(b.paymentMethod));
+
+        const missing = [];
+        if (b._missingService) missing.push('บริการ');
+        if (b._missingPayment) missing.push('การชำระ');
+
+        if (idx > 0) lines.push('');
+        lines.push(`${idx + 1}. ${b.therapistName} ${formatTimeRange(b.startTime, b.endTime)}  (${existing.join(' • ')})`);
+        lines.push(`   ❌ ยังไม่ระบุ: ${missing.join(', ')}`);
+    });
+
+    await sendPushNotification(
+        `⚠️ ลงข้อมูลไม่ครบ • ${incomplete.length} คิว`,
+        lines.join('\n'),
+        'incomplete-booking'
+    );
+
+    console.log(`✅ [${triggerLabel}] Sent reminder: ${incomplete.length} incomplete bookings`);
+    return null;
+}
+
+exports.incompleteBookingCheck15 = functions
+    .region('asia-southeast1')
+    .pubsub.schedule('0 15 * * *')
+    .timeZone('Asia/Bangkok')
+    .onRun(() => runIncompleteBookingCheck('15:00'));
+
+exports.incompleteBookingCheck18 = functions
+    .region('asia-southeast1')
+    .pubsub.schedule('0 18 * * *')
+    .timeZone('Asia/Bangkok')
+    .onRun(() => runIncompleteBookingCheck('18:00'));
+
+exports.incompleteBookingCheck21 = functions
+    .region('asia-southeast1')
+    .pubsub.schedule('0 21 * * *')
+    .timeZone('Asia/Bangkok')
+    .onRun(() => runIncompleteBookingCheck('21:00'));
+
+// HTTP test endpoint
+exports.testIncompleteBookingCheck = functions
+    .region('asia-southeast1')
+    .https.onRequest(async (req, res) => {
+        const label = req.query.label || 'TEST';
+        await runIncompleteBookingCheck(label);
+        res.send(`✅ Incomplete booking check run (${label})`);
+    });
+
+// ─── Customer Reservation Request (from landing page) ────────────────────────
+
+function formatPreferredDate(dateKey) {
+    if (!dateKey) return '-';
+    const [y, m, d] = dateKey.split('-').map(Number);
+    if (!y || !m || !d) return dateKey;
+    const dayName = THAI_DAYS_FULL[new Date(y, m - 1, d).getDay()];
+    return `${dayName} ${d} ${THAI_MONTHS_SHORT[m - 1]} ${y}`;
+}
+
+function buildReservationBody(req) {
+    const lines = [];
+    lines.push(`👤 ${req.name || '-'} • ${req.phone || '-'}`);
+
+    const serviceLine = req.serviceName
+        ? (req.duration ? `💆 ${req.serviceName} • ${req.duration} นาที` : `💆 ${req.serviceName}`)
+        : '💆 ยังไม่เลือกบริการ';
+    lines.push(serviceLine);
+
+    lines.push(`📅 ${formatPreferredDate(req.preferredDate)} ⏰ ${req.preferredTime || '-'}`);
+
+    if (req.price) lines.push(`💰 ${Number(req.price).toLocaleString()}฿`);
+    if (req.guests && Number(req.guests) > 1) lines.push(`👥 ${req.guests} ท่าน`);
+    if (req.email) lines.push(`✉️ ${req.email}`);
+    if (req.notes) lines.push(`📝 ${req.notes}`);
+
+    return lines.join('\n');
+}
+
+exports.onReservationRequestCreated = functions
+    .region('asia-southeast1')
+    .firestore.document('reservationRequests/{requestId}')
+    .onCreate(async (snap) => {
+        const req = snap.data() || {};
+        const name = req.name || 'ลูกค้า';
+
+        await sendPushNotification(
+            `🌿 จองใหม่จากเว็บ • ${name}`,
+            buildReservationBody(req),
+            'new-reservation'
+        );
     });

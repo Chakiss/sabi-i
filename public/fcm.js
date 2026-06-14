@@ -170,19 +170,34 @@ class SabaiFCM {
         const existing = document.getElementById('fcm-toast');
         if (existing) existing.remove();
 
+        // Pick accent color from title prefix
+        const accent =
+            title.startsWith('🆕') ? '#16a34a' :
+            title.startsWith('✏️') ? '#f59e0b' :
+            title.startsWith('🗑️') ? '#ef4444' :
+            title.startsWith('📊') ? '#6366f1' :
+            title.startsWith('⚠️') ? '#dc2626' :
+            '#4c9fff';
+
         const toast = document.createElement('div');
         toast.id = 'fcm-toast';
         toast.style.cssText = `
             position: fixed; top: 16px; right: 16px; z-index: 10000;
             background: white; border-radius: 12px; padding: 14px 18px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.15); border-left: 4px solid #4c9fff;
-            max-width: 340px; animation: slideIn 0.3s ease;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15); border-left: 4px solid ${accent};
+            max-width: 360px; animation: slideIn 0.3s ease;
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
         `;
-        toast.innerHTML = `
-            <div style="font-weight:600; font-size:14px; color:#1d1d1f; margin-bottom:4px;">${title}</div>
-            <div style="font-size:13px; color:#666; line-height:1.4;">${body}</div>
-        `;
+        const titleEl = document.createElement('div');
+        titleEl.style.cssText = 'font-weight:600; font-size:14px; color:#1d1d1f; margin-bottom:6px;';
+        titleEl.textContent = title;
+
+        const bodyEl = document.createElement('div');
+        bodyEl.style.cssText = 'font-size:13px; color:#444; line-height:1.5; white-space:pre-line;';
+        bodyEl.textContent = body;
+
+        toast.appendChild(titleEl);
+        toast.appendChild(bodyEl);
 
         // Add animation
         const style = document.createElement('style');

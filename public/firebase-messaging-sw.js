@@ -1,5 +1,5 @@
 // Firebase Messaging Service Worker — handles background push notifications
-// v2026-04-10
+// v2026-04-26
 importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js');
 
@@ -30,7 +30,7 @@ messaging.onBackgroundMessage((payload) => {
     const title = data.title || 'Saba-i Booking';
     const options = {
         body: data.body || '',
-        icon: '/icons/icon-192.png',
+        icon: data.icon || '/icons/icon-192.png',
         badge: '/icons/icon-192.png',
         tag: data.tag || 'saba-i-notification',
         data: { url: data.click_action || '/index.html' }

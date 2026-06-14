@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ใช้สิทธิ์ Voucher · Saba-i</title>
+<link rel="icon" href="/favicon.ico?v=20260424" sizes="any">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700&family=Raleway:wght@300..700&family=Noto+Sans+Thai:wght@300..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="voucher.css?v=1">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+<header class="v-header">
+  <button class="back" onclick="history.back()" aria-label="กลับ">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
+  <div>
+    <h1>ใช้สิทธิ์ Voucher</h1>
+    <div class="sub">Redeem Voucher</div>
+  </div>
+  <a class="sell-btn" href="voucher-sell.html">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    <span class="lbl">ขาย Voucher</span>
+  </a>
+</header>
+
+<div class="wrap">
+
+  <!-- ===== เลือกลูกค้า ===== -->
+  <div class="card">
+    <div class="card-title">
+      <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
+      เลือกลูกค้าที่มี Voucher
+    </div>
+    <div class="field" style="margin-bottom:14px">
+      <input id="search" type="text" placeholder="🔍 ค้นหาชื่อ หรือ เบอร์โทร" autocomplete="off">
+    </div>
+    <div id="voucherList" class="v-list"></div>
+  </div>
+
+  <!-- ===== การ์ด + ตัดสิทธิ์ ===== -->
+  <div id="detailView" class="hidden">
+    <div id="cardHost"></div>
+
+    <!-- ฟอร์มตัดสิทธิ์ (เหมือนจอง) -->
+    <div class="card" id="redeemForm" style="margin-top:18px">
+      <div class="card-title">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 11l3 3 8-8"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+        ตัดสิทธิ์การใช้งาน
+      </div>
+
+      <div class="field">
+        <label>บริการ <span class="req">*</span></label>
+        <div class="svc-grid" id="svcGrid"></div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>หมอนวด <span class="req">*</span></label>
+          <select id="therapist"></select>
+        </div>
+        <div class="field">
+          <label>ระยะเวลา <span class="req">*</span></label>
+          <select id="duration">
+            <option value="0.5">30 นาที (½ ชม.)</option>
+            <option value="1" selected>1 ชั่วโมง</option>
+            <option value="1.5">1.5 ชั่วโมง</option>
+            <option value="2">2 ชั่วโมง</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>วันที่ใช้บริการ</label>
+          <input id="useDate" type="date">
+        </div>
+        <div class="field">
+          <label>เวลาเริ่ม <span class="req">*</span></label>
+          <select id="startTime"><option value="">เลือกหมอก่อน</option></select>
+        </div>
+      </div>
+
+      <div class="end-badge" style="margin-bottom:16px">สิ้นสุด: <strong id="endBadge">--:--</strong></div>
+
+      <div id="redeemWarn" class="hint hidden" style="color:var(--danger);font-size:13px;margin-bottom:10px"></div>
+
+      <button class="btn btn-primary btn-block" id="redeemBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>
+        ยืนยันตัดสิทธิ์
+      </button>
+    </div>
+
+    <!-- ประวัติการใช้ -->
+    <div class="card" id="logCard">
+      <div class="card-title">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg></span>
+        ประวัติการใช้สิทธิ์
+      </div>
+      <div id="redeemLog" class="redeem-log"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="config.js"></script>
+<script src="voucher-store.js?v=2"></script>
+<script>
+(() => {
+  const S = window.VoucherStore;
+  const P = S.PACKAGE;
+  const pad = n => String(n).padStart(2, '0');
+
+  let selectedId = null;
+  let selectedService = null;
+  let therapists = [];
+
+  const toast = (msg) => {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  };
+
+  // หมอนวด + วันที่ default
+  const therapistSel = document.getElementById('therapist');
+  const durationSel = document.getElementById('duration');
+  const useDateInput = document.getElementById('useDate');
+  const startSel = document.getElementById('startTime');
+  const endBadge = document.getElementById('endBadge');
+  const redeemBtn = document.getElementById('redeemBtn');
+
+  therapistSel.innerHTML = '<option value="">— กำลังโหลดหมอนวด —</option>';
+  S.loadTherapists().then(list => {
+    therapists = list;
+    therapistSel.innerHTML = '<option value="">— เลือกหมอนวด —</option>' +
+      therapists.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+  });
+  const today = new Date();
+  useDateInput.value = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+
+  // เติมช่องเวลาเริ่ม ตามคิวว่างของหมอ (query bookings จริง) — async
+  let slotReqId = 0;
+  async function refreshSlots() {
+    const tId = therapistSel.value;
+    const dateKey = useDateInput.value;
+    const dur = parseFloat(durationSel.value);
+    const prev = startSel.value;                 // เก็บเวลาที่เลือกไว้
+    if (!tId) {
+      startSel.innerHTML = '<option value="">เลือกหมอก่อน</option>';
+      startSel.disabled = true;
+      updateEnd(); validateForm();
+      return;
+    }
+    const myReq = ++slotReqId;
+    startSel.disabled = true;
+    startSel.innerHTML = '<option value="">— กำลังเช็คคิวว่าง —</option>';
+    const slots = await S.genTimeSlots(tId, dateKey, dur);
+    if (myReq !== slotReqId) return;             // มีคำขอใหม่กว่าแล้ว ทิ้งผลเก่า
+    startSel.disabled = false;
+    const free = slots.filter(s => !s.disabled).length;
+    let html = `<option value="">— เลือกเวลา (ว่าง ${free} ช่อง) —</option>`;
+    html += slots.map(s =>
+      `<option value="${s.value}" ${s.disabled ? 'disabled' : ''}>${s.value}–${s.end}${s.disabled ? '  (ไม่ว่าง)' : ''}</option>`
+    ).join('');
+    startSel.innerHTML = html;
+    // คืนค่าที่เคยเลือกถ้ายังว่างอยู่
+    const keep = slots.find(s => s.value === prev && !s.disabled);
+    if (keep) startSel.value = prev;
+    updateEnd(); validateForm();
+  }
+
+  function updateEnd() {
+    const dur = parseFloat(durationSel.value);
+    if (startSel.value) {
+      endBadge.textContent = S.addMinutesHHMM(startSel.value, Math.round(dur * 60));
+    } else {
+      endBadge.textContent = '--:--';
+    }
+  }
+
+  // เปิด/ปิดปุ่มยืนยันตามความครบของฟอร์ม (กันกดซ้ำ/กดทั้งที่ยังไม่พร้อม)
+  function validateForm() {
+    const v = selectedId ? S.getVoucher(selectedId) : null;
+    const ok = v && S.voucherStatus(v) === 'active'
+      && selectedService && therapistSel.value && startSel.value;
+    redeemBtn.disabled = !ok;
+  }
+
+  therapistSel.addEventListener('change', () => { refreshSlots(); validateForm(); });
+  durationSel.addEventListener('change', () => { refreshSlots(); validateForm(); });
+  useDateInput.addEventListener('change', () => { refreshSlots(); validateForm(); });
+  startSel.addEventListener('change', () => { updateEnd(); validateForm(); });
+
+  // บริการ (เฉพาะที่ใช้สิทธิ์ได้)
+  document.getElementById('svcGrid').innerHTML = P.eligibleServices.map(s =>
+    `<div class="svc-opt" data-key="${s.key}">
+       <div class="svc-th">${s.name}</div>
+       <div class="svc-en">${s.en}</div>
+     </div>`).join('');
+  document.querySelectorAll('.svc-opt').forEach(el => {
+    el.addEventListener('click', () => {
+      document.querySelectorAll('.svc-opt').forEach(x => x.classList.remove('sel'));
+      el.classList.add('sel');
+      selectedService = el.dataset.key;
+      validateForm();
+    });
+  });
+
+  // ---- รายการ voucher ----
+  function renderList() {
+    const q = document.getElementById('search').value.trim().toLowerCase();
+    let list = S.loadVouchers();
+    if (q) list = list.filter(v =>
+      v.customerName.toLowerCase().includes(q) || v.customerPhone.includes(q));
+
+    const host = document.getElementById('voucherList');
+    if (!list.length) {
+      if (!S.isReady() && !q) { host.innerHTML = `<div class="empty">กำลังโหลด Voucher…</div>`; return; }
+      host.innerHTML = `<div class="empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 11h18M8 3v4M16 3v4"/></svg>
+        <div>ยังไม่มี Voucher${q ? ' ที่ตรงกับการค้นหา' : ''}</div>
+        <div style="font-size:12px;margin-top:6px">กดปุ่ม “ขาย Voucher” มุมขวาบนเพื่อสร้างใบใหม่</div>
+      </div>`;
+      return;
+    }
+    host.innerHTML = list.map(v => {
+      const st = S.voucherStatus(v);
+      const stLabel = { active:'พร้อมใช้', used_up:'ใช้ครบ', expired:'หมดอายุ' }[st];
+      const initial = v.customerName.trim().charAt(0) || '?';
+      return `<div class="v-item ${v.id === selectedId ? 'selected' : ''}" data-id="${v.id}">
+        <div class="avatar">${initial}</div>
+        <div class="vi-main">
+          <div class="vi-name">${v.customerName} <span class="pill ${st}">${stLabel}</span></div>
+          <div class="vi-sub">${v.customerPhone} · หมดอายุ ${S.fmtDateTH(v.expiryDate)}</div>
+        </div>
+        <div class="vi-hrs"><b>${S.remainingHours(v)}</b><span>ชม.เหลือ</span></div>
+      </div>`;
+    }).join('');
+
+    host.querySelectorAll('.v-item').forEach(el => {
+      el.addEventListener('click', () => selectVoucher(el.dataset.id));
+    });
+  }
+
+  function selectVoucher(id) {
+    selectedId = id;
+    renderList();
+    renderDetail();
+    document.getElementById('detailView').classList.remove('hidden');
+    document.getElementById('cardHost').scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+
+  function renderDetail() {
+    const v = S.getVoucher(selectedId);
+    if (!v) return;
+    const st = S.voucherStatus(v);
+    const stLabel = { active:'พร้อมใช้', used_up:'ใช้ครบแล้ว', expired:'หมดอายุ' }[st];
+
+    document.getElementById('cardHost').innerHTML = `<div class="voucher-card">
+      <div class="vc-top">
+        <div>
+          <div class="vc-name">${v.customerName}</div>
+          <div class="vc-phone">${v.customerPhone} · ${v.id}</div>
+        </div>
+        <div class="vc-badge ${st}">${stLabel}</div>
+      </div>
+      <div class="vc-hours">คงเหลือ <b>${S.remainingHours(v)}</b> / ${v.totalHours} ชม.</div>
+      ${S.renderStampCard(v)}
+      <div class="vc-foot">
+        <span>${v.packageName}</span>
+        <span>ใช้ได้ถึง ${S.fmtDateTH(v.expiryDate)}</span>
+      </div>
+    </div>`;
+
+    // ประวัติ
+    const log = document.getElementById('redeemLog');
+    if (!v.redemptions.length) {
+      log.innerHTML = `<div class="hint">ยังไม่มีการใช้สิทธิ์</div>`;
+    } else {
+      log.innerHTML = v.redemptions.slice().reverse().map(r => `
+        <div class="rl-item">
+          <div>
+            <div class="rl-svc">${r.serviceName}</div>
+            <div class="rl-meta">${S.fmtDateTH(r.date)}${r.therapistName ? ' · ' + r.therapistName : ''}</div>
+          </div>
+          <div class="rl-hrs">−${r.hours} ชม.</div>
+        </div>`).join('');
+    }
+
+    // เตือนถ้าใช้ไม่ได้
+    const warn = document.getElementById('redeemWarn');
+    if (st !== 'active') {
+      warn.classList.remove('hidden');
+      warn.textContent = st === 'expired' ? '⚠ Voucher หมดอายุแล้ว' : '⚠ ใช้สิทธิ์ครบแล้ว';
+    } else {
+      warn.classList.add('hidden');
+    }
+    refreshSlots();
+    validateForm();
+  }
+
+  // ---- ตัดสิทธิ์ ----
+  let processing = false;
+  redeemBtn.addEventListener('click', async () => {
+    if (processing || redeemBtn.disabled) return;   // กันกดซ้ำ
+    const v = S.getVoucher(selectedId);
+    if (!v) return;
+    if (!selectedService) { toast('กรุณาเลือกบริการ'); return; }
+    const tId = therapistSel.value;
+    if (!tId) { toast('กรุณาเลือกหมอนวด'); return; }
+    if (!startSel.value) { toast('กรุณาเลือกเวลาเริ่ม'); return; }
+
+    const hours = parseFloat(durationSel.value);
+    const remain = S.remainingHours(v);
+    if (hours > remain) { toast(`ชั่วโมงคงเหลือไม่พอ (เหลือ ${remain} ชม.)`); return; }
+
+    processing = true;
+    redeemBtn.disabled = true;
+    const origBtn = redeemBtn.innerHTML;
+    redeemBtn.innerHTML = 'กำลังบันทึก…';
+
+    const tName = (therapists.find(t => t.id === tId) || {}).name || '';
+    const dateKey = useDateInput.value;
+    const startTime = startSel.value;
+    const endTime = S.addMinutesHHMM(startTime, Math.round(hours * 60));
+    const svcId = S.serviceIdForKey(selectedService);
+    const svcName = S.serviceName(selectedService);
+
+    let bid = null;
+    try {
+      // 1) สร้าง booking จริงบนปฏิทิน
+      bid = await S.createVoucherBooking({
+        therapistId: tId, dateKey, startTime, endTime,
+        durationMin: Math.round(hours * 60), serviceId: svcId,
+        voucherId: v.id, serviceName: svcName,
+      });
+      // 2) ตัดชั่วโมงด้วย transaction (ผูก bookingId)
+      await S.redeemVoucher(v.id, {
+        date: new Date(`${dateKey}T${startTime}:00`).toISOString(),
+        dateKey, startTime, endTime,
+        serviceKey: selectedService, serviceName: svcName,
+        hours, therapistId: tId, therapistName: tName, bookingId: bid,
+      });
+
+      toast(`✓ ตัด ${hours} ชม. (${startTime}–${endTime}) · บันทึกลงปฏิทินแล้ว`);
+      // ล้างการเลือก กันตัดซ้ำ — UI จะรีเฟรชจาก onChange listener
+      selectedService = null;
+      document.querySelectorAll('.svc-opt').forEach(x => x.classList.remove('sel'));
+      startSel.value = '';
+    } catch (err) {
+      console.error('redeem failed:', err);
+      if (bid) await S.deleteBooking(bid);          // rollback booking ถ้าตัดชั่วโมงพลาด
+      toast('ตัดสิทธิ์ไม่สำเร็จ: ' + (err.message || 'ลองใหม่'));
+    } finally {
+      processing = false;
+      redeemBtn.innerHTML = origBtn;
+      if (selectedId) renderDetail();
+    }
+  });
+
+  document.getElementById('search').addEventListener('input', renderList);
+
+  // ---- realtime: อัปเดตอัตโนมัติเมื่อข้อมูล voucher เปลี่ยน (ทุกเครื่อง) ----
+  renderList();                                   // แสดงสถานะกำลังโหลดทันที
+  S.onChange(() => {
+    renderList();
+    if (selectedId && S.getVoucher(selectedId)) renderDetail();
+  });
+})();
+</script>
+</body>
+</html>

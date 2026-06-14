@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ขาย Voucher · Saba-i</title>
+<link rel="icon" href="/favicon.ico?v=20260424" sizes="any">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700&family=Raleway:wght@300..700&family=Noto+Sans+Thai:wght@300..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="voucher.css?v=1">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+<header class="v-header">
+  <button class="back" onclick="history.back()" aria-label="กลับ">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
+  <div>
+    <h1>ขาย Voucher</h1>
+    <div class="sub">Sell Voucher</div>
+  </div>
+  <a class="tag" href="voucher-use.html" style="color:#fff">ไปหน้าใช้สิทธิ์ →</a>
+</header>
+
+<div class="wrap">
+
+  <!-- ===== ฟอร์มขาย ===== -->
+  <div id="sellView">
+    <!-- แพ็กเกจ -->
+    <div class="pkg">
+      <div class="pkg-name" id="pkgName"></div>
+      <div class="pkg-en" id="pkgEn"></div>
+      <div class="pkg-price" id="pkgPrice"></div>
+      <div class="pkg-meta">
+        <div>⏱ <b id="pkgHours"></b> ชั่วโมง</div>
+        <div>📅 หมดอายุใน <b id="pkgValid"></b> เดือน</div>
+      </div>
+      <div class="pkg-chips" id="pkgChips"></div>
+    </div>
+
+    <!-- ข้อมูลลูกค้า -->
+    <div class="card">
+      <div class="card-title">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span>
+        ข้อมูลลูกค้า
+      </div>
+      <div class="field">
+        <label>ชื่อลูกค้า <span class="req">*</span></label>
+        <input id="custName" type="text" placeholder="เช่น คุณสมหญิง" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>เบอร์โทร <span class="req">*</span></label>
+        <input id="custPhone" type="tel" inputmode="tel" placeholder="08x-xxx-xxxx" autocomplete="off">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>ช่องทางชำระเงิน</label>
+          <select id="payMethod">
+            <option value="cash">เงินสด</option>
+            <option value="kbank">โอน กสิกร</option>
+            <option value="scb">โอน ไทยพาณิชย์</option>
+            <option value="qr">QR / พร้อมเพย์</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>วันที่ซื้อ</label>
+          <input id="buyDate" type="date">
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <div class="hint" id="expiryHint" style="font-size:13px;color:var(--brown)"></div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary btn-block" id="sellBtn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M12 5v14"/></svg>
+      ออก Voucher · 3,825 ฿
+    </button>
+  </div>
+
+  <!-- ===== สำเร็จ ===== -->
+  <div id="successView" class="hidden">
+    <div class="card" style="text-align:center;background:#f3f9f3;border-color:#cfe6cf">
+      <div style="font-family:var(--serif);font-size:18px;font-weight:600;color:var(--green)">✓ ออก Voucher สำเร็จ</div>
+      <div style="font-size:13px;color:var(--ink-dim);margin-top:4px" id="successSub"></div>
+    </div>
+    <div id="newCard"></div>
+    <div class="row2" style="margin-top:18px">
+      <button class="btn btn-ghost" id="againBtn">ขายใบใหม่</button>
+      <a class="btn btn-primary" href="voucher-use.html" style="text-decoration:none">ไปหน้าใช้สิทธิ์ →</a>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="config.js"></script>
+<script src="voucher-store.js?v=2"></script>
+<script>
+(() => {
+  const S = window.VoucherStore;
+  const P = S.PACKAGE;
+
+  // เติมข้อมูลแพ็กเกจ
+  document.getElementById('pkgName').textContent = P.name;
+  document.getElementById('pkgEn').textContent = P.nameEn;
+  document.getElementById('pkgPrice').innerHTML = `${P.price.toLocaleString()} <small>฿</small>`;
+  document.getElementById('pkgHours').textContent = P.hours;
+  document.getElementById('pkgValid').textContent = P.validMonths;
+  document.getElementById('pkgChips').innerHTML =
+    P.eligibleServices.map(s => `<span class="chip">${s.name}</span>`).join('');
+
+  const buyDate = document.getElementById('buyDate');
+  const pad = n => String(n).padStart(2, '0');
+  const today = new Date();
+  buyDate.value = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+
+  const expiryHint = document.getElementById('expiryHint');
+  function updateExpiry() {
+    const d = buyDate.value ? new Date(buyDate.value) : new Date();
+    const exp = S.addMonths(d, P.validMonths);
+    expiryHint.textContent = `📅 ใช้ได้ถึง ${S.fmtDateTH(exp)}`;
+  }
+  buyDate.addEventListener('change', updateExpiry);
+  updateExpiry();
+
+  const toast = (msg) => {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  };
+
+  const sellBtn = document.getElementById('sellBtn');
+  let selling = false;
+  sellBtn.addEventListener('click', async () => {
+    if (selling) return;
+    const name = document.getElementById('custName').value.trim();
+    const phone = document.getElementById('custPhone').value.trim();
+    if (!name || !phone) { toast('กรุณากรอกชื่อและเบอร์โทร'); return; }
+
+    const now = new Date();
+    const purchase = buyDate.value ? new Date(buyDate.value) : now;
+    const voucher = {
+      id: S.genVoucherId(now),
+      customerName: name,
+      customerPhone: phone,
+      packageId: P.id,
+      packageName: P.name,
+      totalHours: P.hours,
+      usedHours: 0,
+      price: P.price,
+      paymentMethod: document.getElementById('payMethod').value,
+      purchaseDate: purchase.toISOString(),
+      expiryDate: S.addMonths(purchase, P.validMonths).toISOString(),
+      redemptions: [],
+    };
+
+    selling = true;
+    sellBtn.disabled = true;
+    const orig = sellBtn.innerHTML;
+    sellBtn.innerHTML = 'กำลังบันทึก…';
+    try {
+      await S.createVoucher(voucher);
+      document.getElementById('successSub').textContent =
+        `${name} · ${phone} · เลขที่ ${voucher.id}`;
+      document.getElementById('newCard').innerHTML = renderVoucherCard(voucher);
+      document.getElementById('sellView').classList.add('hidden');
+      document.getElementById('successView').classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      console.error('createVoucher failed:', err);
+      toast('บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง');
+    } finally {
+      selling = false;
+      sellBtn.disabled = false;
+      sellBtn.innerHTML = orig;
+    }
+  });
+
+  document.getElementById('againBtn').addEventListener('click', () => {
+    document.getElementById('custName').value = '';
+    document.getElementById('custPhone').value = '';
+    document.getElementById('successView').classList.add('hidden');
+    document.getElementById('sellView').classList.remove('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  function renderVoucherCard(v) {
+    const st = S.voucherStatus(v);
+    const stLabel = { active:'พร้อมใช้', used_up:'ใช้ครบแล้ว', expired:'หมดอายุ' }[st];
+    return `<div class="voucher-card">
+      <div class="vc-top">
+        <div>
+          <div class="vc-name">${v.customerName}</div>
+          <div class="vc-phone">${v.customerPhone} · ${v.id}</div>
+        </div>
+        <div class="vc-badge ${st}">${stLabel}</div>
+      </div>
+      <div class="vc-hours">คงเหลือ <b>${S.remainingHours(v)}</b> / ${v.totalHours} ชม.</div>
+      ${S.renderStampCard(v)}
+      <div class="vc-foot">
+        <span>${v.packageName}</span>
+        <span>ใช้ได้ถึง ${S.fmtDateTH(v.expiryDate)}</span>
+      </div>
+    </div>`;
+  }
+})();
+</script>
+</body>
+</html>

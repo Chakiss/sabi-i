@@ -565,6 +565,21 @@ h1, h2, h3 {
     transform: scale(0.95);
 }
 
+/* ปุ่ม Voucher — พื้นขาวทึบ เด่นกว่าปุ่มอื่น แต่ขนาดเท่ากัน ไม่กวน flow หลัก */
+.settings-btn.voucher-btn {
+    background: #ffffff;
+    color: #8A7250;
+    border-color: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    text-decoration: none;
+    margin-right: 4px;
+}
+.settings-btn.voucher-btn:hover,
+.settings-btn.voucher-btn:active {
+    background: #F4EDE2;
+    transform: scale(0.95);
+}
+
 .date-nav {
     display: flex;
     align-items: center;

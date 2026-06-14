@@ -25,14 +25,14 @@ window.log = log;
 // Configuration Constants
 const CONFIG = {
     // App version - increment on each deploy
-    APP_VERSION: '1.7.1',
+    APP_VERSION: '1.9',
 
     // Shop Hours (24-hour format)
     SHOP_START_HOUR: 10,
     SHOP_END_HOUR: 22, // เปลี่ยนกลับเป็น 22
     
     // Time slot duration in minutes
-    SLOT_DURATION: 30,
+    SLOT_DURATION: 15,
     
     // Duration options for bookings (in minutes)
     DURATION_OPTIONS: [30, 60, 90, 120, 150, 180],
